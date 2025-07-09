@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[1967],{71:e=>{e.exports=JSON.parse('{"metadata":{"permalink":"/ocean.chat.docs/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);

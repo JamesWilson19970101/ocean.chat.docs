@@ -18,8 +18,10 @@ Here's a suggested directory structure for your Next.js IM application using the
 │ │ └── page.tsx # --- Register page component (We will create this) ---
 │ ├── /(main) # Route group for the main application interface (e.g., protected routes)
 │ │ ├── /chat # Main chat interface route
+│ │ │ └── [roomId] # room page route
+        └── page.tsx # room page component
 │ │ │ └── page.tsx # Chat page component
-│ │ └── layout.tsx # Layout specific to the main app section (e.g., sidebar, header)
+│ │ └── layout.tsx # Layout specific to the chat app section (e.g., sidebar, header)
 │ ├── layout.tsx # Root layout (applies to all routes)
 │ └── page.tsx # Optional: Your application's landing/home page (if needed)
 │ └── globals.css # Global styles (imported in root layout)

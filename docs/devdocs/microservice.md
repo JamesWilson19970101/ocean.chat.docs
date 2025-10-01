@@ -15,7 +15,7 @@ The entire platform is divided into four logical layers, containing 11 core micr
 
 This layer is the direct entry point for users, focusing on handling massive concurrent connections, and is a performance-critical point of the entire system.
 
-### 1. **Connection Gateway Service** (Stateful)
+### 1. **Connection Gateway Service (oceanchat-gateway)** (Stateful)
 
 <Tabs>
 <TabItem value="desc" label="Introduction" default>
@@ -34,7 +34,7 @@ To completely separate the most resource-intensive I/O tasks (maintaining connec
 </TabItem>
 </Tabs>
 
-### 2. **Message Routing Service** (Stateless)
+### 2. **Message Routing Service (oceanchat-router)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -53,7 +53,7 @@ To decouple the access layer from the business logic layer. The routing service 
 
 This layer is responsible for handling all core business functions of the IM platform. It is designed as a stateless service for easy horizontal scaling.
 
-### 3. **Authentication Service** (Stateless)
+### 3. **Authentication Service (oceanchat-auth)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -68,7 +68,7 @@ To isolate the universal and critical security capability of user authentication
 </TabItem>
 </Tabs>
 
-### 4. **User & Relationship Service** (Stateless)
+### 4. **User & Relationship Service (oceanchat-user)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -82,7 +82,7 @@ User and relationship data are fundamental to an IM system. An independent servi
 </TabItem>
 </Tabs>
 
-### 5. **Group Service** (Stateless)
+### 5. **Group Service (oceanchat-group)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -96,7 +96,7 @@ The business logic for group chats (especially permissions and member management
 </TabItem>
 </Tabs>
 
-### 6. **Message Logic Service** (Stateless)
+### 6. **Message Logic Service (oceanchat-message)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -115,7 +115,7 @@ To separate the business logic of the message itself ("what it is") from the mes
 
 This is the key to ensuring reliable and real-time message delivery, and it is a highly asynchronous processing flow.
 
-### 7. **Push Orchestration Service** (Stateless)
+### 7. **Push Orchestration Service (oceanchat-orchestrator)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -130,7 +130,7 @@ As the "brain" of message delivery, it handles complex decision-making logic. Is
 </TabItem>
 </Tabs>
 
-### 8. **Real-time Push Worker** (Stateless)
+### 8. **Real-time Push Worker ()oceanchat-pusher-realtime** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -145,7 +145,7 @@ Dedicated to handling online message pushes, it can be scaled independently base
 </TabItem>
 </Tabs>
 
-### 9. **Offline Push Worker** (Stateless)
+### 9. **Offline Push Worker (oceanchat-pusher-offline)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -163,7 +163,7 @@ Integration with third-party APIs often involves network latency and uncertainty
 
 These services provide stable and efficient foundational capabilities for the entire platform.
 
-### 10. **Online Status Service** (Stateless)
+### 10. **Online Status Service (oceanchat-presence)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
@@ -177,7 +177,7 @@ Online status is the cornerstone of a distributed IM system, with extremely high
 </TabItem>
 </Tabs>
 
-### 11. **Data Query Service** (Stateless)
+### 11. **Data Query Service (oceanchat-query)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>

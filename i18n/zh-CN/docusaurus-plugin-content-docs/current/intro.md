@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # OceanChat Intro
 
-让我们五分钟内浏览一下Docusaurus Docusaurus。
+让我们五分钟内浏览一下 Docusaurus Docusaurus。
 
 ## Getting Started
 

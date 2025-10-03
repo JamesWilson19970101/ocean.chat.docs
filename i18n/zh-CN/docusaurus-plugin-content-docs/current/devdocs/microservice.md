@@ -15,7 +15,25 @@ import TabItem from '@theme/TabItem';
 
 这一层是用户的直接入口，专注于处理海量并发连接，是整个系统的性能关键点。
 
-### 1. **连接网关服务（oceanchat-gateway）** (有状态)
+### 1. **API 网关服务（oceanchat-api-gateway）** (无状态)
+
+<Tabs>
+<TabItem value="desc" label="简介" default>
+本网关是外部请求的唯一入口。
+</TabItem>
+<TabItem value="resp" label="核心职责">
+
+- **HTTP 请求入口**: 作为所有外部 RESTful API 请求的唯一入口。客户端的登录、注册、获取用户资料、查询历史记录等 HTTP 请求都首先到达这里。
+- **请求路由**: 根据请求的 URL 路径（如 /auth/login, /users/profile），将请求安全地路由到内部对应的业务微服务。
+- **通用横切关注点**: 统一处理认证（校验 JWT）、授权、速率限制、日志记录、SSL 卸载等跨服务的通用功能。
+
+</TabItem>
+<TabItem value="reason" label="分离原因">
+为所有无状态的HTTP请求提供一个统一、安全且易于管理的门面。将API管理与实时连接管理分离，使得职责更单一，更易于独立扩展和维护。
+</TabItem>
+</Tabs>
+
+### 2. **连接网关服务（oceanchat-ws-gateway）** (有状态)
 
 <Tabs>
 <TabItem value="desc" label="简介" default>
@@ -23,10 +41,10 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 <TabItem value="resp" label="核心职责">
 
-- **连接认证**: 客户端建连时，验证其 Token (如 JWT) 的合法性。认证通过后，将 `userId` 附加到后续所有上行消息中。
-- **协议处理**: 维护客户端的 WebSocket/TCP 长连接，处理心跳、连接建立与断开。
+- **实时连接入口**: 作为所有外部 WebSocket/TCP 长连接的唯一入口。
+- **连接认证**: 在客户端建立长连接时，负责对连接进行身份认证（通过调用“认证服务”或使用共享公钥进行本地验证）。
 - **数据透传**: 作为纯粹的连接通道，仅封装客户端原始数据包（如附加上 `connectionId`, `gatewayId`），然后快速投递给后端的 **消息路由服务**。
-- **消息下发**: 接收来自 **实时推送工作单元** 的指令，将消息准确推送给连接在本实例上的客户端。
+- **客户端消息下发**: 接收来自 **实时推送工作单元** 的指令，将消息准确推送给连接在本实例上的客户端。
 
 </TabItem>
 <TabItem value="reason" label="分离原因">
@@ -34,7 +52,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 2. **消息路由服务（oceanchat-router）** (无状态)
+### 3. **消息路由服务（oceanchat-router）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -53,12 +71,12 @@ import TabItem from '@theme/TabItem';
 
 这一层负责处理 IM 平台所有的核心业务功能，设计为无状态服务，易于水平扩展。
 
-### 3. **认证服务（oceanchat-auth）** (无状态)
+### 4. **认证服务（oceanchat-auth）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
 
-- **用户身份认证**: 提供用户注册、登录、登出的标准 HTTP 接口。
+- **用户身份认证**: 处理由 API 网关代理而来的用户注册、登录、登出等 HTTP 请求。
 - **令牌管理**: 负责生成、验证和刷新访问令牌（推荐 JWT），是系统安全的核心。
 - **提供验证能力**: 为其他微服务（尤其是 **连接网关**）提供内部接口，验证令牌有效性。
 
@@ -68,7 +86,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 4. **用户关系服务（oceanchat-user）** (无状态)
+### 5. **用户关系服务（oceanchat-user）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -82,7 +100,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 5. **群组服务（oceanchat-group）** (无状态)
+### 6. **群组服务（oceanchat-group）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -96,7 +114,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 6. **消息逻辑服务（oceanchat-message）** (无状态)
+### 7. **消息逻辑服务（oceanchat-message）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -115,7 +133,7 @@ import TabItem from '@theme/TabItem';
 
 这是确保消息可靠、实时送达的关键，也是一个高度异步化的处理流程。
 
-### 7. **推送编排服务（oceanchat-orchestrator）** (无状态)
+### 8. **推送编排服务（oceanchat-orchestrator）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -130,7 +148,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 8. **实时推送工作单元（oceanchat-pusher-realtime）** (无状态)
+### 9. **实时推送工作单元（oceanchat-pusher-realtime）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -145,7 +163,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 9. **离线推送工作单元（oceanchat-pusher-offline）** (无状态)
+### 10. **离线推送工作单元（oceanchat-pusher-offline）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -163,7 +181,7 @@ import TabItem from '@theme/TabItem';
 
 这些服务为整个平台提供稳定、高效的基础能力。
 
-### 10. **在线状态服务（oceanchat-presence）** (无状态)
+### 11. **在线状态服务（oceanchat-presence）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -177,7 +195,7 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 </Tabs>
 
-### 11. **数据查询服务（oceanchat-query）** (无状态)
+### 12. **数据查询服务（oceanchat-query）** (无状态)
 
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
@@ -205,21 +223,23 @@ import TabItem from '@theme/TabItem';
 
 ### 登录阶段
 
-1.  客户端 A → **认证服务** (发送用户名密码)。
-2.  **认证服务** 验证成功，返回一个 JWT 给客户端 A。
+1.  客户端 A → **API 网关** (向 `/auth/login` 发送用户名密码)。
+2.  **API 网关** → **认证服务** (转发登录请求)。
+3.  **认证服务** 验证成功，生成 JWT，并将其返回给 **API 网关**。
+4.  **API 网关** → 客户端 A (将 JWT 响应给客户端)。
 
 ### 发消息阶段
 
-3.  用户 A 发送一条消息给群 G。
-4.  客户端 A → **连接网关-1** (建立连接, 并附上 JWT)。
-5.  **连接网关-1** 验证 JWT 合法性（通过调用 **认证服务**），确认用户身份为 A，并将 `userId: A` 附加到后续消息中。
-6.  **连接网关-1** → **消息路由服务** (透传)。
-7.  **消息路由服务** → **消息逻辑服务** (路由)。
-8.  **消息逻辑服务** 处理消息（校验权限、生成 ID），然后兵分两路：
+5.  用户 A 发送一条消息给群 G。
+6.  客户端 A → **连接网关-1** (建立连接, 并附上 JWT)。
+7.  **连接网关-1** 验证 JWT 合法性（通过调用 **认证服务**），确认用户身份为 A，并将 `userId: A` 附加到后续消息中。
+8.  **连接网关-1** → **消息路由服务** (透传)。
+9.  **消息路由服务** → **消息逻辑服务** (路由)。
+10. **消息逻辑服务** 处理消息（校验权限、生成 ID），然后兵分两路：
     - → **推送编排服务** (启动投递)
     - → Kafka 持久化队列 (准备存储)
-9.  **推送编排服务** 查询 **在线状态服务**，得知群成员 B 在线（位于网关 2），C 离线。
-10. **推送编排服务** → 在线推送队列 (B 的任务) 和 离线推送队列 (C 的任务)。
-11. **实时推送工作单元** 消费 B 的任务 → 指令 **连接网关-2** → 客户端 B 收到消息。
-12. **离线推送工作单元** 消费 C 的任务 → 调用 APNS/FCM API → 客户端 C 收到通知。
-13. **持久化 Writer** 消费 Kafka 消息 → 写入 MongoDB。
+11. **推送编排服务** 查询 **在线状态服务**，得知群成员 B 在线（位于网关 2），C 离线。
+12. **推送编排服务** → 在线推送队列 (B 的任务) 和 离线推送队列 (C 的任务)。
+13. **实时推送工作单元** 消费 B 的任务 → 指令 **连接网关-2** → 客户端 B 收到消息。
+14. **离线推送工作单元** 消费 C 的任务 → 调用 APNS/FCM API → 客户端 C 收到通知。
+15. **持久化 Writer** 消费 Kafka 消息 → 写入 MongoDB。

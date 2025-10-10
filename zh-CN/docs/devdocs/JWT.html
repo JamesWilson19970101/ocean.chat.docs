@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-devdocs/JWT" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">JWT 混合认证 | oceanchat-devdocs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/JWT"><meta data-rh="true" property="og:locale" content="zh_CN"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="zh-CN"><meta data-rh="true" name="docsearch:language" content="zh-CN"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="JWT 混合认证 | oceanchat-devdocs"><meta data-rh="true" name="description" content="在现代 Web 应用和微服务架构中，身份认证是安全体系的基石。基于 JWT (JSON Web Token) 的认证因其无状态、可扩展和跨域友好的特性而被广泛采用。然而，单一的、长有效期的 JWT 令牌在安全性和灵活性上存在固有风险。"><meta data-rh="true" property="og:description" content="在现代 Web 应用和微服务架构中，身份认证是安全体系的基石。基于 JWT (JSON Web Token) 的认证因其无状态、可扩展和跨域友好的特性而被广泛采用。然而，单一的、长有效期的 JWT 令牌在安全性和灵活性上存在固有风险。"><link data-rh="true" rel="icon" href="/ocean.chat.docs/zh-CN/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/JWT"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/JWT" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/JWT" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/JWT" hreflang="x-default"><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/zh-CN/blog/rss.xml" title="oceanchat-devdocs RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/zh-CN/blog/atom.xml" title="oceanchat-devdocs Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/zh-CN/assets/css/styles.b4e89eac.css">
+<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.e3e01cfa.js" defer="defer"></script>
+<script src="/ocean.chat.docs/zh-CN/assets/js/main.17cd6d6a.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/zh-CN/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/zh-CN/"><div class="navbar__logo"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/zh-CN/docs/intro">Tutorial</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/zh-CN/blog">Blog</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>简体中文</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/JWT" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/JWT" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="zh-CN">简体中文</a></li></ul></div></div><div class="navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="切换浅色/暗黑模式（当前为浅色模式）" aria-label="切换浅色/暗黑模式（当前为浅色模式）" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="回到顶部" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="文档侧边栏" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/zh-CN/docs/intro">OceanChat Intro</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---userdocs">oceanchat - userdocs</a><button aria-label="展开侧边栏分类 &#x27;oceanchat - userdocs&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---devdocs">oceanchat - devdocs</a><button aria-label="折叠侧边栏分类 &#x27;oceanchat - devdocs&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/manage-docs-versions">Manage Docs Versions</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/translate-your-site">Translate your site</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Auth Service">认证服务</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/JWT">JWT 混合认证</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/cache">缓存</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/concurrency considerations">concurrency considerations</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/file structure">file structure</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat">graphql vs http in oceanchat</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/microservice">微服务架构</a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="页面路径"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="主页面" class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item"><a class="breadcrumbs__link" itemprop="item" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---devdocs"><span itemprop="name">oceanchat - devdocs</span></a><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">JWT 混合认证</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">本页总览</button></div><div class="theme-doc-markdown markdown"><header><h1>JWT 混合认证</h1></header>
+<p>在现代 Web 应用和微服务架构中，身份认证是安全体系的基石。基于 JWT (JSON Web Token) 的认证因其无状态、可扩展和跨域友好的特性而被广泛采用。然而，单一的、长有效期的 JWT 令牌在安全性和灵活性上存在固有风险。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>核心思想</div><div class="admonitionContent_BuS1"><p>本平台采用 <strong>JWT 混合模式认证策略</strong>。该策略通过结合使用短期的 <code>Access Token</code> (访问令牌) 和长期的 <code>Refresh Token</code> (刷新令牌)，并在每一个环节实施纵深防御，以期在高性能、高安全性和优秀的用户体验之间取得最佳平衡。</p></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="access-token-at---访问令牌">Access Token (AT - 访问令牌)<a href="#access-token-at---访问令牌" class="hash-link" aria-label="Access Token (AT - 访问令牌)的直接链接" title="Access Token (AT - 访问令牌)的直接链接">​</a></h2>
+<ul>
+<li>
+<p>角色: 客户端访问受保护资源的“通行证”。它是高频使用的令牌。</p>
+</li>
+<li>
+<p>特性:</p>
+<ul>
+<li><strong>生命周期短</strong>: 有效期极短，计划设置为 <strong>5 到 15 分钟</strong>。</li>
+<li><strong>无状态验证</strong>: 服务器仅验证其签名和有效期即可信任其内容，无需查询数据库。这保证了极高的处理性能。</li>
+<li><strong>风险</strong>: 由于其高频使用和传输，被盗风险相对较高。其短暂的生命周期是缓解此风险的关键。</li>
+</ul>
+</li>
+<li>
+<p>载荷 (Payload): 包含用户的非敏感身份信息，如用户 ID、角色等，遵循最小权限原则。</p>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="refresh-token-rt---刷新令牌">Refresh Token (RT - 刷新令牌)<a href="#refresh-token-rt---刷新令牌" class="hash-link" aria-label="Refresh Token (RT - 刷新令牌)的直接链接" title="Refresh Token (RT - 刷新令牌)的直接链接">​</a></h2>
+<ul>
+<li>
+<p>角色: 获取新的 Access Token 的唯一凭证，可以看作是维持用户登录状态的“会话钥匙”。它是低频使用的令牌。</p>
+</li>
+<li>
+<p>特性:</p>
+<ul>
+<li><strong>生命周期长</strong>: 有效期较长，计划设置为 <strong>7 到 30 天</strong>。</li>
+<li><strong>有状态验证</strong>: 服务器在处理 RT 时，必须查询数据库或缓存，以验证其是否仍然有效。这提供了撤销会话的能力。</li>
+<li><strong>风险</strong>: 一旦泄露，将导致严重的安全后果。因此，必须对其进行最严格的存储和传输保护。</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="混合模式">混合模式<a href="#混合模式" class="hash-link" aria-label="混合模式的直接链接" title="混合模式的直接链接">​</a></h2>
+<p>该模式的核心思想是将认证职责分离：</p>
+<ul>
+<li>
+<p>日常访问 (99% 的场景): 使用无状态、高性能的 Access Token。</p>
+</li>
+<li>
+<p>会话续期 (1% 的场景): 使用有状态、高安全的 Refresh Token。</p>
+</li>
+</ul>
+<p>这种设计使得系统在绝大多数情况下都能快速响应，同时保留了在关键时刻（如刷新会话、登出）进行严格安全检查的能力。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="安全策略">安全策略<a href="#安全策略" class="hash-link" aria-label="安全策略的直接链接" title="安全策略的直接链接">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="安全的令牌生成与配置">安全的令牌生成与配置<a href="#安全的令牌生成与配置" class="hash-link" aria-label="安全的令牌生成与配置的直接链接" title="安全的令牌生成与配置的直接链接">​</a></h3>
+<div class="theme-admonition theme-admonition-danger admonition_xJq3 alert alert--danger"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M5.05.31c.81 2.17.41 3.38-.52 4.31C3.55 5.67 1.98 6.45.9 7.98c-1.45 2.05-1.7 6.53 3.53 7.7-2.2-1.16-2.67-4.52-.3-6.61-.61 2.03.53 3.33 1.94 2.86 1.39-.47 2.3.53 2.27 1.67-.02.78-.31 1.44-1.13 1.81 3.42-.59 4.78-3.42 4.78-5.56 0-2.84-2.53-3.22-1.25-5.61-1.52.13-2.03 1.13-1.89 2.75.09 1.08-1.02 1.8-1.86 1.33-.67-.41-.66-1.19-.06-1.78C8.18 5.31 8.68 2.45 5.05.32L5.03.3l.02.01z"></path></svg></span>隔离密钥</div><div class="admonitionContent_BuS1"><p>Access Token 和 Refresh Token <strong>必须</strong>使用两个完全不同且足够复杂的密钥 (<code>JWT_ACCESS_SECRET</code> 和 <code>JWT_REFRESH_SECRET</code>) 进行签名，防止通过一个密钥推断出另一个。</p></div></div>
+<p><strong>最小化载荷</strong>: Access Token 的载荷中<strong>严禁</strong>包含任何敏感信息（如密码、手机号、权限详情等）。只应包含必要的身份标识符（如 <code>userId</code>）和角色。</p>
+<p><strong>合理的有效期</strong>:</p>
+<p>AT: <code>15m</code> (15 分钟)。</p>
+<p>RT: <code>7d</code> (7 天)。</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="安全的客户端存储">安全的客户端存储<a href="#安全的客户端存储" class="hash-link" aria-label="安全的客户端存储的直接链接" title="安全的客户端存储的直接链接">​</a></h3>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="access-token">Access Token<a href="#access-token" class="hash-link" aria-label="Access Token的直接链接" title="Access Token的直接链接">​</a></h4>
+<p><strong>首选: 存储在 JavaScript 的内存变量中</strong>。这是最安全的方式，因为它不会在浏览器会话之间持久化，且完全免疫 CSRF 攻击。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>优点</div><div class="admonitionContent_BuS1"><ul>
+<li><strong>极高的安全性</strong>: 这是最能抵御 XSS (跨站脚本) 攻击的方式。因为令牌存储在一个 JavaScript 变量中，攻击者即使能注入脚本，也无法像访问 <code>sessionStorage</code> 或 <code>localStorage</code> 那样直接、持久地读取到它。</li>
+<li><strong>无 CSRF 风险</strong>: 由于令牌需要通过 JavaScript 手动添加到 <code>Authorization</code> 请求头中，浏览器不会自动携带它，因此完全免疫 CSRF (跨站请求伪造) 攻击。</li>
+<li><strong>攻击窗口极小</strong>: 一旦用户关闭标签页或刷新页面，内存变量就会被清空，令牌立即消失。这意味着即使令牌在某个瞬间被窃取，它的生命周期也极其短暂。</li>
+</ul></div></div>
+<div class="theme-admonition theme-admonition-caution admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>缺点</div><div class="admonitionContent_BuS1"><ul>
+<li><strong>用户体验较差</strong>: 这是最大的短板。每次用户刷新页面或打开一个新的标签页访问您的应用时，内存中的 Access Token 都会丢失。这将导致应用必须立即使用 Refresh Token 去换取新的 Access Token，增加了 <code>/refresh</code> 接口的请求频率。如果网络状况不佳，用户可能会感到明显的“重新加载”或“卡顿”。</li>
+</ul></div></div>
+<p><strong>次选: 存储在 <code>sessionStorage</code> 中</strong>。它会在页面刷新时保留，但在浏览器窗口关闭时清除。</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>优点</div><div class="admonitionContent_BuS1"><ul>
+<li><strong>更好的用户体验</strong>: 它可以在同一个标签页的会话中持久存在。用户刷新页面后，令牌依然有效，应用可以立即恢复状态，无需再次发起刷新令牌的请求。</li>
+<li><strong>隔离性</strong>: <code>sessionStorage</code> 是基于标签页的，关闭标签页后数据即被清除，不会像 <code>localStorage</code> 那样永久存储。</li>
+</ul></div></div>
+<div class="theme-admonition theme-admonition-caution admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>缺点</div><div class="admonitionContent_BuS1"><ul>
+<li><strong>易受 XSS 攻击</strong>: 这是它和内存存储相比最大的安全隐患。如果您的网站存在 XSS 漏洞，攻击者注入的脚本可以通过 <code>sessionStorage.getItem(&#x27;accessToken&#x27;)</code> 轻松地读取到令牌，然后发送到他们自己的服务器。</li>
+</ul></div></div>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="refresh-token">Refresh Token<a href="#refresh-token" class="hash-link" aria-label="Refresh Token的直接链接" title="Refresh Token的直接链接">​</a></h4>
+<p><strong>存储在浏览器的 <code>HttpOnly</code> Cookie 中。</strong></p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>Cookie 属性</div><div class="admonitionContent_BuS1"><ul>
+<li><code>HttpOnly</code>: 此标记禁止任何客户端 JavaScript 访问该 Cookie，从根本上杜绝了 XSS 攻击窃取 RT 的可能性。</li>
+<li><code>Secure</code>: 此标记强制浏览器仅在 HTTPS 连接下发送该 Cookie。</li>
+<li><code>SameSite=Strict</code> 或 <code>Lax</code>: 此标记有助于抵御 CSRF (跨站请求伪造) 攻击。</li>
+</ul></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="安全的令牌传输">安全的令牌传输<a href="#安全的令牌传输" class="hash-link" aria-label="安全的令牌传输的直接链接" title="安全的令牌传输的直接链接">​</a></h3>
+<p><strong>强制 HTTPS</strong>: 所有与认证相关的端点以及整个应用，都<strong>必须</strong>强制使用 HTTPS (TLS) 加密。这可以防止令牌在传输过程中被中间人攻击 (MITM) 截获。</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="安全的令牌轮换与验证">安全的令牌轮换与验证<a href="#安全的令牌轮换与验证" class="hash-link" aria-label="安全的令牌轮换与验证的直接链接" title="安全的令牌轮换与验证的直接链接">​</a></h3>
+<p><strong>令牌轮换 (Refresh Token Rotation)</strong>: 这是检测 RT 盗窃的核心机制。</p>
+<ol>
+<li>当客户端使用一个 RT (<code>RT_A</code>) 来刷新时，服务器在验证通过后，会同时返回一个新的 AT (<code>AT_B</code>) 和一个全新的 RT (<code>RT_B</code>)。</li>
+<li>服务器会立即将旧的 <code>RT_A</code> 标记为已使用或作废。</li>
+</ol>
+<div class="theme-admonition theme-admonition-danger admonition_xJq3 alert alert--danger"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M5.05.31c.81 2.17.41 3.38-.52 4.31C3.55 5.67 1.98 6.45.9 7.98c-1.45 2.05-1.7 6.53 3.53 7.7-2.2-1.16-2.67-4.52-.3-6.61-.61 2.03.53 3.33 1.94 2.86 1.39-.47 2.3.53 2.27 1.67-.02.78-.31 1.44-1.13 1.81 3.42-.59 4.78-3.42 4.78-5.56 0-2.84-2.53-3.22-1.25-5.61-1.52.13-2.03 1.13-1.89 2.75.09 1.08-1.02 1.8-1.86 1.33-.67-.41-.66-1.19-.06-1.78C8.18 5.31 8.68 2.45 5.05.32L5.03.3l.02.01z"></path></svg></span>检测到重放攻击</div><div class="admonitionContent_BuS1"><p>如果服务器之后再次收到了 <code>RT_A</code> 的刷新请求，就意味着这个令牌可能已被盗用（攻击者在重放旧令牌）。此时，服务器应立即将该用户的所有会话全部作废，强制其在所有设备上重新登录。</p></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="安全的会话终止">安全的会话终止<a href="#安全的会话终止" class="hash-link" aria-label="安全的会话终止的直接链接" title="安全的会话终止的直接链接">​</a></h3>
+<p><strong>用户登出</strong>: 用户登出时，客户端应主动请求 <code>/logout</code> 端点。服务器收到请求后，必须将数据库中存储的对应 RT 哈希值清除，从而使该 RT 立即失效。</p>
+<p><strong>强制所有设备登出</strong>: 提供一个“安全设置”选项，允许用户清除其账户下关联的所有 RT 记录，实现一键下线。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="工作流程">工作流程<a href="#工作流程" class="hash-link" aria-label="工作流程的直接链接" title="工作流程的直接链接">​</a></h2>
+<p>步骤 1: 初始登录
+客户端: 用户在登录页面输入用户名和密码，点击登录。</p>
+<p>服务器:</p>
+<ol>
+<li>验证凭证是否正确。</li>
+<li>若正确，生成一对令牌：<!-- -->
+<ul>
+<li>短期的 Access Token (<code>AT_A</code>)。</li>
+<li>长期的 Refresh Token (<code>RT_A</code>)。</li>
+</ul>
+</li>
+<li>对 <code>RT_A</code> 进行哈希处理，并将哈希值 (<code>Hashed_RT_A</code>) 存储在用户数据库的对应记录中。</li>
+<li>通过 HTTP 响应将令牌发回客户端：<!-- -->
+<ul>
+<li><code>AT_A</code> 放在响应体 (JSON Body) 中。</li>
+<li><code>RT_A</code> 放在 <code>Set-Cookie</code> 响应头中，并附带 <code>HttpOnly; Secure; SameSite=Strict</code> 标志。</li>
+</ul>
+</li>
+</ol>
+<p>步骤 2: 访问受保护资源
+客户端:</p>
+<ol>
+<li>将从响应体中获取的 <code>AT_A</code> 存储在内存中。</li>
+<li>在每次向受保护 API 发送请求时，将 <code>AT_A</code> 放在 <code>Authorization: Bearer &lt;AT_A&gt;</code> 请求头中。</li>
+</ol>
+<p>服务器:</p>
+<ol>
+<li>接收到请求，提取 <code>AT_A</code>。</li>
+<li>进行快速的无状态验证（检查签名和有效期）。</li>
+<li>验证通过，处理请求并返回数据。</li>
+</ol>
+<p>步骤 3: Access Token 过期与刷新
+客户端: 使用已过期的 <code>AT_A</code> 请求 API。</p>
+<p>服务器: 验证 <code>AT_A</code> 发现其已过期，拒绝请求，返回 <code>401 Unauthorized</code> 状态码。</p>
+<p>客户端 (请求拦截器):</p>
+<ol>
+<li>自动捕获 <code>401</code> 错误。</li>
+<li>自动向服务器的 <code>/auth/refresh</code> 端点发起一个请求（服务器设置 Cookie 时使用的一个非常重要的属性：Path）。浏览器会自动携带存储在 <code>HttpOnly</code> Cookie 中的 <code>RT_A</code>。</li>
+</ol>
+<p>服务器 (<code>/auth/refresh</code> 端点):</p>
+<ol>
+<li>从 Cookie 中获取 <code>RT_A</code>。</li>
+<li>进行<strong>有状态验证</strong>:<!-- -->
+<ul>
+<li>检查 <code>RT_A</code> 的签名和有效期。</li>
+<li>从 <code>RT_A</code> 的载荷中获取 <code>userId</code>。</li>
+<li>根据 <code>userId</code> 查询数据库，获取存储的 <code>Hashed_RT_A</code>。</li>
+<li>比对 <code>RT_A</code> 的哈希值与 <code>Hashed_RT_A</code> 是否匹配。</li>
+</ul>
+</li>
+<li><strong>验证成功 (令牌轮换)</strong>:<!-- -->
+<ul>
+<li>生成一对全新的令牌：<code>AT_B</code> 和 <code>RT_B</code>。</li>
+<li>对 <code>RT_B</code> 进行哈希，用新的 <code>Hashed_RT_B</code> 覆盖数据库中的 <code>Hashed_RT_A</code>。</li>
+<li>将 <code>AT_B</code> 和新的 <code>RT_B</code> (通过 <code>HttpOnly</code> Cookie) 返回给客户端。</li>
+</ul>
+</li>
+<li><strong>验证失败</strong>: 返回 <code>403 Forbidden</code>，表示会话无效。</li>
+</ol>
+<p>客户端 (请求拦截器):</p>
+<ol>
+<li>收到新的 <code>AT_B</code> 后，更新内存中的 Access Token。</li>
+<li>使用新的 <code>AT_B</code> 自动重试刚才因 <code>401</code> 失败的那个 API 请求。</li>
+<li>如果收到 <code>403</code>，则清除所有本地状态，将用户重定向到登录页面。</li>
+</ol>
+<p>步骤 4: 登出
+客户端: 用户点击登出按钮，向 /auth/logout 端点发送请求。</p>
+<p>服务器:</p>
+<ol>
+<li>通过 Access Token 识别用户身份。</li>
+<li>在数据库中找到该用户的记录，将其 <code>hashedRefreshToken</code> 字段置为 <code>null</code>。</li>
+<li>在响应中发送一个用于清除 <code>HttpOnly</code> Cookie 的 <code>Set-Cookie</code> 头。</li>
+</ol></div></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="文件选项卡"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/zh-CN/docs/devdocs/Auth Service"><div class="pagination-nav__sublabel">上一页</div><div class="pagination-nav__label">认证服务</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/zh-CN/docs/devdocs/cache"><div class="pagination-nav__sublabel">下一页</div><div class="pagination-nav__label">缓存</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#access-token-at---访问令牌" class="table-of-contents__link toc-highlight">Access Token (AT - 访问令牌)</a></li><li><a href="#refresh-token-rt---刷新令牌" class="table-of-contents__link toc-highlight">Refresh Token (RT - 刷新令牌)</a></li><li><a href="#混合模式" class="table-of-contents__link toc-highlight">混合模式</a></li><li><a href="#安全策略" class="table-of-contents__link toc-highlight">安全策略</a><ul><li><a href="#安全的令牌生成与配置" class="table-of-contents__link toc-highlight">安全的令牌生成与配置</a></li><li><a href="#安全的客户端存储" class="table-of-contents__link toc-highlight">安全的客户端存储</a></li><li><a href="#安全的令牌传输" class="table-of-contents__link toc-highlight">安全的令牌传输</a></li><li><a href="#安全的令牌轮换与验证" class="table-of-contents__link toc-highlight">安全的令牌轮换与验证</a></li><li><a href="#安全的会话终止" class="table-of-contents__link toc-highlight">安全的会话终止</a></li></ul></li><li><a href="#工作流程" class="table-of-contents__link toc-highlight">工作流程</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/docs/intro">Tutorial</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://stackoverflow.com/questions/tagged/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">Stack Overflow<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li><li class="footer__item"><a href="https://discordapp.com/invite/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">Discord<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li><li class="footer__item"><a href="https://x.com/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div><div class="col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/blog">Blog</a></li><li class="footer__item"><a href="https://github.com/facebook/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 Ocean Chat, Inc. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>

@@ -4,7 +4,7 @@ import TabItem from '@theme/TabItem';
 # Microservice Architecture
 
 :::info Architecture Overview
-The entire platform is divided into four logical layers, containing 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
+The entire platform is divided into four logical layers, comprising 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
 :::
 
 ## IM Architecture Diagram
@@ -13,82 +13,100 @@ The entire platform is divided into four logical layers, containing 11 core micr
 
 ## Layer 1: Gateway and Access Layer
 
-This layer is the direct entry point for users, focusing on handling massive concurrent connections, and is a performance-critical point of the entire system.
+This layer is the direct entry point for users, focusing on handling massive concurrent connections, and is a critical performance point for the entire system.
 
-### 1. **Connection Gateway Service (oceanchat-gateway)** (Stateful)
+### 1. **API Gateway Service (oceanchat-api-gateway)** (Stateless)
 
 <Tabs>
 <TabItem value="desc" label="Introduction" default>
-Given that this service is stateful, the design aims to keep it as business-agnostic, lightweight, and simple as possible.
+This gateway is the sole entry point for external requests.
 </TabItem>
 <TabItem value="resp" label="Core Responsibilities">
 
-- **Connection Authentication**: When a client establishes a connection, it's responsible for validating the legitimacy of its Token (e.g., JWT). After authentication, the parsed `userId` is attached to all subsequent upstream messages.
-- **Protocol Handling**: Maintains client WebSocket/TCP long-lived connections, handling heartbeats, connection establishment, and disconnection.
-- **Data Passthrough**: Acts as a pure connection channel, only encapsulating the client's raw data packets (e.g., by adding `connectionId`, `gatewayId`) and then quickly delivering them to the backend **Message Routing Service**.
-- **Message Delivery**: Receives instructions from the **Real-time Push Worker** and accurately pushes messages to clients connected to this instance.
+- **HTTP Request Entry Point**: Acts as the single entry point for all external RESTful API requests. Client HTTP requests for login, registration, fetching user profiles, querying history, etc., all arrive here first.
+- **Request Routing**: Securely routes requests to the corresponding internal business microservices based on the request's URL path (e.g., /auth/login, /users/profile).
+- **Common Cross-Cutting Concerns**: Centrally handles cross-service common functionalities such as authentication (validating JWT), authorization, rate limiting, logging, and SSL offloading.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-To completely separate the most resource-intensive I/O tasks (maintaining connections) from CPU-intensive tasks (business logic). This allows the Connection Gateway to be highly optimized and scaled horizontally to support tens or even hundreds of millions of concurrent connections.
+To provide a unified, secure, and manageable facade for all stateless HTTP requests. Separating API management from real-time connection management makes responsibilities more singular and easier to scale and maintain independently.
 </TabItem>
 </Tabs>
 
-### 2. **Message Routing Service (oceanchat-router)** (Stateless)
+### 2. **Connection Gateway Service (oceanchat-ws-gateway)** (Stateful)
+
+<Tabs>
+<TabItem value="desc" label="Introduction" default>
+Given that this service is stateful, its design should remain business-agnostic, lightweight, and simple.
+</TabItem>
+<TabItem value="resp" label="Core Responsibilities">
+
+- **Real-time Connection Entry Point**: Serves as the sole entry point for all external WebSocket/TCP long-lived connections.
+- **Connection Authentication**: Responsible for authenticating the connection when a client establishes a long-lived connection (by calling the "Auth Service" or using a shared public key for local validation).
+- **Data Passthrough**: Acts as a pure connection channel, only encapsulating the client's raw data packet (e.g., by attaching `connectionId`, `gatewayId`) and then quickly delivering it to the backend **Message Router Service**.
+- **Client Message Delivery**: Receives instructions from the **Real-time Pusher Worker** and accurately pushes messages to clients connected to this instance.
+
+</TabItem>
+<TabItem value="reason" label="Reason for Separation">
+To completely separate the most resource-intensive I/O-bound tasks (maintaining connections) from CPU-bound tasks (business logic). This allows the Connection Gateway to be extremely optimized and scaled horizontally independently to support tens or even hundreds of millions of concurrent connections.
+</TabItem>
+</Tabs>
+
+### 3. **Message Router Service (oceanchat-router)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
 - **Message Decoding and Dispatching**: Receives raw data packets from the **Connection Gateway**, performs decoding, protocol parsing, and initial validation.
-- **Business Routing**: Determines which business microservice should handle the message based on its type, then dispatches it via the NATS message queue.
-- **Upstream Traffic Control**: Implements generic rate limiting and circuit breaking. For example, limiting "each user ID to forward a maximum of 100 requests per second". More granular business-specific rate limiting (like group creation frequency) should be implemented in the respective services.
+- **Business Routing**: Determines which business microservice should handle the message based on its type, and then dispatches it via the NATS message queue.
+- **Upstream Traffic Control**: Implements general rate limiting and circuit breaking. For example, limiting "a maximum of 100 requests per second per user ID". More fine-grained business rate limiting (like group creation frequency) should be implemented in the specific services.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-To decouple the access layer from the business logic layer. The routing service acts as a middle coordinator, making the addition, removal, and changes of backend business services completely transparent to the gateway layer, greatly improving system flexibility and maintainability.
+Decouples the access layer from the business logic layer. The router service acts as an intermediary coordinator, making the addition, removal, and changes of backend business services completely transparent to the gateway layer, greatly improving system flexibility and maintainability.
 </TabItem>
 </Tabs>
 
 ## Layer 2: Core Business Logic Layer
 
-This layer is responsible for handling all core business functions of the IM platform. It is designed as a stateless service for easy horizontal scaling.
+This layer is responsible for handling all the core business functions of the IM platform, designed as stateless services for easy horizontal scaling.
 
-### 3. **Authentication Service (oceanchat-auth)** (Stateless)
+### 4. **Auth Service (oceanchat-auth)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **User Authentication**: Provides standard HTTP interfaces for user registration, login, and logout.
+- **User Authentication**: Handles user registration, login, logout, and other HTTP requests proxied by the API Gateway.
 - **Token Management**: Responsible for generating, validating, and refreshing access tokens (JWT recommended), which is the core of system security.
-- **Validation Capability**: Provides an internal interface for other microservices (especially the **Connection Gateway**) to validate token legitimacy.
+- **Provide Validation Capability**: Provides internal interfaces for other microservices (especially the **Connection Gateway**) to validate token effectiveness.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-To isolate the universal and critical security capability of user authentication into a single, trusted service. All other services rely on it to confirm user identity, ensuring clear responsibilities and unified management of security policies.
+Isolates the common and critical security capability of user authentication into a single, trusted service. All other services rely on it to confirm user identity, making responsibilities clear and facilitating unified management of security policies.
 </TabItem>
 </Tabs>
 
-### 4. **User & Relationship Service (oceanchat-user)** (Stateless)
+### 5. **User & Relationship Service (oceanchat-user)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Data Management**: Manages user accounts, profiles, friend relationships (add/delete/blacklist), contacts, etc.
-- **Permission Decision**: As the sole owner of relationship data, it is responsible for making permission judgments for related operations (e.g., answering "Are user A and B friends?").
+- **Data Management**: Manages user accounts, profiles, friend relationships (add/delete/blacklist), address books, etc.
+- **Authorization Decision-Making**: As the sole owner of relationship data, it is responsible for making permission judgments for related operations (e.g., answering "Are user A and B friends?").
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-User and relationship data are fundamental to an IM system. An independent service provides a unified and stable data source for other services. Co-locating permission decision logic within this service ensures data and rule consistency.
+User and relationship data are the foundational data of an IM system. An independent service can provide a unified and stable data source for other services. Co-locating the authorization decision logic within this service ensures the consistency of data and rules.
 </TabItem>
 </Tabs>
 
-### 5. **Group Service (oceanchat-group)** (Stateless)
+### 6. **Group Service (oceanchat-group)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Lifecycle Management**: Responsible for group creation/disbandment, member management, permission systems, group announcements, group settings, etc.
-- **Permission Decision**: As the sole owner of group data, it contains all group-related permission logic (e.g., determining if a user is a group member, is muted, etc.).
+- **Lifecycle Management**: Responsible for group creation/dissolution, member management, permission systems, group announcements, group settings, etc.
+- **Authorization Decision-Making**: As the sole owner of group data, it contains all group-related authorization logic (e.g., determining if a user is a group member, is muted, etc.).
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
@@ -96,66 +114,66 @@ The business logic for group chats (especially permissions and member management
 </TabItem>
 </Tabs>
 
-### 6. **Message Logic Service (oceanchat-message)** (Stateless)
+### 7. **Message Logic Service (oceanchat-message)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Permission Coordination**: Acts as a "coordinator" for permission checks, calling the correct "decision-maker" service. For example, it calls the **User & Relationship Service** for one-on-one messages and the **Group Service** for group messages.
-- **Message Processing**: As the business processing center for messages, it handles permission checks, content processing (@mentions, sensitive word filtering), generating message IDs, and assembling the message body.
-- **Triggering Delivery**: After processing is complete, it calls the **Push Orchestration Service** to start the message delivery process.
+- **Permission Check Coordination**: Acts as a "coordinator" for permission checks, calling the correct "decision-maker" service to complete the check. For example, it calls the **User & Relationship Service** for one-on-one messages and the **Group Service** for group messages.
+- **Message Processing**: As the business processing center for one-on-one and group messages, it's responsible for permission checks, content processing (@mentions, sensitive word filtering), generating message IDs, assembling the message body, etc.
+- **Triggering Delivery**: After processing is complete, it calls the **Push Orchestrator Service** to start the message delivery process.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-To separate the business logic of the message itself ("what it is") from the message delivery process ("how it's sent"), making responsibilities clearer.
+Separates the business logic of the message itself ("what it is") from the message delivery process ("how it's sent"), making responsibilities clearer.
 </TabItem>
 </Tabs>
 
 ## Layer 3: Message Push Pipeline
 
-This is the key to ensuring reliable and real-time message delivery, and it is a highly asynchronous processing flow.
+This is the key to ensuring reliable, real-time message delivery, and it is a highly asynchronous processing flow.
 
-### 7. **Push Orchestration Service (oceanchat-orchestrator)** (Stateless)
+### 8. **Push Orchestrator Service (oceanchat-orchestrator)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Delivery Decision**: Receives messages to be delivered from the **Message Logic Service**.
-- **Status Query**: Queries the **Online Status Service** in real-time to get the online status and gateway node of all recipients.
-- **Task Dispatch**: Based on the online status, splits the message into "online push tasks" and "offline push tasks" and atomically writes these tasks to different Kafka queues.
+- **Delivery Decision-Making**: Receives messages to be delivered from the **Message Logic Service**.
+- **Status Query**: Queries the **Presence Service** in real-time to get the online status and gateway node of all recipients.
+- **Task Dispatching**: Splits the message into "online push tasks" and "offline push tasks" based on the online status, and publishes them to different NATS subjects (using JetStream to ensure persistence).
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-As the "brain" of message delivery, it handles complex decision-making logic. Isolating it makes the push process clearer and easier to monitor and debug.
+As the "brain" of message delivery, it is responsible for complex decision-making logic. Isolating it makes the push flow clearer and easier to monitor and debug.
 </TabItem>
 </Tabs>
 
-### 8. **Real-time Push Worker ()oceanchat-pusher-realtime** (Stateless)
+### 9. **Real-time Pusher Worker (oceanchat-pusher-realtime)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
 - **Task Consumption**: Listens to the "online push" queue and consumes tasks.
-- **Instruction Dispatch**: Communicates directly with the target user's **Connection Gateway** instance, instructing it to deliver the message.
-- **Tech Stack**: Kafka consumer, ioredis (for inter-gateway Pub/Sub).
+- **Command Issuance**: Directly communicates with the **Connection Gateway** instance where the target user is located, instructing it to deliver the message.
+- **Tech Stack**: NATS JetStream subscriber, ioredis (for inter-gateway Pub/Sub).
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-Dedicated to handling online message pushes, it can be scaled independently based on the number of online users and message volume to ensure real-time performance.
+Dedicated to handling online message pushing, it can be scaled independently based on the number of online users and message volume to ensure real-time performance.
 </TabItem>
 </Tabs>
 
-### 9. **Offline Push Worker (oceanchat-pusher-offline)** (Stateless)
+### 10. **Offline Pusher Worker (oceanchat-pusher-offline)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Task Consumption**: Listens to the "offline push" queue and consumes tasks.
-- **API Calls**: Calls Apple APNS, Google FCM, or domestic vendor push APIs to send offline notifications.
+- **Task Consumption**: Subscribes to the "offline push" topic and consumes tasks.
+- **API Calling**: Calls the push APIs of Apple APNS, Google FCM, or domestic vendors to send offline notifications.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-Integration with third-party APIs often involves network latency and uncertainty. Isolating it prevents its failures or slowness from affecting the core real-time push pipeline.
+Integration with third-party APIs comes with network latency and uncertainty. Isolating it prevents its failures or slowness from affecting the core real-time push link.
 </TabItem>
 </Tabs>
 
@@ -163,63 +181,65 @@ Integration with third-party APIs often involves network latency and uncertainty
 
 These services provide stable and efficient foundational capabilities for the entire platform.
 
-### 10. **Online Status Service (oceanchat-presence)** (Stateless)
+### 11. **Presence Service (oceanchat-presence)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
 - **Status Maintenance**: Maintains the global online status of users in real-time through a `userId -> {gatewayId, status}` mapping.
-- **Status Query**: Provides millisecond-level online status query interfaces for services like the **Push Orchestration Service**.
+- **Status Query**: Provides millisecond-level online status query interfaces for services like the **Push Orchestrator Service**.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-Online status is the cornerstone of a distributed IM system, with extremely high read and write frequency. An independent service using an in-memory database like Redis allows for extreme optimization to ensure high performance.
+Online presence is the cornerstone of a distributed IM system, with extremely frequent reads and writes. An independent service, highly optimized with an in-memory database like Redis, ensures high performance.
 </TabItem>
 </Tabs>
 
-### 11. **Data Query Service (oceanchat-query)** (Stateless)
+### 12. **Query Service (oceanchat-query)** (Stateless)
 
 <Tabs>
 <TabItem value="resp" label="Core Responsibilities" default>
 
-- **Unified Query Entrypoint**: Provides a unified HTTP API for clients to query historical messages, conversation lists, etc.
-- **Tiered Query**: Intelligently pulls and aggregates data from different storage media (Redis cache, MongoDB, etc.) based on the query's time range.
+- **Unified Query Entry Point**: Provides a unified HTTP API for clients to query data such as message history and session lists.
+- **Tiered Query**: Intelligently fetches and aggregates data from different storage media (Redis cache, MongoDB, etc.) based on the query's time range.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
-Implements read-write separation. Separating high-frequency read operations from the core write pipeline allows for independent optimization of query performance without affecting the stability of message writing.
+Implements read-write splitting. Separating high-frequency read operations from the core write path allows for independent optimization of query performance without affecting the stability of message writing.
 </TabItem>
 </Tabs>
 
-### Data Processing Pipeline: Message Persistence
+### Data Processing Pipeline (MessagePersistence): Message Persistence
 
 :::note This is an asynchronous process, not an independent service
 
-- **Core Responsibilities**: After the **Message Logic Service** processes a message, besides calling the push service, it also sends a copy of the message to a dedicated persistence Kafka queue. One or more independent **consumer processes (Writers)** listen to this queue and batch-write the messages to the database.
+- **Core Responsibility**: After the **Message Logic Service** processes a message, besides calling the push service, it also sends a copy of the message to a dedicated NATS topic for persistence (backed by JetStream). One or more independent **subscriber processes (Writers)** will listen to this queue and batch-write the messages to the database.
 
-- **Reason for Separation**: Complete asynchronicity. Sending and receiving messages should not wait for the database write to complete. This "write-after-persistence" design maximizes message real-time performance.
+- **Reason for Separation**: Complete asynchronicity. The sending and receiving of messages should not wait for the database write to complete. This "write-after-persistence" design maximizes the real-time nature of messages.
 
 :::
 
-## Flow Description
+## Process Description
 
 ### Login Phase
 
-1.  Client A → **Authentication Service** (sends username/password).
-2.  **Authentication Service** validates successfully and returns a JWT to Client A.
+1.  Client A → **API Gateway** (sends username/password to `/auth/login`).
+2.  **API Gateway** → **Auth Service** (forwards login request).
+3.  **Auth Service** validates successfully, generates a JWT, and returns it to the **API Gateway**.
+4.  **API Gateway** → Client A (responds with the JWT to the client).
 
-### Sending Message Phase
+### Message Sending Phase
 
-3.  User A sends a message to Group G.
-4.  Client A → **Connection Gateway-1** (establishes connection, attaching JWT).
-5.  **Connection Gateway-1** validates the JWT's legitimacy (by calling **Authentication Service**), confirms user identity as A, and attaches `userId: A` to subsequent messages.
-6.  **Connection Gateway-1** → **Message Routing Service** (passthrough).
-7.  **Message Routing Service** → **Message Logic Service** (routing).
-8.  **Message Logic Service** processes the message (validates permissions, generates ID), then forks into two paths:
-    - → **Push Orchestration Service** (initiates delivery)
-    - → Kafka persistence queue (prepares for storage)
-9.  **Push Orchestration Service** queries the **Online Status Service**, learns that group member B is online (on Gateway-2) and C is offline.
-10. **Push Orchestration Service** → sends a task for B to the "online push queue" and a task for C to the "offline push queue".
-11. **Real-time Push Worker** consumes task B → instructs **Connection Gateway-2** → Client B receives the message.
-12. **Offline Push Worker** consumes task C → calls APNS/FCM API → Client C receives a notification.
-13. **Persistence Writer** consumes the message from Kafka → writes it to MongoDB.
+5.  User A sends a message to group G.
+6.  Client A → **Connection Gateway-1** (establishes a connection, attaching the JWT).
+7.  **Connection Gateway-1** validates the JWT's legitimacy (by calling the **Auth Service**), confirms the user identity as A, and attaches `userId: A` to subsequent messages.
+8.  **Connection Gateway-1** → **Message Router Service** (passthrough).
+9.  **Message Router Service** → **Message Logic Service** (routing).
+10. **Message Logic Service** processes the message (checks permissions, generates ID), then splits into two paths:
+    - → **Push Orchestrator Service** (initiates delivery)
+    - → NATS persistence topic (prepares for storage)
+11. **Push Orchestrator Service** queries the **Presence Service** and learns that group member B is online (on gateway 2), and C is offline.
+12. **Push Orchestrator Service** → NATS online push topic (task for B) and NATS offline push topic (task for C).
+13. **Real-time Pusher Worker** consumes B's task → instructs **Connection Gateway-2** → Client B receives the message.
+14. **Offline Pusher Worker** consumes C's task → calls APNS/FCM API → Client C receives a notification.
+15. **Persistence Writer** subscribes to and consumes the NATS message → writes to MongoDB.

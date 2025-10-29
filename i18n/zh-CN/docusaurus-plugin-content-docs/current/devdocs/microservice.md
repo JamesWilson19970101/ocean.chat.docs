@@ -79,6 +79,7 @@ import TabItem from '@theme/TabItem';
 - **用户身份认证**: 处理由 API 网关代理而来的用户注册、登录、登出等 HTTP 请求。
 - **令牌管理**: 负责生成、验证和刷新访问令牌（推荐 JWT），是系统安全的核心。
 - **提供验证能力**: 为其他微服务（尤其是 **连接网关**）提供内部接口，验证令牌有效性。
+- **发布领域事件**: 在关键业务操作（如用户注册成功、登录成功）完成后，向 NATS JetStream 发布异步领域事件，供其他服务订阅和处理。
 
 </TabItem>
 <TabItem value="reason" label="分离原因">
@@ -226,6 +227,9 @@ import TabItem from '@theme/TabItem';
 1.  客户端 A → **API 网关** (向 `/auth/login` 发送用户名密码)。
 2.  **API 网关** → **认证服务** (转发登录请求)。
 3.  **认证服务** 验证成功，生成 JWT，并将其返回给 **API 网关**。
+
+    3a. **认证服务** (异步) → NATS JetStream (发布 `auth.event.user.loggedIn` 事件)。
+
 4.  **API 网关** → 客户端 A (将 JWT 响应给客户端)。
 
 ### 发消息阶段

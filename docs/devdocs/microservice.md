@@ -79,6 +79,7 @@ This layer is responsible for handling all the core business functions of the IM
 - **User Authentication**: Handles user registration, login, logout, and other HTTP requests proxied by the API Gateway.
 - **Token Management**: Responsible for generating, validating, and refreshing access tokens (JWT recommended), which is the core of system security.
 - **Provide Validation Capability**: Provides internal interfaces for other microservices (especially the **Connection Gateway**) to validate token effectiveness.
+- **Publish Domain Events**: Publishes asynchronous domain events to NATS JetStream upon the completion of critical business operations (e.g., user registration, login), allowing other services to subscribe and react.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">
@@ -226,6 +227,9 @@ Implements read-write splitting. Separating high-frequency read operations from 
 1.  Client A → **API Gateway** (sends username/password to `/auth/login`).
 2.  **API Gateway** → **Auth Service** (forwards login request).
 3.  **Auth Service** validates successfully, generates a JWT, and returns it to the **API Gateway**.
+
+    3a. **Authentication Service** (async) → NATS JetStream (Publishes `auth.event.user.loggedIn` event).
+
 4.  **API Gateway** → Client A (responds with the JWT to the client).
 
 ### Message Sending Phase

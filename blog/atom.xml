@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="atom.xsl"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://JamesWilson19970101.github.io/ocean.chat.docs/blog</id>
-    <title>oceanchat-devdocs Blog</title>
+    <title>Oceanchat-devdocs Blog</title>
     <updated>2025-11-07T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/blog"/>
-    <subtitle>oceanchat-devdocs Blog</subtitle>
+    <subtitle>Oceanchat-devdocs Blog</subtitle>
     <icon>https://JamesWilson19970101.github.io/ocean.chat.docs/img/favicon.ico</icon>
     <entry>
         <title type="html"><![CDATA[Implementation Steps]]></title>

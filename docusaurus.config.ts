@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'oceanchat-devdocs',
-  tagline: 'oceanchat is an IM platform that you can trust',
+  title: 'Oceanchat-devdocs',
+  tagline: 'Oceanchat is an IM platform that you can trust',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here

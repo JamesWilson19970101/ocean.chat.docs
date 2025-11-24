@@ -1,44 +1,44 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type * as Preset from '@docusaurus/preset-classic';
+import { themes as prismThemes } from "prism-react-renderer";
+import type { Config } from "@docusaurus/types";
+import type * as Preset from "@docusaurus/preset-classic";
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'oceanchat-devdocs',
-  tagline: 'oceanchat is an IM platform that you can trust',
-  favicon: 'img/favicon.ico',
+  title: "Oceanchat-devdocs",
+  tagline: "Oceanchat is an IM platform that you can trust",
+  favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: 'https://JamesWilson19970101.github.io',
+  url: "https://JamesWilson19970101.github.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/ocean.chat.docs/',
+  baseUrl: "/ocean.chat.docs/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'JamesWilson19970101', // Usually your GitHub org/user name.
-  projectName: 'ocean.chat.docs', // Usually your repo name.
+  organizationName: "JamesWilson19970101", // Usually your GitHub org/user name.
+  projectName: "ocean.chat.docs", // Usually your repo name.
   trailingSlash: false,
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
+    defaultLocale: "en",
 
-    locales: ['en', 'zh-CN'],
+    locales: ["en", "zh-CN"],
 
     localeConfigs: {
       en: {
-        label: 'English',
-        htmlLang: 'en',
+        label: "English",
+        htmlLang: "en",
       },
-      'zh-CN': {
-        label: '简体中文',
-        htmlLang: 'zh-CN',
+      "zh-CN": {
+        label: "简体中文",
+        htmlLang: "zh-CN",
       },
     },
   },
@@ -50,24 +50,24 @@ const config: Config = {
 
   presets: [
     [
-      'classic',
+      "classic",
       {
         docs: {
-          sidebarPath: './sidebars.ts',
+          sidebarPath: "./sidebars.ts",
         },
         blog: {
           showReadingTime: true,
           feedOptions: {
-            type: ['rss', 'atom'],
+            type: ["rss", "atom"],
             xslt: true,
           },
           // Useful options to enforce blogging best practices
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
+          onInlineTags: "warn",
+          onInlineAuthors: "warn",
+          onUntruncatedBlogPosts: "warn",
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: "./src/css/custom.css",
         },
       } satisfies Preset.Options,
     ],
@@ -75,72 +75,72 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: "img/docusaurus-social-card.jpg",
     navbar: {
-      title: 'Ocean Chat',
+      title: "Ocean Chat",
       logo: {
-        alt: 'oceanchat Logo',
-        src: 'img/logo.svg',
+        alt: "oceanchat Logo",
+        src: "img/logo.svg",
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
-          position: 'left',
-          label: 'Tutorial',
+          type: "docSidebar",
+          sidebarId: "tutorialSidebar",
+          position: "left",
+          label: "Tutorial",
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
+        { to: "/blog", label: "Blog", position: "left" },
         {
-          href: 'https://github.com/JamesWilson19970101',
-          label: 'GitHub',
-          position: 'right',
+          href: "https://github.com/JamesWilson19970101",
+          label: "GitHub",
+          position: "right",
         },
         {
-          type: 'localeDropdown',
-          position: 'left'
+          type: "localeDropdown",
+          position: "left",
         },
       ],
     },
 
     footer: {
-      style: 'dark',
+      style: "dark",
       links: [
         {
-          title: 'Docs',
+          title: "Docs",
           items: [
             {
-              label: 'Tutorial',
-              to: '/docs/intro',
+              label: "Tutorial",
+              to: "/docs/intro",
             },
           ],
         },
         {
-          title: 'Community',
+          title: "Community",
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: "Stack Overflow",
+              href: "https://stackoverflow.com/questions/tagged/docusaurus",
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: "Discord",
+              href: "https://discordapp.com/invite/docusaurus",
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: "X",
+              href: "https://x.com/OceanChat",
             },
           ],
         },
         {
-          title: 'More',
+          title: "More",
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: "Blog",
+              to: "/blog",
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              label: "GitHub",
+              href: "https://github.com/JamesWilson19970101",
             },
           ],
         },

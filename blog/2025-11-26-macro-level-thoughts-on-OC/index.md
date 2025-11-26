@@ -20,6 +20,21 @@ Consider how to make it entirely accessible to individual users. Here, we need t
 
 When introducing this feature, we need to consider that individuals can use their own PCs as servers.
 
+> Development Roadmap Of The Above Plans:
+> 
+> Phase 1 (Current): Pure Chat
+> - Core Architecture: Extremely fast, high throughput.
+> - Strategy: Only MongoDB local transactions + NATS JetStream.
+> - Goal: Solve the issues of message loss and latency.
+>
+> Phase 2 (Expansion): Introduce State Consistency
+> - Features: For example, "self-destructing messages" (requiring strong coordination between the messaging service and scheduled task service), or "permission transfer during group owner transfer."
+> - Strategy: Lightweight Saga (such as using NestJS's Saga module) can be introduced to handle such complex, long-running business processes.
+>
+> Phase 3 (Commercial): Introduce Cash Flow
+> - Features: Red envelopes, tipping, e-commerce.
+> - Strategy: A TCC mechanism must be introduced (at this point you might truly consider frameworks like Seata, or write your own TCC logic).
+
 ## AI-Generated Profiles
 
 Generate AI profiles based on chat content.

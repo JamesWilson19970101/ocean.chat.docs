@@ -4,33 +4,52 @@
         <title>Oceanchat-devdocs Blog</title>
         <link>https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/blog</link>
         <description>Oceanchat-devdocs Blog</description>
-        <lastBuildDate>Fri, 07 Nov 2025 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 26 Nov 2025 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh-CN</language>
         <item>
-            <title><![CDATA[Implementation Steps]]></title>
-            <link>https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC</link>
-            <guid>https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC</guid>
-            <pubDate>Fri, 07 Nov 2025 00:00:00 GMT</pubDate>
-            <description><![CDATA[plan]]></description>
-            <content:encoded><![CDATA[<p><img decoding="async" loading="lazy" alt="plan" src="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/assets/images/oceanchat-b8868e30e3e3525dedeffec93c02c8a9.png" width="2158" height="2068" class="img_ev3q"></p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational-chat">Organizational Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#organizational-chat" class="hash-link" aria-label="Organizational Chat的直接链接" title="Organizational Chat的直接链接">​</a></h2>
-<p>First, mimic other platforms to implement the organizational chat function.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational--personal-chat">Organizational + Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#organizational--personal-chat" class="hash-link" aria-label="Organizational + Personal Chat的直接链接" title="Organizational + Personal Chat的直接链接">​</a></h2>
-<p>Consider how to make the organization accessible to individuals. This can be achieved using a resource lobby.</p>
-<p>Once these two steps are completed, monetization can begin.</p>
-<p>For example, education (tutors, fitness coaches, etc.) combined with users can already generate revenue.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="personal-chat">Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#personal-chat" class="hash-link" aria-label="Personal Chat的直接链接" title="Personal Chat的直接链接">​</a></h2>
-<p>Consider how to make it entirely accessible to individual users. Here, we need to assume that individuals are "useful."</p>
-<p>When introducing this feature, we need to consider that individuals can use their own PCs as servers.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="ai-generated-profiles">AI-Generated Profiles<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#ai-generated-profiles" class="hash-link" aria-label="AI-Generated Profiles的直接链接" title="AI-Generated Profiles的直接链接">​</a></h2>
-<p>Generate AI profiles based on chat content.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="consider-how-to-create-personal-profiles-in-real-time">Consider how to create personal profiles in real time.<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#consider-how-to-create-personal-profiles-in-real-time" class="hash-link" aria-label="Consider how to create personal profiles in real time.的直接链接" title="Consider how to create personal profiles in real time.的直接链接">​</a></h2>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="introduction-of-blockchain-technology">Introduction of Blockchain Technology<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#introduction-of-blockchain-technology" class="hash-link" aria-label="Introduction of Blockchain Technology的直接链接" title="Introduction of Blockchain Technology的直接链接">​</a></h2>
-<p>Put resources on the blockchain.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="establishment-of-a-virtual-world">Establishment of a Virtual World<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/07/macro-level-thoughts-on-OC#establishment-of-a-virtual-world" class="hash-link" aria-label="Establishment of a Virtual World的直接链接" title="Establishment of a Virtual World的直接链接">​</a></h2>
-<p>After putting resources on the blockchain, establish a virtual world to enable transactions.</p>]]></content:encoded>
+            <title><![CDATA[实施步骤]]></title>
+            <link>https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC</link>
+            <guid>https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC</guid>
+            <pubDate>Wed, 26 Nov 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[计划]]></description>
+            <content:encoded><![CDATA[<p><img decoding="async" loading="lazy" alt="计划" src="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/assets/images/oceanchat-b8868e30e3e3525dedeffec93c02c8a9.png" width="2158" height="2068" class="img_ev3q"></p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="组织的聊天">组织的聊天<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E7%BB%84%E7%BB%87%E7%9A%84%E8%81%8A%E5%A4%A9" class="hash-link" aria-label="组织的聊天的直接链接" title="组织的聊天的直接链接">​</a></h2>
+<p>首先，模仿其他平台实现组织（群）聊天功能。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="组织--个人的聊天">组织 + 个人的聊天<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E7%BB%84%E7%BB%87--%E4%B8%AA%E4%BA%BA%E7%9A%84%E8%81%8A%E5%A4%A9" class="hash-link" aria-label="组织 + 个人的聊天的直接链接" title="组织 + 个人的聊天的直接链接">​</a></h2>
+<p>考虑如何让个人用户也能访问组织聊天功能。这可以通过资源大厅来实现。</p>
+<p>完成这两个步骤后，即可开始盈利。</p>
+<p>例如，教育资源（辅导老师、健身教练等）与用户相结合即可产生收益。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="个人聊天">个人聊天<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E4%B8%AA%E4%BA%BA%E8%81%8A%E5%A4%A9" class="hash-link" aria-label="个人聊天的直接链接" title="个人聊天的直接链接">​</a></h2>
+<p>考虑如何让个人用户也能完全访问个人聊天功能。这里，我们需要假设个人用户是“有用的”。</p>
+<p>在引入此功能时，我们需要考虑个人用户可以使用自己的电脑作为服务器。</p>
+<blockquote>
+<p>上述计划的开发路线图：</p>
+<p>第一阶段（当前）：纯聊天</p>
+<ul>
+<li>核心架构：速度极快，吞吐量极高。</li>
+<li>策略：仅使用 MongoDB 本地事务 + NATS JetStream。</li>
+<li>目标：解决消息丢失和延迟问题。</li>
+</ul>
+<p>第二阶段（扩展）：引入状态一致性</p>
+<ul>
+<li>功能：例如，“自毁消息”（需要消息服务和计划任务服务之间进行紧密协调），或“群组所有者转移期间的权限转移”。</li>
+<li>策略：可以引入轻量级 Saga（例如使用 NestJS 的 Saga 模块）来处理此类复杂、长时间运行的业务流程。</li>
+</ul>
+<p>第三阶段（商业化）：引入现金</p>
+<ul>
+<li>功能：红包、小费、电子商务。</li>
+<li>策略：必须引入 TCC 机制（此时您可以认真考虑使用 Seata 等框架，或编写自己的 TCC 逻辑）。</li>
+</ul>
+</blockquote>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="ai-生成的个人资料">AI 生成的个人资料<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#ai-%E7%94%9F%E6%88%90%E7%9A%84%E4%B8%AA%E4%BA%BA%E8%B5%84%E6%96%99" class="hash-link" aria-label="AI 生成的个人资料的直接链接" title="AI 生成的个人资料的直接链接">​</a></h2>
+<p>根据聊天内容生成 AI 个人资料。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="考虑如何实时创建个人资料">考虑如何实时创建个人资料。<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E8%80%83%E8%99%91%E5%A6%82%E4%BD%95%E5%AE%9E%E6%97%B6%E5%88%9B%E5%BB%BA%E4%B8%AA%E4%BA%BA%E8%B5%84%E6%96%99" class="hash-link" aria-label="考虑如何实时创建个人资料。的直接链接" title="考虑如何实时创建个人资料。的直接链接">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="引入区块链技术">引入区块链技术<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E5%BC%95%E5%85%A5%E5%8C%BA%E5%9D%97%E9%93%BE%E6%8A%80%E6%9C%AF" class="hash-link" aria-label="引入区块链技术的直接链接" title="引入区块链技术的直接链接">​</a></h2>
+<p>将资源放到区块链上。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="构建虚拟世界">构建虚拟世界<a href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/blog/2025/11/26/macro-level-thoughts-on-OC#%E6%9E%84%E5%BB%BA%E8%99%9A%E6%8B%9F%E4%B8%96%E7%95%8C" class="hash-link" aria-label="构建虚拟世界的直接链接" title="构建虚拟世界的直接链接">​</a></h2>
+<p>将资源上链后，构建一个虚拟世界以进行交易。</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Welcome]]></title>

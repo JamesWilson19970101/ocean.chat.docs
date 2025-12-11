@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-devdocs/message queue" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.7.0">
+<title data-rh="true">消息队列 | Oceanchat-devdocs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><meta data-rh="true" property="og:locale" content="zh_CN"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="zh-CN"><meta data-rh="true" name="docsearch:language" content="zh-CN"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="消息队列 | Oceanchat-devdocs"><meta data-rh="true" name="description" content="本文主要对比三种消息队列中间件（RocketMQ vs Kafka vs NATS），并解释为什么选择 NATS 作为 Ocean Chat 的中间件。"><meta data-rh="true" property="og:description" content="本文主要对比三种消息队列中间件（RocketMQ vs Kafka vs NATS），并解释为什么选择 NATS 作为 Ocean Chat 的中间件。"><link data-rh="true" rel="icon" href="/ocean.chat.docs/zh-CN/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/message queue" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/message queue" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/message queue" hreflang="x-default"><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/zh-CN/blog/rss.xml" title="Oceanchat-devdocs RSS Feed">
+<link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/zh-CN/blog/atom.xml" title="Oceanchat-devdocs Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/zh-CN/assets/css/styles.9dcc5b86.css">
+<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.f991fa13.js" defer="defer"></script>
+<script src="/ocean.chat.docs/zh-CN/assets/js/main.db1f52f3.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<script>!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}(),function(){try{const n=new URLSearchParams(window.location.search).entries();for(var[t,e]of n)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/zh-CN/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="navbar navbar--fixed-top"><div class="navbar__inner"><div class="navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/zh-CN/"><div class="navbar__logo"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/zh-CN/docs/intro">Tutorial</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/zh-CN/blog">Blog</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>简体中文</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/message queue" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="zh-CN">简体中文</a></li></ul></div></div><div class="navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="切换浅色/暗黑模式（当前为浅色模式）" aria-label="切换浅色/暗黑模式（当前为浅色模式）" aria-live="polite" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="回到顶部" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="文档侧边栏" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/zh-CN/docs/intro">OceanChat Intro</a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---userdocs">oceanchat - userdocs</a><button aria-label="展开侧边栏分类 &#x27;oceanchat - userdocs&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---devdocs">oceanchat - devdocs</a><button aria-label="折叠侧边栏分类 &#x27;oceanchat - devdocs&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul style="display:block;overflow:visible;height:auto" class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Auth Service">认证服务</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Authorization">权限设计考量</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Budiness Logic">Budiness Logic</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/JWT">JWT 混合认证</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/cache">缓存</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/concurrency considerations">并发问题的考虑</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/distributed">分布式相关问题</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat">graphql vs http</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue">消息队列</a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/microservice">微服务架构</a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="页面路径"><ul class="breadcrumbs" itemscope="" itemtype="https://schema.org/BreadcrumbList"><li class="breadcrumbs__item"><a aria-label="主页面" class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item"><a class="breadcrumbs__link" itemprop="item" href="/ocean.chat.docs/zh-CN/docs/category/oceanchat---devdocs"><span itemprop="name">oceanchat - devdocs</span></a><meta itemprop="position" content="1"></li><li itemscope="" itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">消息队列</span><meta itemprop="position" content="2"></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">本页总览</button></div><div class="theme-doc-markdown markdown"><header><h1>消息队列</h1></header>
+<p>本文主要对比三种消息队列中间件（RocketMQ vs Kafka vs NATS），并解释为什么选择 NATS 作为 Ocean Chat 的中间件。</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="核心架构和设计理念">核心架构和设计理念<a href="#核心架构和设计理念" class="hash-link" aria-label="核心架构和设计理念的直接链接" title="核心架构和设计理念的直接链接">​</a></h2>
+<ul>
+<li>Apache RocketMQ<!-- -->
+<ul>
+<li>设计哲学：诞生于阿里电商业务，强调消息的“绝对不丢失”和复杂的业务处理能力。它更像是一个功能完善的业务系统组件，而非单纯的数据管道。</li>
+<li>通信模型：采用 Topic + Queue 模式。消费者订阅 Topic，实际上是拉取 Queue 中的数据。支持 Tag 二级过滤，适合业务隔离。</li>
+<li>架构依赖：依赖 NameServer 进行服务发现。NameServer 虽然比 Zookeeper 轻量且去中心化，但仍需独立部署和维护，增加了运维组件数量。</li>
+<li>技术栈：纯 Java 实现，生态成熟但运行时较重。</li>
+</ul>
+</li>
+<li>Apache Kafka<!-- -->
+<ul>
+<li>设计哲学：设计初衷是处理海量日志和流数据。它本质上是一个分布式的、可分区的、多副本的提交日志服务（Commit Log），核心目标是极限吞吐量。</li>
+<li>通信模型：采用 Topic + Partition 模式。严格的分区有序性，消费者组与分区绑定。</li>
+<li>架构依赖：长期依赖 Zookeeper 管理元数据（新版 KRaft 模式虽移除了 ZK，但配置参数依然极其复杂，调优难度大）。</li>
+<li>技术栈：Scala 和 Java 混合编写，严重依赖操作系统的 PageCache。</li>
+</ul>
+</li>
+<li>NATS (Core &amp; JetStream)<!-- -->
+<ul>
+<li>设计哲学：推崇极简主义。Core NATS 负责极速的即时通信（Fire-and-forget），JetStream 负责持久化流处理。它的目标是成为云原生时代的“中枢神经系统”。</li>
+<li>通信模型：采用 Subject-based (主题式) 寻址。不局限于固定的 Topic，而是支持动态的 . 分层结构和通配符（*, &gt;），比传统的 Topic/Queue 模型灵活得多。</li>
+<li>架构依赖：零依赖。它是一个静态编译的 Go 语言二进制文件（Single Binary），内置 Raft 共识算法，无需任何外部组件即可组建全网状集群。</li>
+<li>技术栈：Go 语言编写，云原生友好。</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="功能">功能<a href="#功能" class="hash-link" aria-label="功能的直接链接" title="功能的直接链接">​</a></h2>
+<ul>
+<li>Apache RocketMQ<!-- -->
+<ul>
+<li>消息类型：原生支持事务消息（分布式事务利器）、延迟消息（定时任务）、顺序消息、死信队列和重试队列。</li>
+<li>过滤能力：支持 Tag 过滤和 SQL 92 标准属性过滤，可以在服务端过滤掉不需要的消息，减少网络带宽压力。</li>
+<li>交互模式：虽然支持 Request-Reply，但本质上还是基于异步消息模拟的，实现较重。</li>
+</ul>
+</li>
+<li>Apache Kafka<!-- -->
+<ul>
+<li>消息类型：功能相对基础，主要依赖其强大的流处理生态（Kafka Streams, KSQL）。不支持原生的任意时间延迟消息。</li>
+<li>交互模式：仅支持异步解耦。完全不适合用于同步的 RPC 调用场景。</li>
+<li>过滤能力：较弱，通常需要消费者将所有数据拉取到本地后再进行过滤。</li>
+</ul>
+</li>
+<li>NATS<!-- -->
+<ul>
+<li>消息类型：JetStream 支持消息去重、持久化流。虽然没有原生的“事务消息”，但支持 Headers 和延迟发布。</li>
+<li>交互模式：原生支持 Request-Reply。这是 NATS 的杀手级特性，使它能直接替代 HTTP/gRPC 进行微服务内部的同步调用，性能极高。</li>
+<li>独有特性：内置 KV Store（分布式键值存储）和 Object Store（对象存储），支持多租户（Accounts）隔离，支持 WebSocket。</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="性能">性能<a href="#性能" class="hash-link" aria-label="性能的直接链接" title="性能的直接链接">​</a></h2>
+<ul>
+<li>Apache RocketMQ<!-- -->
+<ul>
+<li>吞吐量：高（10万+ TPS）。虽不如 Kafka 的极限吞吐，但足以支撑大规模电商并发。</li>
+<li>延迟：低且稳定（ms 级）。针对在线业务优化，即使在消息堆积的情况下，延迟波动也较小，不会像 Kafka 那样出现明显的长尾延迟。</li>
+<li>资源消耗：高。作为 Java 应用，堆内存（Heap）开销大，垃圾回收（GC）可能导致瞬时的性能“毛刺”。</li>
+</ul>
+</li>
+<li>Apache Kafka<!-- -->
+<ul>
+<li>吞吐量：极高（百万级 TPS）。通过磁盘顺序读写和零拷贝（Zero Copy）技术，实现了惊人的写入性能，非常适合日志收集。</li>
+<li>延迟：中等（ms ~ 几十 ms）。为了追求高吞吐，Kafka 默认采用微批处理（Batching）机制，导致单条消息的实时性不如 NATS 和 RocketMQ。</li>
+<li>资源消耗：高。需要大量的内存用于 PageCache 缓存日志段，且对磁盘 I/O 占用较高。</li>
+</ul>
+</li>
+<li>NATS<!-- -->
+<ul>
+<li>吞吐量：极高。Core NATS 可达千万级 TPS；JetStream 在开启持久化模式下，吞吐量接近 Kafka，但 CPU 效率更高。</li>
+<li>延迟：极低（μs ~ ms 级）。由于代码路径极短且没有 JVM 的负担，NATS 提供了几乎是市面上最低的端到端延迟，非常适合高频交易和 IoT 控制指令。</li>
+<li>资源消耗：极低。Docker 镜像仅 ~15MB，启动仅需几 MB 内存，极大节省云服务器成本。</li>
+</ul>
+</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="为什么选择-nats">为什么选择 NATS？<a href="#为什么选择-nats" class="hash-link" aria-label="为什么选择 NATS？的直接链接" title="为什么选择 NATS？的直接链接">​</a></h2>
+<ul>
+<li>
+<p>轻量级</p>
+<ul>
+<li>RocketMQ/Kafka 的负担：RocketMQ 和 Kafka 都是基于 JVM 的“重型”中间件。运维它们需要懂 JVM 调优（堆大小、GC 策略），需要部署配套组件（RocketMQ 的 NameServer，Kafka 的 ZK/KRaft），且镜像体积动辄几百 MB。</li>
+<li>NATS 的优势：NATS 是一个静态编译的 Go 二进制文件。<!-- -->
+<ul>
+<li>部署：docker run nats 即可，镜像 &lt; 20MB。</li>
+<li>运维：没有 JVM GC 停顿问题，没有外部依赖，配置文件极简。</li>
+<li>集群：节点间自动发现（Gossip），全网状连接，扩容极其简单。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>架构统一</p>
+<ul>
+<li>RocketMQ/Kafka：主要解决的是“异步解耦”和“削峰填谷”。如果还需要服务间同步调用，通常还需要引入 gRPC 或 Dubbo。</li>
+<li>NATS：一套系统搞定所有通信。<!-- -->
+<ul>
+<li>即时通讯：Core NATS 的 Pub/Sub。</li>
+<li>RPC 调用：原生 Request-Reply 模式，性能极高，可直接替代 gRPC。</li>
+<li>持久化存储：JetStream 替代 Kafka/RocketMQ。</li>
+<li>KV 存储：内置分布式 KV 和对象存储，甚至可以替代部分 Redis 用法。</li>
+<li>结论：选择 NATS 可以让技术栈减少 2-3 个组件。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>实用主义</p>
+<ul>
+<li>
+<p>性能“够用”：</p>
+<p>虽然 Kafka 的极限吞吐量（百万级 TPS）更高，但对于 99% 的企业级应用，这属于严重的性能过剩。NATS 单节点轻松支撑数万甚至十万级 TPS，这已经远超大多数业务的峰值需求。相比于 Kafka 追求极限吞吐而牺牲的实时性，NATS 的低延迟特性在日常业务中带来的体验提升更加直观和重要。</p>
+</li>
+<li>
+<p>功能“够用”：</p>
+<p>RocketMQ 确实拥有事务消息、定时消息等高级特性，但在微服务实践中，往往可以通过架构设计（如本地消息表、独立调度服务）来解决这些问题。NATS 提供的核心功能（持久化、ACK 确认、重试机制、流控）已经覆盖了分布式通信 95% 的核心需求。为了剩下 5% 极少用到的特定功能，去引入并维护一套庞大且复杂的 RocketMQ/Kafka 集群，从投入产出比（ROI）来看往往并不划算。NATS 以最小的运维成本解决了最核心的问题。</p>
+</li>
+</ul>
+</li>
+</ul></div></article><nav class="pagination-nav docusaurus-mt-lg" aria-label="文件选项卡"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat"><div class="pagination-nav__sublabel">上一页</div><div class="pagination-nav__label">graphql vs http</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/zh-CN/docs/devdocs/microservice"><div class="pagination-nav__sublabel">下一页</div><div class="pagination-nav__label">微服务架构</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#核心架构和设计理念" class="table-of-contents__link toc-highlight">核心架构和设计理念</a></li><li><a href="#功能" class="table-of-contents__link toc-highlight">功能</a></li><li><a href="#性能" class="table-of-contents__link toc-highlight">性能</a></li><li><a href="#为什么选择-nats" class="table-of-contents__link toc-highlight">为什么选择 NATS？</a></li></ul></div></div></div></div></main></div></div></div><footer class="footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/docs/intro">Tutorial</a></li></ul></div><div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://stackoverflow.com/questions/tagged/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">Stack Overflow<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li><li class="footer__item"><a href="https://discordapp.com/invite/docusaurus" target="_blank" rel="noopener noreferrer" class="footer__link-item">Discord<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li><li class="footer__item"><a href="https://x.com/OceanChat" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div><div class="col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/blog">Blog</a></li><li class="footer__item"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink_nPIU"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2025 Ocean Chat, Inc. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>

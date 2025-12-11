@@ -4,32 +4,51 @@
         <title>Oceanchat-devdocs Blog</title>
         <link>https://JamesWilson19970101.github.io/ocean.chat.docs/blog</link>
         <description>Oceanchat-devdocs Blog</description>
-        <lastBuildDate>Fri, 07 Nov 2025 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 26 Nov 2025 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en</language>
         <item>
             <title><![CDATA[Implementation Steps]]></title>
-            <link>https://JamesWilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC</link>
-            <guid>https://JamesWilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC</guid>
-            <pubDate>Fri, 07 Nov 2025 00:00:00 GMT</pubDate>
+            <link>https://JamesWilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC</link>
+            <guid>https://JamesWilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC</guid>
+            <pubDate>Wed, 26 Nov 2025 00:00:00 GMT</pubDate>
             <description><![CDATA[plan]]></description>
             <content:encoded><![CDATA[<p><img decoding="async" loading="lazy" alt="plan" src="https://jameswilson19970101.github.io/ocean.chat.docs/assets/images/oceanchat-b8868e30e3e3525dedeffec93c02c8a9.png" width="2158" height="2068" class="img_ev3q"></p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational-chat">Organizational Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#organizational-chat" class="hash-link" aria-label="Direct link to Organizational Chat" title="Direct link to Organizational Chat">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational-chat">Organizational Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#organizational-chat" class="hash-link" aria-label="Direct link to Organizational Chat" title="Direct link to Organizational Chat">​</a></h2>
 <p>First, mimic other platforms to implement the organizational chat function.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational--personal-chat">Organizational + Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#organizational--personal-chat" class="hash-link" aria-label="Direct link to Organizational + Personal Chat" title="Direct link to Organizational + Personal Chat">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="organizational--personal-chat">Organizational + Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#organizational--personal-chat" class="hash-link" aria-label="Direct link to Organizational + Personal Chat" title="Direct link to Organizational + Personal Chat">​</a></h2>
 <p>Consider how to make the organization accessible to individuals. This can be achieved using a resource lobby.</p>
 <p>Once these two steps are completed, monetization can begin.</p>
 <p>For example, education (tutors, fitness coaches, etc.) combined with users can already generate revenue.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="personal-chat">Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#personal-chat" class="hash-link" aria-label="Direct link to Personal Chat" title="Direct link to Personal Chat">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="personal-chat">Personal Chat<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#personal-chat" class="hash-link" aria-label="Direct link to Personal Chat" title="Direct link to Personal Chat">​</a></h2>
 <p>Consider how to make it entirely accessible to individual users. Here, we need to assume that individuals are "useful."</p>
 <p>When introducing this feature, we need to consider that individuals can use their own PCs as servers.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="ai-generated-profiles">AI-Generated Profiles<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#ai-generated-profiles" class="hash-link" aria-label="Direct link to AI-Generated Profiles" title="Direct link to AI-Generated Profiles">​</a></h2>
+<blockquote>
+<p>Development Roadmap Of The Above Plans:</p>
+<p>Phase 1 (Current): Pure Chat</p>
+<ul>
+<li>Core Architecture: Extremely fast, high throughput.</li>
+<li>Strategy: Only MongoDB local transactions + NATS JetStream.</li>
+<li>Goal: Solve the issues of message loss and latency.</li>
+</ul>
+<p>Phase 2 (Expansion): Introduce State Consistency</p>
+<ul>
+<li>Features: For example, "self-destructing messages" (requiring strong coordination between the messaging service and scheduled task service), or "permission transfer during group owner transfer."</li>
+<li>Strategy: Lightweight Saga (such as using NestJS's Saga module) can be introduced to handle such complex, long-running business processes.</li>
+</ul>
+<p>Phase 3 (Commercial): Introduce Cash Flow</p>
+<ul>
+<li>Features: Red envelopes, tipping, e-commerce.</li>
+<li>Strategy: A TCC mechanism must be introduced (at this point you might truly consider frameworks like Seata, or write your own TCC logic).</li>
+</ul>
+</blockquote>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="ai-generated-profiles">AI-Generated Profiles<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#ai-generated-profiles" class="hash-link" aria-label="Direct link to AI-Generated Profiles" title="Direct link to AI-Generated Profiles">​</a></h2>
 <p>Generate AI profiles based on chat content.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="consider-how-to-create-personal-profiles-in-real-time">Consider how to create personal profiles in real time.<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#consider-how-to-create-personal-profiles-in-real-time" class="hash-link" aria-label="Direct link to Consider how to create personal profiles in real time." title="Direct link to Consider how to create personal profiles in real time.">​</a></h2>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="introduction-of-blockchain-technology">Introduction of Blockchain Technology<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#introduction-of-blockchain-technology" class="hash-link" aria-label="Direct link to Introduction of Blockchain Technology" title="Direct link to Introduction of Blockchain Technology">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="consider-how-to-create-personal-profiles-in-real-time">Consider how to create personal profiles in real time.<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#consider-how-to-create-personal-profiles-in-real-time" class="hash-link" aria-label="Direct link to Consider how to create personal profiles in real time." title="Direct link to Consider how to create personal profiles in real time.">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="introduction-of-blockchain-technology">Introduction of Blockchain Technology<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#introduction-of-blockchain-technology" class="hash-link" aria-label="Direct link to Introduction of Blockchain Technology" title="Direct link to Introduction of Blockchain Technology">​</a></h2>
 <p>Put resources on the blockchain.</p>
-<h2 class="anchor anchorWithStickyNavbar_LWe7" id="establishment-of-a-virtual-world">Establishment of a Virtual World<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/07/macro-level-thoughts-on-OC#establishment-of-a-virtual-world" class="hash-link" aria-label="Direct link to Establishment of a Virtual World" title="Direct link to Establishment of a Virtual World">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="establishment-of-a-virtual-world">Establishment of a Virtual World<a href="https://jameswilson19970101.github.io/ocean.chat.docs/blog/2025/11/26/macro-level-thoughts-on-OC#establishment-of-a-virtual-world" class="hash-link" aria-label="Direct link to Establishment of a Virtual World" title="Direct link to Establishment of a Virtual World">​</a></h2>
 <p>After putting resources on the blockchain, establish a virtual world to enable transactions.</p>]]></content:encoded>
         </item>
         <item>

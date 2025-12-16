@@ -19,13 +19,14 @@ import TabItem from '@theme/TabItem';
 
 <Tabs>
 <TabItem value="desc" label="简介" default>
-本网关是外部请求的唯一入口。
+本网关是外部 http 请求的唯一入口。
 </TabItem>
 <TabItem value="resp" label="核心职责">
 
-- **HTTP 请求入口**: 作为所有外部 RESTful API 请求的唯一入口。客户端的登录、注册、获取用户资料、查询历史记录等 HTTP 请求都首先到达这里。
-- **请求路由**: 根据请求的 URL 路径（如 /auth/login, /users/profile），将请求安全地路由到内部对应的业务微服务。
-- **通用横切关注点**: 统一处理认证（校验 JWT）、授权、速率限制、日志记录、SSL 卸载等跨服务的通用功能。
+- **请求路由**: 核心功能。作为所有外部 RESTful API 请求的唯一入口。客户端的登录、注册、获取用户资料、查询历史记录等 HTTP 请求都首先到达这里。然后根据规则将请求转发到对应的服务中。例如，将 /auth/* 开头的请求转发给 oceanchat-auth 服务，将 /users/* 转发给 oceanchat-user 服务。
+- **身份认证**：鉴于目前使用的是异步非阻塞的IO，所以这里不仅会校验JWT的合法性，还将查询 redis 的白名单，以确保用户身份的有效性。对于无需认证的接口，则直接放行。
+- **限流**: 比如限制同一个 IP 每秒只能请求 10 次，保护后端服务不被压垮。
+- **日志与监控**: 记录所有进出的 HTTP 请求日志，用于排查问题和性能分析。
 
 </TabItem>
 <TabItem value="reason" label="分离原因">
@@ -66,6 +67,24 @@ import TabItem from '@theme/TabItem';
 解耦接入层和业务逻辑层。路由服务作为中间协调者，使得后端业务服务的增减和变更对网关层完全透明，极大地提高了系统的灵活性和可维护性。
 </TabItem>
 </Tabs>
+
+```mermaid
+graph TD
+    Client[客户端]
+
+    subgraph HTTP请求
+    Client -- HTTP --> APIGW["API 网关 (oceanchat-api-gateway)"]
+    APIGW -- 直接调用 --> Auth[认证服务]
+    APIGW -- 直接调用 --> User[用户服务]
+    end
+
+    subgraph WebSocket长连接
+    Client -- WS连接 --> WSGW["连接网关 (oceanchat-ws-gateway)"]
+    WSGW -- 原始数据透传 --> Router["消息路由服务 (oceanchat-router)"]
+    Router -- 解析后分发 --> Message[消息服务]
+    Router -- 解析后分发 --> Group[群组服务]
+    end
+```
 
 ## 第二层：核心业务逻辑层
 

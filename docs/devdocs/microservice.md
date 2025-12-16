@@ -19,13 +19,14 @@ This layer is the direct entry point for users, focusing on handling massive con
 
 <Tabs>
 <TabItem value="desc" label="Introduction" default>
-This gateway is the sole entry point for external requests.
+This gateway is the sole entry point for external http requests.
 </TabItem>
 <TabItem value="resp" label="Core Responsibilities">
 
-- **HTTP Request Entry Point**: Acts as the single entry point for all external RESTful API requests. Client HTTP requests for login, registration, fetching user profiles, querying history, etc., all arrive here first.
-- **Request Routing**: Securely routes requests to the corresponding internal business microservices based on the request's URL path (e.g., /auth/login, /users/profile).
-- **Common Cross-Cutting Concerns**: Centrally handles cross-service common functionalities such as authentication (validating JWT), authorization, rate limiting, logging, and SSL offloading.
+- **Request Routing**: Core functionality. It serves as the sole entry point for all external RESTful API requests. Client HTTP requests for login, registration, retrieving user information, and querying history all arrive here first. Then, requests are forwarded to the appropriate services according to rules. For example, requests starting with `/auth/*` are forwarded to the `oceanchat-auth` service, and `/users/*` are forwarded to the `oceanchat-user` service.
+- **Authentication**: Since asynchronous non-blocking I/O is currently being used, this process not only verifies the validity of the JWT but also queries the Redis whitelist to ensure the validity of the user's identity. Interfaces that do not require authentication are allowed directly.
+- **Rate Limiting**: For example, limiting the number of requests from the same IP address to 10 per second to protect backend services from overload.
+- **Logs and Monitoring**: Records all incoming and outgoing HTTP request logs for troubleshooting and performance analysis.
 
 </TabItem>
 <TabItem value="reason" label="Reason for Separation">

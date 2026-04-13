@@ -5,8 +5,8 @@ import type * as Preset from "@docusaurus/preset-classic";
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: "Oceanchat-devdocs",
-  tagline: "Oceanchat is an IM platform that you can trust",
+  title: "Oceanchat",
+  tagline: "Oceanchat is an IM platform that you can trust.",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
@@ -117,14 +117,6 @@ const config: Config = {
         {
           title: "Community",
           items: [
-            {
-              label: "Stack Overflow",
-              href: "https://stackoverflow.com/questions/tagged/docusaurus",
-            },
-            {
-              label: "Discord",
-              href: "https://discordapp.com/invite/docusaurus",
-            },
             {
               label: "X",
               href: "https://x.com/OceanChat",

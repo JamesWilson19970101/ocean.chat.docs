@@ -1,7 +1,6 @@
-# Budiness Logic
+# 业务逻辑
 
 :::note 下面的业务规则是零碎的，需要后期整理
-
 
 ## Room
 

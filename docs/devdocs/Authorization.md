@@ -43,7 +43,7 @@ Permission decisions are often not stateless; they are highly dependent on speci
 > **Scenario 1: Can User A send a message in Group G?**
 >
 > - **Data Needed:** Is A a member of Group G? Has A been muted? Is Group G currently in a "mute-all" state?
-> - **Data Owner:* All of this data is stored in the database of the Group Service (oceanchat-group).
+> - **Data Owner:** All of this data is stored in the database of the Group Service (oceanchat-group).
 
 > **Scenario 2: Can User A remove their friendship with User B?**
 >

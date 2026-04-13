@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="oceanGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5ec9f9"/>
+      <stop offset="100%" stop-color="#0c8cc6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="80" fill="url(#oceanGrad2)" opacity="0.9"/>
+  <path d="M110 40 L60 110 H100 L90 160 L140 90 H100 Z" fill="#ffffff"/>
+  <path d="M40 100 Q70 130 100 100 T160 100" stroke="#ffffff" stroke-width="8" fill="none" opacity="0.4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="oceanGrad3" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1eafea"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <path d="M100 20 C144 20 180 56 180 100 C180 144 144 180 100 180 C56 180 20 144 20 100 C20 56 56 20 100 20 Z M100 50 C72 50 50 72 50 100 C50 128 72 150 100 150 C128 150 150 128 150 100 C150 72 128 50 100 50 Z" fill="url(#oceanGrad3)" opacity="0.8"/>
+  <circle cx="100" cy="35" r="15" fill="#ffffff"/>
+  <circle cx="165" cy="100" r="15" fill="#ffffff"/>
+  <circle cx="100" cy="165" r="15" fill="#ffffff"/>
+  <circle cx="35" cy="100" r="15" fill="#ffffff"/>
+  <circle cx="100" cy="100" r="25" fill="#ffffff" opacity="0.9"/>
+  <path d="M100 35 L165 100 L100 165 L35 100 Z" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.5"/>
+  <path d="M100 100 L100 35 M100 100 L165 100 M100 100 L100 165 M100 100 L35 100" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.5"/>
+</svg>

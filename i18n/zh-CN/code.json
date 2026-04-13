@@ -60,7 +60,7 @@
     "description": "The ARIA label for the breadcrumbs"
   },
   "theme.docs.DocCard.categoryDescription.plurals": {
-    "message": "{count} 个项目",
+    "message": "{count} 个文档",
     "description": "The default description for a category card in the generated index about how many items this category includes"
   },
   "theme.docs.paginator.navAriaLabel": {
@@ -309,5 +309,35 @@
   "theme.tags.tagsPageTitle": {
     "message": "标签",
     "description": "The title of the tag list page"
+  },
+  "homepage.title": {
+    "message": "欢迎来到 {siteTitle}"
+  },
+  "homepage.description": {
+    "message": "OceanChat 官方文档与博客"
+  },
+  "homepage.tagline": {
+    "message": "OceanChat，值得信赖的即时通讯平台。"
+  },
+  "homepage.tutorial.button": {
+    "message": "OceanChat 教程 - 只需几分钟 ⏱️"
+  },
+  "homepage.feature.secure.title": {
+    "message": "安全与隐私"
+  },
+  "homepage.feature.secure.description": {
+    "message": "OceanChat 提供全面的安全防护功能和强大的隐私控制，确保您的通信绝对安全保密。"
+  },
+  "homepage.feature.fast.title": {
+    "message": "快速与可靠"
+  },
+  "homepage.feature.fast.description": {
+    "message": "基于分布式微服务架构，OceanChat 能够提供极高的性能、极低的延迟和最大的稳定性保障。"
+  },
+  "homepage.feature.extensible.title": {
+    "message": "开放与可扩展"
+  },
+  "homepage.feature.extensible.description": {
+    "message": "借助丰富的 API 和集成能力定制您的专属体验。轻松在您的私有服务器上部署、扩展和管理 OceanChat。"
   }
 }

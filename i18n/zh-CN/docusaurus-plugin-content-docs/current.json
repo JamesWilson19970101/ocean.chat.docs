@@ -4,15 +4,19 @@
     "description": "The label for version current"
   },
   "sidebar.tutorialSidebar.category.oceanchat - userdocs": {
-    "message": "oceanchat - userdocs",
+    "message": "oceanchat - 用户文档",
     "description": "The label for category oceanchat - userdocs in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.oceanchat - userdocs.link.generated-index.description": {
-    "message": "5 minutes to learn the most important Docusaurus concepts.",
+    "message": "帮助用户了解 oceanchat",
     "description": "The generated-index page description for category oceanchat - userdocs in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.oceanchat - devdocs": {
-    "message": "oceanchat - devdocs",
+    "message": "oceanchat - 开发者文档",
     "description": "The label for category oceanchat - devdocs in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.ADR - Architecture Decision Records": {
+    "message": "ADR - 架构决策记录",
+    "description": "The label for category ADR - Architecture Decision Records in sidebar tutorialSidebar"
   }
 }

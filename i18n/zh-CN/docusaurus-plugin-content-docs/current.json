@@ -18,5 +18,13 @@
   "sidebar.tutorialSidebar.category.ADR - Architecture Decision Records": {
     "message": "ADR - 架构决策记录",
     "description": "The label for category ADR - Architecture Decision Records in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Auth Service": {
+    "message": "认证服务",
+    "description": "The label for category Auth Service in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.API": {
+    "message": "接口",
+    "description": "The label for category API in sidebar tutorialSidebar"
   }
 }

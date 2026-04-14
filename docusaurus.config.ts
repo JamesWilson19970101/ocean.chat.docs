@@ -2,6 +2,8 @@ import { themes as prismThemes } from "prism-react-renderer";
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
+import type * as OpenApiPlugin from "docusaurus-plugin-openapi-docs";
+
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
@@ -46,7 +48,6 @@ const config: Config = {
   markdown: {
     mermaid: true,
   },
-  themes: ["@docusaurus/theme-mermaid"],
 
   presets: [
     [
@@ -54,6 +55,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: "./sidebars.ts",
+          docItemComponent: "@theme/ApiItem",
         },
         blog: {
           showReadingTime: true,
@@ -73,6 +75,40 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    function webpackPolyfillPlugin() {
+      return {
+        name: "webpack-polyfill-plugin",
+        configureWebpack() {
+          return {
+            resolve: {
+              fallback: {
+                path: require.resolve("path-browserify"),
+              },
+            },
+          };
+        },
+      };
+    },
+    [
+      "docusaurus-plugin-openapi-docs",
+      {
+        id: "api", // plugin id
+        docsPluginId: "classic", // configured for preset-classic
+        config: {
+          petstore: {
+            specPath:
+              "/home/seconp/ocean.chat.private-FIX-1-auth-improvements/swagger.json",
+            outputDir: "docs/devdocs/API",
+            sidebarOptions: {
+              groupPathsBy: "tag",
+            },
+          } satisfies OpenApiPlugin.Options,
+        },
+      },
+    ],
+  ],
+  themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
   themeConfig: {
     // Replace with your project's social card
     image: "img/docusaurus-social-card.jpg",

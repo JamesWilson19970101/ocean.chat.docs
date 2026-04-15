@@ -1,9 +1,19 @@
 ---
 id: monkey-protocol-spec
 title: Monkey Protocol Specification
-sidebar_label: Monkey Protocol
+sidebar_label: Monkey Protocol Specification
 description: Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 10M+ concurrent users.
-keywords: [monkey protocol, websocket, high concurrency, distributed im, push-pull, rate limiting, ocean chat, microservices]
+keywords:
+  [
+    monkey protocol,
+    websocket,
+    high concurrency,
+    distributed im,
+    push-pull,
+    rate limiting,
+    ocean chat,
+    microservices,
+  ]
 image: https://www.shutterstock.com/search/seo-cover
 ---
 
@@ -21,7 +31,7 @@ The **Monkey Protocol** is Ocean Chat's proprietary, high-performance binary app
 This reference outlines the exact bit-level frame structure, command registry, and the strict operational state machines required for gateway and client implementations.
 
 :::info TODO: Multi-Protocol Gateway & Transport Layer
-While WebSocket (WS) is currently utilized for broad compatibility (especially for Web/Mini-programs), **pure TCP is the optimal transport for native mobile apps (iOS/Android) to achieve maximum battery efficiency and connection stability**. 
+While WebSocket (WS) is currently utilized for broad compatibility (especially for Web/Mini-programs), **pure TCP is the optimal transport for native mobile apps (iOS/Android) to achieve maximum battery efficiency and connection stability**.
 
 Future gateway iterations must expose dual ports (e.g., `TCP: 8080` and `WS: 8081`). The `oceanchat-ws-gateway` will be upgraded to a multi-protocol gateway that strips the transport layer framing (WebSocket frames vs. TCP streams) and forwards the identical, underlying 12-byte Monkey Protocol binary payload to the backend microservices.
 :::
@@ -44,42 +54,42 @@ Ocean Chat's architecture strictly isolates network I/O from business logic. The
 graph TD
     Client[Client App] -->|Monkey Protocol WS/TCP| Gateway[oceanchat-ws-gateway]
     Gateway -->|Monkey Protocol WS/TCP| Client
-    
+
     subgraph Microservices Cluster
         Gateway -->|Auth Request| Auth[oceanchat-auth]
         Gateway -->|NATS JetStream| Router[oceanchat-router]
         Router -->|NATS JetStream| Gateway
-        
+
         Router -->|Store Message| Message[oceanchat-message]
         Message -->|Write| MongoDB[(MongoDB)]
-        
+
         Router -->|Broadcast| Pusher[oceanchat-pusher-realtime]
         Pusher -->|Query State| Presence[oceanchat-presence]
         Presence -->|Read/Write Session| Redis[(Redis)]
         Redis -->|Session Data| Presence
-        
+
         Gateway -->|Sync Request| Query[oceanchat-query]
         Query -->|Read| MongoDB
     end
-    
+
     Pusher -->|NATS Subject routing| Gateway
 ```
 
 ## 2. Frame Structure
 
-Every Monkey Protocol packet consists of a strict, fixed-length **12-byte Header** followed by a variable-length **Payload**. 
+Every Monkey Protocol packet consists of a strict, fixed-length **12-byte Header** followed by a variable-length **Payload**.
 
 ### 2.1 Header Layout
 
-| Offset | Field | Size | Type | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| 0 | `Magic` | 2 Bytes | `UInt16` | Magic number `0x4D4B` ("MK") to identify the protocol. |
-| 2 | `Version` | 1 Byte | `UInt8` | Protocol version for forward compatibility (current: `0x01`). |
-| 3 | `Cmd` | 1 Byte | `UInt8` | Command type identifier (see Command Registry). |
-| 4 | `Flags` | 1 Byte | `Bitmask`| 8-bit flags for protocol features (e.g., Compression, ACK). |
-| 5 | `SeqId` | 3 Bytes | `UInt24` | Sequence ID for matching Request/Response pairs. |
-| 8 | `Length` | 4 Bytes | `UInt32` | Length of the variable payload in bytes (Max 16KB). |
-| 12 | `Payload`| Variable| `Binary` | **Protobuf** encoded payload. |
+| Offset | Field     | Size     | Type      | Description                                                   |
+| :----- | :-------- | :------- | :-------- | :------------------------------------------------------------ |
+| 0      | `Magic`   | 2 Bytes  | `UInt16`  | Magic number `0x4D4B` ("MK") to identify the protocol.        |
+| 2      | `Version` | 1 Byte   | `UInt8`   | Protocol version for forward compatibility (current: `0x01`). |
+| 3      | `Cmd`     | 1 Byte   | `UInt8`   | Command type identifier (see Command Registry).               |
+| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8-bit flags for protocol features (e.g., Compression, ACK).   |
+| 5      | `SeqId`   | 3 Bytes  | `UInt24`  | Sequence ID for matching Request/Response pairs.              |
+| 8      | `Length`  | 4 Bytes  | `UInt32`  | Length of the variable payload in bytes (Max 16KB).           |
+| 12     | `Payload` | Variable | `Binary`  | **Protobuf** encoded payload.                                 |
 
 :::warning JSON is Prohibited in Production
 To achieve 10M concurrency, JSON serialization is strictly prohibited. You must use **Protobuf** for the `Payload`. This reduces bandwidth by 40%+ and drastically lowers CPU overhead on the gateway.
@@ -95,19 +105,19 @@ To minimize payload overhead, boolean states are encoded into the `Flags` byte:
 
 ## 3. Command Registry (`Cmd`)
 
-| Cmd Hex | Name | Direction | Description |
-| :--- | :--- | :--- | :--- |
-| `0x01` | `AUTH_REQ` | Client -> Server | Authenticate connection. Payload contains `DeviceType`, `DeviceId`, and JWT. |
-| `0x02` | `AUTH_ACK` | Server -> Client | Authentication result. |
-| `0x03` | `PING` | Client -> Server | Keep-alive heartbeat (Empty Payload). |
-| `0x04` | `PONG` | Server -> Client | Keep-alive response (Empty Payload). |
-| `0x05` | `MSG_UP` | Client -> Server | Upstream chat message. Payload requires `ClientMsgId` for idempotency. |
-| `0x06` | `MSG_UP_ACK` | Server -> Client | Acknowledgment of upstream message. |
-| `0x07` | `MSG_DOWN` | Server -> Client | Downstream push message (1-to-1 chat or small groups). |
-| `0x08` | `MSG_NOTIFY` | Server -> Client | Push-Pull hybrid notification for large groups. Payload contains `GroupId` and `MsgId` only. |
-| `0x09` | `SYNC_REQ` | Client -> Server | Request offline or missing messages. Payload contains required `SeqId` ranges. |
-| `0x0A` | `SYNC_ACK` | Server -> Client | Returns an array of requested messages. |
-| `0x0B` | `READ_RECEIPT`| Both | Synchronization of unread status across multiple devices. |
+| Cmd Hex | Name           | Direction        | Description                                                                                  |
+| :------ | :------------- | :--------------- | :------------------------------------------------------------------------------------------- |
+| `0x01`  | `AUTH_REQ`     | Client -> Server | Authenticate connection. Payload contains `DeviceType`, `DeviceId`, and JWT.                 |
+| `0x02`  | `AUTH_ACK`     | Server -> Client | Authentication result.                                                                       |
+| `0x03`  | `PING`         | Client -> Server | Keep-alive heartbeat (Empty Payload).                                                        |
+| `0x04`  | `PONG`         | Server -> Client | Keep-alive response (Empty Payload).                                                         |
+| `0x05`  | `MSG_UP`       | Client -> Server | Upstream chat message. Payload requires `ClientMsgId` for idempotency.                       |
+| `0x06`  | `MSG_UP_ACK`   | Server -> Client | Acknowledgment of upstream message.                                                          |
+| `0x07`  | `MSG_DOWN`     | Server -> Client | Downstream push message (1-to-1 chat or small groups).                                       |
+| `0x08`  | `MSG_NOTIFY`   | Server -> Client | Push-Pull hybrid notification for large groups. Payload contains `GroupId` and `MsgId` only. |
+| `0x09`  | `SYNC_REQ`     | Client -> Server | Request offline or missing messages. Payload contains required `SeqId` ranges.               |
+| `0x0A`  | `SYNC_ACK`     | Server -> Client | Returns an array of requested messages.                                                      |
+| `0x0B`  | `READ_RECEIPT` | Both             | Synchronization of unread status across multiple devices.                                    |
 
 ## 4. Connection Lifecycle & Defenses
 
@@ -119,10 +129,10 @@ To defend against Slowloris and FD-exhaustion attacks, the `oceanchat-ws-gateway
 sequenceDiagram
     participant Client
     participant Gateway as oceanchat-ws-gateway
-    
+
     Client->>Gateway: TCP Connect & WS Upgrade
     note right of Gateway: Start 5-second socket timer
-    
+
     alt Sends AUTH_REQ within 5s
         Client->>Gateway: [0x01] AUTH_REQ
         Gateway->>Client: [0x02] AUTH_ACK
@@ -135,8 +145,9 @@ sequenceDiagram
 
 ### 4.2 Smart Keep-Alive (Any Message is Pong)
 
-Ocean Chat abandons rigid periodic heartbeats. 
-1. **Any Data is Liveness:** Whenever the gateway receives *any* valid upstream packet (e.g., `MSG_UP`), it immediately refreshes the connection's `LastActiveTime`.
+Ocean Chat abandons rigid periodic heartbeats.
+
+1. **Any Data is Liveness:** Whenever the gateway receives _any_ valid upstream packet (e.g., `MSG_UP`), it immediately refreshes the connection's `LastActiveTime`.
 2. **Adaptive Heartbeat:** Clients MUST dynamically adjust `PING` intervals (e.g., from 30s to 4 mins) based on their NAT environment and OS background state. If a client is actively sending messages, it should suspend background `PING`s to save bandwidth.
 
 ### 4.3 Rate Limiting & Backpressure
@@ -157,24 +168,24 @@ sequenceDiagram
     participant Router as oceanchat-router
     participant Query as oceanchat-query
     participant Receiver
-    
+
     Sender->>Gateway: [0x05] MSG_UP (GroupId: G1, Payload: 1MB Image)
     Gateway->>Router: Route & Persist
     Router-->>Gateway: Broadcast Event via NATS
-    
+
     note over Gateway, Receiver: 1. Lightweight Push Notification (Write Diffusion)
     Gateway->>Receiver: [0x08] MSG_NOTIFY (GroupId: G1, NewMsgId: 1001)
-    
+
     note over Receiver: If user is actively looking at G1:
     note over Gateway, Receiver: 2. Client Pulls Content (Read Diffusion)
     Receiver->>Gateway: [0x09] SYNC_REQ (MsgId: 1001)
-    
+
     Gateway->>Query: Fetch MsgId 1001
     Query-->>Gateway: 1MB Image
-    
+
     note over Gateway: 3. Local Caching prevents backend collapse
     note over Gateway: Next 9,999 SYNC_REQs for MsgId 1001 are served from Gateway RAM.
-    
+
     Gateway-->>Receiver: [0x0A] SYNC_ACK (Payload: 1MB Image)
 ```
 
@@ -196,15 +207,15 @@ sequenceDiagram
     participant Message as oceanchat-message
     participant DB as MongoDB
     participant NATS as NATS JetStream
-    
+
     Gateway->>Message: Route MSG_UP
     Message->>DB: 1. Async write to MongoDB
     Message->>NATS: 2. Async publish to NATS Subject
-    
+
     note right of Message: Write Fence Barrier
     DB-->>Message: DB Confirmed
     NATS-->>Message: NATS ACK Received
-    
+
     note left of Message: Both prerequisites met
     Message-->>Gateway: Transaction Successful
     Gateway->>Client: [0x06] MSG_UP_ACK
@@ -216,8 +227,9 @@ Clients must generate a UUID (`ClientMsgId`) for every `MSG_UP`. If the client d
 
 ### 6.3 Message Hole Detection (Self-Healing)
 
-Clients must maintain a local `MaxReceivedSeqId`. If a `MSG_DOWN` arrives with `SeqId=105` but the client's local max is `103`, a **Message Hole** has occurred. 
-- The client MUST NOT render message `105` immediately. 
+Clients must maintain a local `MaxReceivedSeqId`. If a `MSG_DOWN` arrives with `SeqId=105` but the client's local max is `103`, a **Message Hole** has occurred.
+
+- The client MUST NOT render message `105` immediately.
 - It must stash `105`, send a `SYNC_REQ` for `104`, and only render the stream once continuous.
 
 ## 7. Multi-Device Synchronization

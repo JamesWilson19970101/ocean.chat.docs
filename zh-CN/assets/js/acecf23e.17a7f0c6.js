@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[1903],{1912:a=>{a.exports=JSON.parse('{"blogBasePath":"/ocean.chat.docs/zh-CN/blog","blogTitle":"\u535a\u5ba2","authorsListPath":"/ocean.chat.docs/zh-CN/blog/authors"}')}}]);

@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[1947],{1947:(e,c,a)=>{a.d(c,{createWardleyServices:()=>s.J});var s=a(22295);a(72519)}}]);

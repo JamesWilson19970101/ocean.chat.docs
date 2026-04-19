@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[5390],{75390:(e,c,a)=>{a.d(c,{createArchitectureServices:()=>s.S});var s=a(65530);a(72519)}}]);

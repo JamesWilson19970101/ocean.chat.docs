@@ -24,92 +24,86 @@ image: https://www.shutterstock.com/search/seo-cover
 下图展示了 Ocean Chat 微服务与 NATS JetStream 主题之间的生产和消费流程。
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 flowchart LR
- classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
- classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
- classDef stream fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000;
- classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+    classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+    classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+    classDef stream fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000;
+    classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
     %% Producers
-    subgraph Producers [消息生产者]
-        direction TB
-        WSG_P[WebSocket 网关]:::gateway
-        RS_P[路由服务]:::service
-        AS_P[认证服务]:::service
-        MS_P[消息服务]:::service
-        API_P[API 网关]:::gateway
+    subgraph Producers [Message Producers]
+        WSG_P[WebSocket Gateway]:::gateway
+        RS_P[Router Service]:::service
+        AS_P[Auth Service]:::service
+        MS_P[Message Service]:::service
+        API_P[API Gateway]:::gateway
     end
 
     %% JetStream Topology
     subgraph JetStream [NATS JetStream]
-        direction TB
-
-        subgraph S_CORE [流: IM_CORE]
-            direction TB
+        subgraph S_CORE [Stream: IM_CORE]
             UP(im.up.>):::subject
             DOWN(im.down.node.*):::subject
         end
 
-        subgraph S_AUTH [流: AUTH_STATE]
-            direction TB
-            REVOKE(auth.jwt.revoke):::subject
-        end
-
-        subgraph S_HYBRID [流: GROUP_HYBRID]
-            direction TB
+        subgraph S_HYBRID [Stream: GROUP_HYBRID]
             TICK(group.tick.*):::subject
         end
 
-        subgraph S_PUSH [流: OFFLINE_PUSH]
-            direction TB
+        subgraph S_PUSH [Stream: OFFLINE_PUSH]
             PUSH(push.trigger.*):::subject
         end
 
-        subgraph S_PIPE [流: DATA_PIPELINE]
-            direction TB
+        subgraph S_AUTH [Stream: AUTH_STATE]
+            REVOKE(auth.jwt.revoke):::subject
+        end
+
+        subgraph S_PIPE [Stream: DATA_PIPELINE]
             INDEX(pipeline.index.msg):::subject
         end
 
-        subgraph S_TASK [流: BACKGROUND_TASKS]
-            direction TB
+        subgraph S_TASK [Stream: BACKGROUND_TASKS]
             TASK(task.*):::subject
         end
 
-        subgraph S_SYNC [流: DEVICE_SYNC]
-            direction TB
+        subgraph S_SYNC [Stream: DEVICE_SYNC]
             SYNC(sync.cursor.read.*):::subject
         end
     end
 
     %% Consumers
-    subgraph Consumers [消息消费者]
-        direction TB
-        RS_C[路由服务]:::service
-        WSG_C[WebSocket 网关]:::gateway
-        PUSH_C[推送服务]:::service
-        DP_C[数据管道工作单元]:::service
-        MEDIA_C[多媒体 / 审计服务]:::service
+    subgraph Consumers [Message Consumers]
+        RS_C[Router Service]:::service
+        WSG_C[WebSocket Gateway]:::gateway
+        PUSH_C[Push Service]:::service
+        DP_C[Data Pipeline Worker]:::service
+        MEDIA_C[Media / Audit Service]:::service
     end
 
     %% Production Flows
-    WSG_P -- 微批处理 --> UP
-    RS_P -- 定向路由 --> DOWN
-    RS_P -- Tick 信号 --> TICK
-    RS_P -- 离线事件 --> PUSH
-    AS_P -- 令牌撤销 --> REVOKE
-    MS_P -- Mongo 已同步 --> INDEX
-    API_P -- 上传事件 --> TASK
-    API_P -- 已读回执 --> SYNC
+    WSG_P -- Micro-batch --> UP
+    RS_P -- Targeted Route --> DOWN
+    RS_P -- Tick --> TICK
+    RS_P -- Offline Event --> PUSH
+    AS_P -- Revoke --> REVOKE
+    MS_P -- Mongo Synced --> INDEX
+    API_P -- Upload Event --> TASK
+    API_P -- Read Receipt --> SYNC
 
     %% Consumption Flows
-    UP -- Pull (队列组) --> RS_C
-    DOWN -- 临时 Push --> WSG_C
-    REVOKE -- 扇出广播 --> WSG_C
-    TICK -- 信号 Push --> WSG_C
-    PUSH -- Pull (队列组) --> PUSH_C
-    INDEX -- 大批次 Pull --> DP_C
-    TASK -- Pull (显式 NAK) --> MEDIA_C
-    SYNC -- 临时 Push --> WSG_C
+    UP -- Pull Queue Group --> RS_C
+    DOWN -- Ephemeral Push --> WSG_C
+    REVOKE -- Fan-out Broadcast --> WSG_C
+    REVOKE -- Fan-out Broadcast --> API_P
+    TICK -- Signal Push --> WSG_C
+    PUSH -- Pull Queue Group --> PUSH_C
+    INDEX -- Large Batch Pull --> DP_C
+    TASK -- Pull Explicit NAK --> MEDIA_C
+    SYNC -- Ephemeral Push --> WSG_C
 ```
 
 本文档详细介绍了 Ocean Chat 架构所需的流定义、主题命名空间以及交付语义（推/拉、至少一次、至多一次）。
@@ -134,7 +128,7 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 - **保留策略**: 工作队列 (WorkQueue) 或 NATS KV 存储。
 - **存储**: 内存或文件。
 - **生产者**: 认证服务。
-- **消费者**: 所有 WebSocket 网关实例。
+- **消费者**: 所有 WebSocket 网关及 API 网关实例。
 - **策略**: 扇出广播 (无队列组)。
 
 ### **SYS_PRESENCE (状态与事件流)**
@@ -202,12 +196,12 @@ import TabItem from '@theme/TabItem';
 </TabItem>
 <TabItem value="auth" label="认证服务: Zero-I/O 验证">
 
-通过保持本地内存状态同步来实现 Zero-I/O 身份验证机制。
+通过保持本地内存状态在所有接入点同步来实现 Zero-I/O 身份验证机制。
 
 - **生产者**: 认证服务（触发令牌撤销）。
-- **消费者**: 所有 WebSocket 网关实例。
+- **消费者**: 所有 WebSocket 网关及 API 网关实例。
 - **策略**: **扇出广播 (无队列组)**。
-- **机制**: 每个网关实例必须独立订阅 `auth.jwt.revoke`。当令牌被撤销时，事件同时到达所有网关，以更新其内存黑名单，从而消除连接握手期间的 Redis 网络 I/O。
+- **机制**: 每一个网关实例（包括 WS 和 API）必须独立订阅 `auth.jwt.revoke`。当令牌被撤销时，事件同时到达所有网关，以便它们更新内存黑名单，从而完全消除 WebSocket 握手和 REST API 请求关键路径上的同步网络 I/O（如 Redis 查询）。
 
 </TabItem>
 <TabItem value="group" label="群组服务: 推拉结合">

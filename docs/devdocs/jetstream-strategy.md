@@ -33,15 +33,18 @@ To support ten-million concurrent connections, Ocean Chat utilizes **NATS JetStr
 The following diagram illustrates the production and consumption flows between Ocean Chat microservices and NATS JetStream subjects.
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 flowchart LR
- classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
- classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
- classDef stream fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000;
- classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+    classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+    classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+    classDef stream fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000;
+    classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
     %% Producers
     subgraph Producers [Message Producers]
-        direction TB
         WSG_P[WebSocket Gateway]:::gateway
         RS_P[Router Service]:::service
         AS_P[Auth Service]:::service
@@ -51,48 +54,38 @@ flowchart LR
 
     %% JetStream Topology
     subgraph JetStream [NATS JetStream]
-        direction TB
-
         subgraph S_CORE [Stream: IM_CORE]
-            direction TB
             UP(im.up.>):::subject
             DOWN(im.down.node.*):::subject
         end
 
-        subgraph S_AUTH [Stream: AUTH_STATE]
-            direction TB
-            REVOKE(auth.jwt.revoke):::subject
-        end
-
         subgraph S_HYBRID [Stream: GROUP_HYBRID]
-            direction TB
             TICK(group.tick.*):::subject
         end
 
         subgraph S_PUSH [Stream: OFFLINE_PUSH]
-            direction TB
             PUSH(push.trigger.*):::subject
         end
 
+        subgraph S_AUTH [Stream: AUTH_STATE]
+            REVOKE(auth.jwt.revoke):::subject
+        end
+
         subgraph S_PIPE [Stream: DATA_PIPELINE]
-            direction TB
             INDEX(pipeline.index.msg):::subject
         end
 
         subgraph S_TASK [Stream: BACKGROUND_TASKS]
-            direction TB
             TASK(task.*):::subject
         end
 
         subgraph S_SYNC [Stream: DEVICE_SYNC]
-            direction TB
             SYNC(sync.cursor.read.*):::subject
         end
     end
 
     %% Consumers
     subgraph Consumers [Message Consumers]
-        direction TB
         RS_C[Router Service]:::service
         WSG_C[WebSocket Gateway]:::gateway
         PUSH_C[Push Service]:::service
@@ -111,13 +104,14 @@ flowchart LR
     API_P -- Read Receipt --> SYNC
 
     %% Consumption Flows
-    UP -- Pull (Queue Group) --> RS_C
+    UP -- Pull Queue Group --> RS_C
     DOWN -- Ephemeral Push --> WSG_C
     REVOKE -- Fan-out Broadcast --> WSG_C
+    REVOKE -- Fan-out Broadcast --> API_P
     TICK -- Signal Push --> WSG_C
-    PUSH -- Pull (Queue Group) --> PUSH_C
+    PUSH -- Pull Queue Group --> PUSH_C
     INDEX -- Large Batch Pull --> DP_C
-    TASK -- Pull (Explicit NAK) --> MEDIA_C
+    TASK -- Pull Explicit NAK --> MEDIA_C
     SYNC -- Ephemeral Push --> WSG_C
 ```
 
@@ -143,7 +137,7 @@ Streams in Ocean Chat are partitioned by **business domain** and **data retentio
 - **Retention**: WorkQueue or NATS KV Store (Rollup by Subject).
 - **Storage**: Memory or File.
 - **Producer**: Auth Service.
-- **Consumer**: All WebSocket Gateway instances.
+- **Consumer**: All WebSocket Gateway and API Gateway instances.
 - **Strategy**: Fan-out Broadcast (No Queue Group).
 
 ### **SYS_PRESENCE (Presence & Events Stream)**
@@ -211,12 +205,12 @@ The Connection Gateway is strictly stateless and acts as a transparent proxy.
 </TabItem>
 <TabItem value="auth" label="Authentication Service: Zero-I/O Verification">
 
-Implements the Zero-I/O authentication mechanism by keeping local memory states synchronized.
+Implements the Zero-I/O authentication mechanism by keeping local memory states synchronized across all entry points.
 
 - **Producer**: Auth Service (triggering token revocation).
-- **Consumer**: ALL WebSocket Gateway instances.
+- **Consumer**: ALL WebSocket Gateway and API Gateway instances.
 - **Strategy**: **Fan-out Broadcast (No Queue Group)**.
-- **Mechanism**: Every single Gateway instance MUST subscribe independently to `auth.jwt.revoke`. When a token is revoked, the event reaches all gateways simultaneously to update their in-memory blacklists, eliminating Redis network I/O during connection handshakes.
+- **Mechanism**: Every single Gateway instance (both WS and API) MUST subscribe independently to `auth.jwt.revoke`. When a token is revoked, the event reaches all gateways simultaneously so they can update their in-memory blacklists, entirely eliminating synchronous network I/O (like Redis queries) during both WebSocket handshakes and REST API requests.
 
 </TabItem>
 <TabItem value="group" label="Group Service: Push-Pull Hybrid">

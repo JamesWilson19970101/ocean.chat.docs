@@ -4,8 +4,19 @@ import TabItem from '@theme/TabItem';
 # Microservice Architecture
 
 :::info Architecture Overview
-The entire platform is divided into four logical layers, comprising 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
+The entire platform is a distributed microservice architecture designed to support 10 million-level (10M+) concurrency. It is divided into four logical layers, comprising 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
 :::
+
+## Technology Stack
+
+The project is built upon a modern and robust technology stack, chosen for its performance, scalability, and developer experience.
+
+- **[NestJS 11](https://nestjs.com/)**: A progressive Node.js framework for building efficient, reliable, and scalable server-side applications. Its modular architecture is perfectly suited for developing the microservices in this project.
+- **[TypeScript 5](https://www.typescriptlang.org/)**: The primary programming language for the project. By adding static types to JavaScript, it helps improve code quality, readability, and maintainability, which is crucial for large-scale projects.
+- **[Yarn 4.7](https://yarnpkg.com/)**: A fast, reliable, and secure dependency manager used to efficiently manage the project's packages and dependencies.
+- **[MongoDB](https://www.mongodb.com/) (with [Mongoose](https://mongoosejs.com/))**: The primary NoSQL database for persistent data storage. It is used to store user data, messages, group information, etc. Mongoose serves as an Object Data Modeling (ODM) library, providing a schema-based solution for modeling application data.
+- **[Redis](https://redis.io/)**: A high-performance in-memory data store. In this project, it is used for caching, real-time user presence management, and as a high-speed message bus for certain real-time communication scenarios.
+- **[NATS](https://nats.io/) (with JetStream)**: A simple, secure, and high-performance open-source messaging system that serves as the main communication backbone between microservices. The project specifically utilizes **NATS JetStream**, its built-in persistence engine, to provide at-least-once message delivery guarantees. This is critical for reliable asynchronous operations like persisting messages, handling offline pushes, and broadcasting domain events.
 
 ## IM Architecture Diagram
 
@@ -24,7 +35,7 @@ This gateway is the sole entry point for external http requests.
 <TabItem value="resp" label="Core Responsibilities">
 
 - **Request Routing**: Core functionality. It serves as the sole entry point for all external RESTful API requests. Client HTTP requests for login, registration, retrieving user information, and querying history all arrive here first. Then, requests are forwarded to the appropriate services according to rules. For example, requests starting with `/auth/*` are forwarded to the `oceanchat-auth` service, and `/users/*` are forwarded to the `oceanchat-user` service.
-- **Authentication**: Since asynchronous non-blocking I/O is currently being used, this process not only verifies the validity of the JWT but also queries the Redis whitelist to ensure the validity of the user's identity. Interfaces that do not require authentication are allowed directly.
+- **Authentication**: Implements **Zero-I/O Authentication**. It cryptographically verifies the RS256 Access Token and performs an `O(1)` local memory lookup against a token blacklist (populated via NATS JetStream events), entirely eliminating synchronous network I/O (like Redis queries) from the critical path to support 10M+ concurrency. Interfaces that do not require authentication are allowed directly.
 - **Rate Limiting**: For example, limiting the number of requests from the same IP address to 10 per second to protect backend services from overload.
 - **Logs and Monitoring**: Records all incoming and outgoing HTTP request logs for troubleshooting and performance analysis.
 
@@ -34,11 +45,11 @@ To provide a unified, secure, and manageable facade for all stateless HTTP reque
 </TabItem>
 </Tabs>
 
-### 2. **Connection Gateway Service (oceanchat-ws-gateway)** (Stateful)
+### 2. **Connection Gateway Service (oceanchat-ws-gateway)** (Stateless)
 
 <Tabs>
 <TabItem value="desc" label="Introduction" default>
-Given that this service is stateful, its design should remain business-agnostic, lightweight, and simple.
+Given that this service is Stateless, its design should remain business-agnostic, lightweight, and simple.
 </TabItem>
 <TabItem value="resp" label="Core Responsibilities">
 
@@ -220,31 +231,3 @@ Implements read-write splitting. Separating high-frequency read operations from 
 - **Reason for Separation**: Complete asynchronicity. The sending and receiving of messages should not wait for the database write to complete. This "write-after-persistence" design maximizes the real-time nature of messages.
 
 :::
-
-## Process Description
-
-### Login Phase
-
-1.  Client A → **API Gateway** (sends username/password to `/auth/login`).
-2.  **API Gateway** → **Auth Service** (forwards login request).
-3.  **Auth Service** validates successfully, generates a JWT, and returns it to the **API Gateway**.
-
-    3a. **Authentication Service** (async) → NATS JetStream (Publishes `auth.event.user.loggedIn` event).
-
-4.  **API Gateway** → Client A (responds with the JWT to the client).
-
-### Message Sending Phase
-
-5.  User A sends a message to group G.
-6.  Client A → **Connection Gateway-1** (establishes a connection, attaching the JWT).
-7.  **Connection Gateway-1** validates the JWT's legitimacy (by calling the **Auth Service**), confirms the user identity as A, and attaches `userId: A` to subsequent messages.
-8.  **Connection Gateway-1** → **Message Router Service** (passthrough).
-9.  **Message Router Service** → **Message Logic Service** (routing).
-10. **Message Logic Service** processes the message (checks permissions, generates ID), then splits into two paths:
-    - → **Push Orchestrator Service** (initiates delivery)
-    - → NATS persistence topic (prepares for storage)
-11. **Push Orchestrator Service** queries the **Presence Service** and learns that group member B is online (on gateway 2), and C is offline.
-12. **Push Orchestrator Service** → NATS online push topic (task for B) and NATS offline push topic (task for C).
-13. **Real-time Pusher Worker** consumes B's task → instructs **Connection Gateway-2** → Client B receives the message.
-14. **Offline Pusher Worker** consumes C's task → calls APNS/FCM API → Client C receives a notification.
-15. **Persistence Writer** subscribes to and consumes the NATS message → writes to MongoDB.

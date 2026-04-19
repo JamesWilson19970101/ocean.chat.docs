@@ -12,7 +12,7 @@ image: https://www.shutterstock.com/search/seo-cover
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="JetStream 拓扑与消费策略 | Ocean Chat" />
   <meta property="og:description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持千万级并发连接。" />
-  <link rel="canonical" href="https://docs.oceanchat.com/zh-CN/devdocs/jetstream-strategy" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" />
 </head>
 
 # NATS JetStream 拓扑与策略

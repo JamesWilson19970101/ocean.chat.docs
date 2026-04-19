@@ -20,7 +20,7 @@ keywords:
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Monkey Protocol 协议规范 | Ocean Chat" />
   <meta property="og:description" content="Ocean Chat Monkey Protocol 综合参考规范。涵盖千万级并发 WebSocket 消息传递、推拉结合模型、微服务架构数据流及高可靠性保障机制。" />
-  <link rel="canonical" href="https://docs.oceanchat.com/zh-CN/docs/devdocs/monkey-protocol-spec" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/monkey-protocol-spec" />
 </head>
 
 # Monkey Protocol 协议规范

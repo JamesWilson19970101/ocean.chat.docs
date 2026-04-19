@@ -3,15 +3,15 @@ id: understanding-zero-io-authentication
 title: "理解零 I/O (Zero-I/O) 认证"
 sidebar_label: "零 I/O 认证"
 description: "解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在千万并发连接下消除网络瓶颈。"
-keywords: [ocean chat, 零 i/o, 认证, 规模, 千万并发, rs256, 内存黑名单, 解释, 架构]
-image: "https://www.shutterstock.com/search/seo-cover"
+keywords:
+  [ocean chat, 零 i/o, 认证, 规模, 千万并发, rs256, 内存黑名单, 解释, 架构]
 ---
 
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="理解零 I/O (Zero-I/O) 认证 | Ocean Chat" />
   <meta property="og:description" content="解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在千万并发连接下消除网络瓶颈。" />
-  <link rel="canonical" href="https://docs.oceanchat.com/devdocs/understanding-zero-io-authentication" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/Auth%20Service/understanding-zero-io-authentication" />
 </head>
 
 # 理解零 I/O (Zero-I/O) 认证

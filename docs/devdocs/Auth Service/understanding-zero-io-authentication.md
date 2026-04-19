@@ -3,15 +3,25 @@ id: understanding-zero-io-authentication
 title: "Understanding Zero-I/O Authentication"
 sidebar_label: "Zero-I/O Auth"
 description: "An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 10M concurrent connections."
-keywords: [ocean chat, zero-io, authentication, scale, 10m concurrent, rs256, in-memory blacklist, explanation, architecture]
-image: "https://www.shutterstock.com/search/seo-cover"
+keywords:
+  [
+    ocean chat,
+    zero-io,
+    authentication,
+    scale,
+    10m concurrent,
+    rs256,
+    in-memory blacklist,
+    explanation,
+    architecture,
+  ]
 ---
 
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Understanding Zero-I/O Authentication | Ocean Chat" />
   <meta property="og:description" content="An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 10M concurrent connections." />
-  <link rel="canonical" href="https://docs.oceanchat.com/devdocs/understanding-zero-io-authentication" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/Auth%20Service/understanding-zero-io-authentication" />
 </head>
 
 # Understanding Zero-I/O Authentication
@@ -51,7 +61,7 @@ By using RS256, the blast radius of a compromised edge node is contained. An att
 
 Cryptographic verification only proves a token was legitimately issued; it does not prove the user hasn't logged out. Instead of querying a remote database to check valid standing, gateways use an **Event-Driven In-Memory Blacklist**.
 
-When a user logs out, the Auth Service publishes an asynchronous `auth.token.revoked` event via NATS JetStream. Every active gateway receives this broadcast and inserts the token's unique ID (`jti`) into a local, in-memory LRU cache (or Bloom Filter). 
+When a user logs out, the Auth Service publishes an asynchronous `auth.token.revoked` event via NATS JetStream. Every active gateway receives this broadcast and inserts the token's unique ID (`jti`) into a local, in-memory LRU cache (or Bloom Filter).
 
 During request verification, the gateway performs an `O(1)` local memory lookup. If the `jti` is not found, the request proceeds immediately with zero network I/O. The `jti` is naturally evicted from memory once the token reaches its absolute `exp` expiration time.
 

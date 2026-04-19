@@ -14,14 +14,13 @@ keywords:
     pub sub,
     push pull hybrid,
   ]
-image: https://www.shutterstock.com/search/seo-cover
 ---
 
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="JetStream Topology & Consumption Strategy | Ocean Chat" />
   <meta property="og:description" content="Comprehensive guide to Ocean Chat's NATS JetStream topology, subject namespaces, and distributed consumption strategies for ten-million concurrent connections." />
-  <link rel="canonical" href="https://docs.oceanchat.com/docs/devdocs/jetstream-strategy" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" />
 </head>
 
 # NATS JetStream Topology & Strategy
@@ -71,6 +70,10 @@ flowchart LR
             REVOKE(auth.jwt.revoke):::subject
         end
 
+        subgraph S_EVENTS [Stream: AUTH_EVENTS]
+            AEVENTS(auth.event.*):::subject
+        end
+
         subgraph S_PIPE [Stream: DATA_PIPELINE]
             INDEX(pipeline.index.msg):::subject
         end
@@ -99,6 +102,7 @@ flowchart LR
     RS_P -- Tick --> TICK
     RS_P -- Offline Event --> PUSH
     AS_P -- Revoke --> REVOKE
+    AS_P -- Event --> AEVENTS
     MS_P -- Mongo Synced --> INDEX
     API_P -- Upload Event --> TASK
     API_P -- Read Receipt --> SYNC
@@ -108,6 +112,7 @@ flowchart LR
     DOWN -- Ephemeral Push --> WSG_C
     REVOKE -- Fan-out Broadcast --> WSG_C
     REVOKE -- Fan-out Broadcast --> API_P
+    AEVENTS -- Pull Queue Group --> MEDIA_C
     TICK -- Signal Push --> WSG_C
     PUSH -- Pull Queue Group --> PUSH_C
     INDEX -- Large Batch Pull --> DP_C
@@ -133,12 +138,21 @@ Streams in Ocean Chat are partitioned by **business domain** and **data retentio
 
 ### **AUTH_STATE (Global Security Stream)**
 
-- **Responsibility**: Distributes JWT revocation blacklists and security policies to support Zero-I/O local authentication.
-- **Retention**: WorkQueue or NATS KV Store (Rollup by Subject).
-- **Storage**: Memory or File.
+- **Responsibility**: Distributes JWT revocation blacklists and critical security policies to support Zero-I/O local authentication.
+- **Retention**: Limits (e.g., 15-30 minutes for quick recovery) or NATS KV Store.
+- **Storage**: Memory (Optimized for extreme low latency and fast broadcast).
 - **Producer**: Auth Service.
 - **Consumer**: All WebSocket Gateway and API Gateway instances.
-- **Strategy**: Fan-out Broadcast (No Queue Group).
+- **Strategy**: Native Ordered Consumer (Fan-out Broadcast without Queue Group).
+
+### **AUTH_EVENTS (Auth Business Events Stream)**
+
+- **Responsibility**: Stores historical and business events related to authentication (e.g., user logins, registrations) for asynchronous processing, auditing, and analytics.
+- **Retention**: Limits (e.g., 24+ hours) or WorkQueue depending on the specific event.
+- **Storage**: File (SSD) for persistence.
+- **Producer**: Auth Service.
+- **Consumer**: Audit, Stats, or other Business Services.
+- **Strategy**: Pull Consumer with Queue Group (At-Least-Once).
 
 ### **SYS_PRESENCE (Presence & Events Stream)**
 
@@ -170,6 +184,7 @@ The Subject hierarchy utilizes NATS wildcards (`*` and `>`) to enable precise ro
   - Connection Events: `presence.conn.online`, `presence.conn.offline`
 - **Authorization Control**
   - Token Revocation: `auth.jwt.revoke`
+  - Auth Events: `auth.event.user.loggedIn`, `auth.event.user.registered`
 
 ## 3. Microservice Consumption Strategies
 

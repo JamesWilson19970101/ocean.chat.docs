@@ -3,15 +3,25 @@ id: jwt-hybrid
 title: "Understanding the JWT Hybrid Mode"
 sidebar_label: "JWT Hybrid Mode"
 description: "An explanation of Ocean Chat's JWT Hybrid strategy, balancing performance and security by separating Access Tokens and Refresh Tokens."
-keywords: [ocean chat, jwt, hybrid auth, access token, refresh token, security, tokens, defense in depth, explanation]
-image: "https://www.shutterstock.com/search/seo-cover"
+keywords:
+  [
+    ocean chat,
+    jwt,
+    hybrid auth,
+    access token,
+    refresh token,
+    security,
+    tokens,
+    defense in depth,
+    explanation,
+  ]
 ---
 
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Understanding the JWT Hybrid Mode | Ocean Chat" />
   <meta property="og:description" content="An explanation of Ocean Chat's JWT Hybrid strategy, balancing performance and security by separating Access Tokens and Refresh Tokens." />
-  <link rel="canonical" href="https://docs.oceanchat.com/devdocs/jwt-hybrid" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/Auth%20Service/jwt-hybrid" />
 </head>
 
 # Understanding the JWT Hybrid Mode
@@ -31,14 +41,16 @@ To prevent this, the lifespan of the token must be drastically shortened. But a 
 The Hybrid Mode divides the authentication lifecycle into two specialized roles to address the competing needs of 99% of daily traffic versus the 1% of session renewals.
 
 ### The Access Token (AT)
-The Access Token is the "boarding pass" for routine API interactions. 
+
+The Access Token is the "boarding pass" for routine API interactions.
 
 - **Lifespan:** Extremely short (5 to 15 minutes).
 - **Validation:** Completely stateless. Validated locally by the API Gateway using [Zero-I/O cryptography](./understanding-zero-io-authentication.md).
-- **Storage Strategy:** Stored exclusively in **JavaScript memory variables** on the client. 
+- **Storage Strategy:** Stored exclusively in **JavaScript memory variables** on the client.
 - **The Rationale:** Storing in memory prevents CSRF attacks (as browsers don't append it automatically) and neutralizes XSS risks (it cannot be read from `localStorage`). If a page reloads, the memory clears, minimizing the attack window to mere minutes.
 
 ### The Refresh Token (RT)
+
 The Refresh Token is the "session key" used solely to acquire a new Access Token.
 
 - **Lifespan:** Long-lived (7 to 30 days).
@@ -56,13 +68,13 @@ When designing client-side storage, there are multiple alternatives:
 
 - **Local Storage:** Survives reloads and tabs, providing a seamless UX. However, it is directly exposed to XSS. If an attacker injects a script, they instantly steal the long-lived credentials.
 - **Session Storage:** Survives reloads within the same tab, but is still vulnerable to XSS.
-- **Memory + HttpOnly Cookies (Our Approach):** The most secure approach. The primary trade-off is a slight UX hit: opening a new tab or refreshing the page clears the Access Token from memory. The client must automatically transparently call the refresh endpoint to obtain a new AT before proceeding. 
+- **Memory + HttpOnly Cookies (Our Approach):** The most secure approach. The primary trade-off is a slight UX hit: opening a new tab or refreshing the page clears the Access Token from memory. The client must automatically transparently call the refresh endpoint to obtain a new AT before proceeding.
 
 ### Refresh Token Rotation
 
-To further secure the Refresh Token, Ocean Chat employs **Token Rotation**. 
+To further secure the Refresh Token, Ocean Chat employs **Token Rotation**.
 
-Every time the client uses an RT to get a new AT, the server issues a *brand new RT* alongside the new AT, invalidating the old RT in the database. If an attacker somehow steals an RT and attempts to use it after the legitimate user has already rotated it, the server detects a **Replay Attack**. It will immediately invalidate the entire session family, forcing the user to log in again.
+Every time the client uses an RT to get a new AT, the server issues a _brand new RT_ alongside the new AT, invalidating the old RT in the database. If an attacker somehow steals an RT and attempts to use it after the legitimate user has already rotated it, the server detects a **Replay Attack**. It will immediately invalidate the entire session family, forcing the user to log in again.
 
 ## Higher-Level Perspective
 

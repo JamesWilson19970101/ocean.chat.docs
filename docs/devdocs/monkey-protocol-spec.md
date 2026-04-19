@@ -20,7 +20,7 @@ keywords:
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Monkey Protocol Specification | Ocean Chat" />
   <meta property="og:description" content="Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 10M+ concurrent users." />
-  <link rel="canonical" href="https://docs.oceanchat.com/docs/devdocs/monkey-protocol-spec" />
+  <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/monkey-protocol-spec" />
 </head>
 
 # Monkey Protocol Specification

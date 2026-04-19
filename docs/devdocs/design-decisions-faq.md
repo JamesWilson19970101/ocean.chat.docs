@@ -71,3 +71,69 @@ When a new business requirement arises (e.g., a "Daily Login Rewards" system), w
 ### 4. Peak Load Smoothing (Traffic Shaping)
 
 During traffic spikes (e.g., a push notification causing 100,000 users to open the app simultaneously), downstream services like database auditing might be overwhelmed. NATS JetStream safely buffers these events on disk. The downstream services can then Pull the events at their maximum safe consumption rate without crashing, ensuring zero data loss while preserving system stability.
+
+---
+
+## Why use a custom `BoundedPublisherService` instead of libraries like `p-limit`?
+
+In high-throughput systems, the standard "Fire-and-Forget" pattern using `void js.publish()` is dangerous because it creates an unbounded number of Promises. While concurrency control libraries like `p-limit` are common, they are insufficient for protecting a 10M+ scale microservice.
+
+### 1. The "Hidden" Unbounded Array in `p-limit`
+
+`p-limit` effectively manages **Concurrency** (e.g., limiting active NATS requests to 100). However, it uses an **unbounded internal array** to store the backlog of tasks.
+
+If NATS slows down or network latency spikes, but the Auth Service continues to receive 10,000 requests/sec, `p-limit` will simply push those thousands of new Promises into its internal array every second. This array consumes **V8 Heap Memory** until it inevitably triggers a Node.js process crash with an **OOM (Out of Memory)** error.
+
+### 2. The Custom Solution: Bounded Backlog + Quota Isolation
+
+Our `BoundedPublisherService` was manually implemented to address the memory safety issues that `p-limit` ignores:
+
+- **Bounded Queue (Backpressure)**: Unlike `p-limit`, we enforce a `maxQueueSize` (e.g., 5000). Once reached, we proactively drop new tasks. This ensures the V8 heap remains stable regardless of NATS performance.
+- **Quota Isolation**: We implemented a priority mechanism where critical security signals (revocations) have a larger quota than business events (logins). This ensures that a surge in business events cannot "choke" the system's ability to revoke tokens.
+- **Zero Dependency & PnP Compatibility**: Avoided ESM/CommonJS compatibility issues with third-party libraries in our specific Yarn PnP environment.
+
+At 10M+ scale, **deterministic memory usage** is more critical than ensuring every single non-essential event is published.
+
+---
+
+## Why use the Modern NATS Consumer API instead of `js.subscribe()`?
+
+Older versions of the NATS client used `js.subscribe()` for both Push and Pull consumers. In modern NATS (v2.14+), this is deprecated in favor of a clearer, more powerful API.
+
+### 1. Ephemeral Ordered Consumers
+
+For Zero-I/O authentication, we use `js.consumers.get('AUTH_STATE', { filterSubjects: [...] })`. This automatically manages a high-performance **Ordered Consumer** on the client side. It is ephemeral, requires no server-side management, and automatically handles complex "Sequence Tracking" during network reconnects.
+
+### 2. Async Iteration (`consume()`)
+
+The new `.consume()` method returns an async iterator. This allows us to use standard `for await (...)` loops, making the consumption logic non-blocking, easy to read, and perfectly aligned with the Node.js event loop.
+
+---
+
+## Why enforce a strict "POJO-only" policy in Repositories?
+
+We strictly forbid the return of Mongoose `Document` instances from our Repository layer (BaseRepository). All methods like `find`, `findOne`, `create`, and `update` must return Plain Old JavaScript Objects (POJOs).
+
+### 1. Massive Memory/CPU Savings
+
+A Mongoose Document is an instance of a heavy class with internal state, change tracking, and dozens of methods. Instantiating a Document for every request in a 10M+ system causes massive GC (Garbage Collection) pressure and high CPU usage. POJOs are nearly zero-overhead.
+
+### 2. Implementation: `.lean()` and `.toObject()`
+
+- All read operations use `.lean()` to bypass Document instantiation entirely at the driver level.
+- All write operations (like `create`) immediately call `.toObject()` before returning to the Service layer.
+
+---
+
+## Why perform "Zero-Trust" validation on every NATS message?
+
+Even though NATS is internal to our VPC, we treat it as an untrusted source for data integrity (Zero-Trust).
+
+### 1. `plainToInstance` + `validateOrReject`
+
+Every incoming message is passed through `class-transformer` and `class-validator`. This ensures that even if a developer introduces a bug in a producer, the consumer will never process malformed dates (e.g., `Invalid Date`) or missing IDs that could corrupt our MongoDB.
+
+### 2. Precise ACK/NAK Routing
+
+- **Validation Failed**: We immediately `m.ack()` (acknowledge) the message. This tells NATS the message is "bad debt" and should be discarded, preventing infinite redelivery loops.
+- **Business/DB Failed**: We `m.nak()` (negative acknowledge) to trigger a redelivery, ensuring eventual consistency for transient infrastructure issues.

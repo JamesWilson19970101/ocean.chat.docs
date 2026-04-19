@@ -4,7 +4,7 @@ const sidebar: SidebarsConfig = {
   apisidebar: [
     {
       type: "doc",
-      id: "dev/ocean-chat-api",
+      id: "devdocs/API/ocean-chat-api",
     },
     {
       type: "category",
@@ -12,25 +12,25 @@ const sidebar: SidebarsConfig = {
       items: [
         {
           type: "doc",
-          id: "dev/auth-controller-login",
+          id: "devdocs/API/auth-controller-login",
           label: "AuthController_login",
           className: "api-method post",
         },
         {
           type: "doc",
-          id: "dev/auth-controller-register",
+          id: "devdocs/API/auth-controller-register",
           label: "AuthController_register",
           className: "api-method post",
         },
         {
           type: "doc",
-          id: "dev/auth-controller-refresh",
+          id: "devdocs/API/auth-controller-refresh",
           label: "AuthController_refresh",
           className: "api-method post",
         },
         {
           type: "doc",
-          id: "dev/auth-controller-logout",
+          id: "devdocs/API/auth-controller-logout",
           label: "AuthController_logout",
           className: "api-method post",
         },
@@ -42,7 +42,7 @@ const sidebar: SidebarsConfig = {
       items: [
         {
           type: "doc",
-          id: "dev/users-controller-get-my-profile",
+          id: "devdocs/API/users-controller-get-my-profile",
           label: "UsersController_getMyProfile",
           className: "api-method get",
         },

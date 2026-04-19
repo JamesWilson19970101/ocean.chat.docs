@@ -17,10 +17,11 @@
     "clean-api": "docusaurus clear && docusaurus clean-api-docs all"
   },
   "dependencies": {
-    "@docusaurus/core": "3.7.0",
-    "@docusaurus/preset-classic": "3.7.0",
-    "@docusaurus/theme-mermaid": "3.7.0",
+    "@docusaurus/core": "^3.10.0",
+    "@docusaurus/preset-classic": "^3.10.0",
+    "@docusaurus/theme-mermaid": "^3.10.0",
     "@mdx-js/react": "^3.0.0",
+    "@mermaid-js/layout-elk": "^0.1.9",
     "clsx": "^2.0.0",
     "docusaurus-plugin-openapi-docs": "^4.4.0",
     "docusaurus-theme-openapi-docs": "^4.4.0",
@@ -29,9 +30,9 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.7.0",
-    "@docusaurus/tsconfig": "3.7.0",
-    "@docusaurus/types": "3.7.0",
+    "@docusaurus/module-type-aliases": "^3.10.0",
+    "@docusaurus/tsconfig": "^3.10.0",
+    "@docusaurus/types": "^3.10.0",
     "path-browserify": "^1.0.1",
     "typescript": "~5.6.2"
   },

@@ -14,7 +14,6 @@ keywords:
     ocean chat,
     microservices,
   ]
-image: https://www.shutterstock.com/search/seo-cover
 ---
 
 <head>

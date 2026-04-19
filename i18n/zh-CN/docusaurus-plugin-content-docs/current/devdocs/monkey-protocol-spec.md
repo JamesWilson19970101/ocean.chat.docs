@@ -14,7 +14,6 @@ keywords:
     ocean chat,
     微服务,
   ]
-image: https://www.shutterstock.com/search/seo-cover
 ---
 
 <head>

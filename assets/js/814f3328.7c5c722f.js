@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[7472],{55513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Visions for OceanChat","permalink":"/ocean.chat.docs/blog/visions-for-oceanchat","unlisted":false,"date":"2025-11-26T00:00:00.000Z"}]}')}}]);

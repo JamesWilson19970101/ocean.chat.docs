@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkoceanchat_devdocs=self.webpackChunkoceanchat_devdocs||[]).push([[7472],{55513:e=>{e.exports=JSON.parse('{"title":"\u6700\u8fd1","items":[{"title":"OceanChat \u7545\u60f3","permalink":"/ocean.chat.docs/zh-CN/blog/visions-for-oceanchat","unlisted":false,"date":"2025-11-26T00:00:00.000Z"}]}')}}]);

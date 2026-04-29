@@ -235,3 +235,38 @@ Clients must maintain a local `MaxReceivedSeqId`. If a `MSG_DOWN` arrives with `
 
 - **Unread Counts (ZSET):** Ocean Chat avoids all `SELECT COUNT` operations in MongoDB. The `oceanchat-presence` service maintains a Redis ZSET per group containing the last 500 `MessageIds`. The user's `LastReadSeqID` is compared against this ZSET using the `ZCOUNT` command to resolve unread totals in O(log(N)) time.
 - **Read Receipts:** Sending a `[0x0B] READ_RECEIPT` from a PC client will be routed via NATS to all of the user's active mobile endpoints (via their respective `DeviceType` gateway connections), instantly clearing notification badges cross-device.
+
+## 8. Rich Media & File Transfer Architecture (Long-Short Connection Synergy)
+
+The Monkey Protocol is positioned for **high-concurrency signaling and short text transmission** (Control Plane). For large files such as images, voice, and video (Data Plane), the system strictly adopts a **Long-Short Connection Synergy** architecture.
+
+Directly transmitting large binary file streams via Monkey Protocol (WebSocket/TCP) is strictly prohibited. Doing so would lead to Gateway Out-of-Memory (OOM) and severe Head-of-Line (HOL) blocking, preventing critical signals (e.g., heartbeats) from being sent or received in time.
+
+### 8.1 Transmission Collaboration Process
+
+1.  **Short Connection (HTTP) Uploads Data Plane:** Clients upload file fragments directly to distributed object storage (e.g., OSS / AWS S3) via HTTP/HTTPS short connections. This phase can fully leverage CDN edge node acceleration and resumable upload features.
+2.  **Long Connection (Monkey Protocol) Delivers Control Plane:** After a successful file upload, the client obtains the file's download URL. Subsequently, the client encapsulates the URL and the file's metadata in a lightweight Protobuf payload and delivers it via the `MSG_UP` command of the Monkey Protocol.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant OSS as Distributed Object Storage (OSS/CDN)
+    participant Gateway as ws-gateway
+
+    note over Client, OSS: 1. Data Plane: HTTP Short Connection Upload
+    Client->>OSS: POST /api/v1/upload (Multimedia Binary Stream)
+    OSS-->>Client: 200 OK (Returns File URL)
+
+    note over Client, Gateway: 2. Control Plane: Monkey Protocol Long Connection Signaling
+    Client->>Gateway: [0x05] MSG_UP (Payload: Protobuf { MsgType: IMAGE, URL: "...", Width: 800, Height: 600 })
+    Gateway-->>Client: [0x06] MSG_UP_ACK
+```
+
+### 8.2 Payload Metadata Structure
+
+For non-text messages, the Payload only carries metadata, typically including:
+
+-   **Image:** URL, ThumbnailURL, Width, Height, Size, Format
+-   **Voice:** URL, Duration (in seconds), Size
+-   **File:** URL, FileName, Extension, Size
+

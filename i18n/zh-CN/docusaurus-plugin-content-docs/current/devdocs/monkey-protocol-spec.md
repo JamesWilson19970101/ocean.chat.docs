@@ -87,7 +87,7 @@ graph TD
 | 3      | `Cmd`     | 1 Byte   | `UInt8`   | 指令类型标识符（参见指令注册表）。            |
 | 4      | `Flags`   | 1 Byte   | `Bitmask` | 8 位标志位，用于控制协议特性（如压缩、ACK）。 |
 | 5      | `SeqId`   | 3 Bytes  | `UInt24`  | 序列号，用于匹配请求与响应。                  |
-| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（最大 16KB）。        |
+| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（硬限制最大 16KB）。  |
 | 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                 |
 
 :::warning 生产环境严禁使用 JSON
@@ -168,7 +168,7 @@ sequenceDiagram
     participant Query as oceanchat-query
     participant Receiver
 
-    Sender->>Gateway: [0x05] MSG_UP (GroupId: G1, Payload: 1MB 图片)
+    Sender->>Gateway: [0x05] MSG_UP (GroupId: G1, Payload: 图片元数据及URL)
     Gateway->>Router: 路由与持久化
     Router-->>Gateway: 通过 NATS 广播事件
 
@@ -180,12 +180,12 @@ sequenceDiagram
     Receiver->>Gateway: [0x09] SYNC_REQ (MsgId: 1001)
 
     Gateway->>Query: 请求 MsgId 1001 的内容
-    Query-->>Gateway: 1MB 图片数据
+    Query-->>Gateway: 图片元数据及URL
 
     note over Gateway: 3. 本地短缓存防御后端击穿
     note over Gateway: 接下来 9999 个针对 MsgId 1001 的 SYNC_REQ 将直接由网关内存极速响应。
 
-    Gateway-->>Receiver: [0x0A] SYNC_ACK (Payload: 1MB 图片)
+    Gateway-->>Receiver: [0x0A] SYNC_ACK (Payload: 图片元数据及URL)
 ```
 
 **网关本地短缓存 (Local Short-Cache)：** 网关维持一个短生命周期（如 3 秒）的 LRU 缓存。它通过直接从内存响应后续相同消息的 `SYNC_REQ`，有效阻止了针对后端服务的“缓存击穿”。
@@ -235,3 +235,38 @@ sequenceDiagram
 
 - **未读数降维打击 (ZSET)：** Ocean Chat 规避了所有在 MongoDB 中执行的 `SELECT COUNT` 操作。`oceanchat-presence` 服务在 Redis 中为每个群维护一个存储了近期 500 条消息 ID 的有序集合 (ZSET)。通过将用户的 `LastReadSeqID` 传入 `ZCOUNT` 命令，系统可在 O(log(N)) 复杂度下极速算出精确的未读数。
 - **已读回执广播：** 当用户在 PC 端阅读消息并发出了 `[0x0B] READ_RECEIPT` 信令后，该信令将经由 NATS 总线，根据设备类型 (`DeviceType`) 路由并广播至该用户当前活跃的所有移动端网关连接，实现跨设备的未读红点瞬间消除。
+
+## 8. 富媒体与文件传输架构 (长短链协同)
+
+Monkey Protocol 定位于**高并发信令与短文本传输**（控制面）。对于图片、语音、视频等大文件（数据面），系统强制采用**长短链结合**的架构。
+
+严禁通过 Monkey Protocol (WebSocket/TCP) 直接传输大体积文件二进制流，此举会导致网关内存溢出 (OOM) 并引发严重的队头阻塞 (Head-of-Line Blocking)，使得关键信令（如心跳包）无法及时收发。
+
+### 8.1 传输协作流程
+
+1. **短链接 (HTTP) 上传数据面：** 客户端直接通过 HTTP/HTTPS 短连接，将文件分片上传至分布式对象存储 (如 OSS / AWS S3)，此阶段可充分利用 CDN 边缘节点加速及断点续传特性。
+
+2. **长链接 (Monkey Protocol) 投递控制面：** 文件上传成功后，客户端获取文件的下载 URL。随后，客户端将该 URL 及文件的元数据封装在轻量级的 Protobuf 载荷中，通过 Monkey Protocol 的 MSG_UP 指令完成极速投递。
+
+```mermaid
+sequenceDiagram
+participant Client
+participant OSS as 分布式对象存储 (OSS/CDN)
+participant Gateway as ws-gateway
+
+    note over Client, OSS: 1. 数据面：HTTP 短链接上传实体文件
+    Client->>OSS: POST /api/v1/upload (多媒体二进制流)
+    OSS-->>Client: 200 OK (返回文件 URL)
+
+    note over Client, Gateway: 2. 控制面：Monkey Protocol 长链接分发信令
+    Client->>Gateway: [0x05] MSG_UP (Payload: Protobuf { MsgType: IMAGE, URL: "...", Width: 800, Height: 600 })
+    Gateway-->>Client: [0x06] MSG_UP_ACK
+```
+
+### 8.2 Payload 元数据结构
+
+对于非文本消息，Payload 内部只携带元数据，通常包含：
+
+- 图片：URL, ThumbnailURL, Width, Height, Size, Format
+- 语音：URL, Duration (时长秒数), Size
+- 文件：URL, FileName, Extension, Size

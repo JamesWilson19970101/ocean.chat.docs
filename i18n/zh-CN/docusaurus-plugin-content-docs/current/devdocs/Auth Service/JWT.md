@@ -68,7 +68,7 @@ Access Token 和 Refresh Token 必须使用完全不同的加密密钥 (`JWT_ACC
 
 - **Local Storage：** 在页面重新加载和新标签页中得以保留，提供无缝的用户体验。然而，它直接暴露于 XSS 之下。如果攻击者注入脚本，他们会立即窃取长期凭证。
 - **Session Storage：** 在同一标签页内的重新加载中得以保留，但仍然容易受到 XSS 攻击。
-- **内存 + HttpOnly Cookie (我们的方法)：** 最安全的方法。主要的权衡是对用户体验的轻微影响：打开新标签页或刷新页面会清除内存中的 Access Token。客户端必须自动透明地调用刷新接口，在继续之前获取新的 AT。
+- **内存 + HttpOnly Cookie (我的方法)：** 最安全的方法。主要的权衡是对用户体验的轻微影响：打开新标签页或刷新页面会清除内存中的 Access Token。客户端必须自动透明地调用刷新接口，在继续之前获取新的 AT。
 
 ### Refresh Token 轮换 (Token Rotation)
 

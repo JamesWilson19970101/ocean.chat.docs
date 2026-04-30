@@ -22,9 +22,9 @@ For example, education (tutors, fitness coaches, etc.) combined with users can a
 
 ## Personal Chat
 
-Consider how to make it entirely accessible to individual users. Here, we need to assume that individuals are "useful."
+Consider how to make it entirely accessible to individual users. Here, I need to assume that individuals are "useful."
 
-When introducing this feature, we need to consider that individuals can use their own PCs as servers.
+When introducing this feature, I need to consider that individuals can use their own PCs as servers.
 
 > Development Roadmap Of The Above Plans:
 >

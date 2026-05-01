@@ -55,7 +55,7 @@ This article mainly compares three message queue middlewares (RocketMQ vs Kafka 
 - Lightweight
     - Burden of RocketMQ/Kafka: RocketMQ and Kafka are both "heavy" middlewares based on JVM. Operating them requires understanding JVM tuning (heap size, GC strategy), deploying supporting components (RocketMQ's NameServer, Kafka's ZK/KRaft), and image sizes are often hundreds of MB.
     - Advantage of NATS: NATS is a statically compiled Go binary file.
-        - Deployment: `docker run nats` is enough, image < 20MB.
+        - Deployment: `docker run nats` is enough, image `< 20MB`.
         - Operations: No JVM GC pause issues, no external dependencies, minimal configuration.
         - Cluster: Automatic node discovery (Gossip), full mesh connection, scaling is extremely simple.
 

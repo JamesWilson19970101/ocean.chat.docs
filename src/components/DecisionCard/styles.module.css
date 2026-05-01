@@ -1,0 +1,149 @@
+.decisionCard {
+  border-left: 5px solid var(--ifm-color-emphasis-300);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.decisionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--ifm-color-emphasis-100);
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.categoryBadge {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.chevronExpanded {
+  transform: rotate(90deg);
+}
+
+.decisionSummary {
+  background-color: var(--ifm-color-emphasis-50);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px dashed var(--ifm-color-emphasis-300);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.decisionLabel {
+  color: var(--ifm-color-primary-darker);
+  font-weight: 800;
+  margin-right: 8px;
+  font-size: 0.85rem;
+}
+
+.decisionDetails {
+  margin-top: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--ifm-color-emphasis-200);
+  margin-bottom: 1rem;
+}
+
+.content {
+  font-size: 0.95rem;
+}
+
+.cardFooter {
+  padding: 8px 16px;
+  background-color: var(--ifm-color-emphasis-50);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  text-align: center;
+  cursor: pointer;
+}
+
+.footerLink {
+  font-size: 0.8rem;
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.footerLink:hover {
+  color: var(--ifm-color-primary-darker);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Severity styles */
+.critical {
+  border-left-color: var(--ifm-color-danger);
+}
+.critical .categoryBadge {
+  background-color: var(--ifm-color-danger);
+  color: white;
+}
+
+.important {
+  border-left-color: var(--ifm-color-warning);
+}
+.important .categoryBadge {
+  background-color: var(--ifm-color-warning);
+  color: black;
+}
+
+.info {
+  border-left-color: var(--ifm-color-info);
+}
+.info .categoryBadge {
+  background-color: var(--ifm-color-info);
+  color: white;
+}
+
+/* Category specific colors override severity for badge only if needed */
+.badge--nats {
+  background-color: #27aae1 !important;
+  color: white !important;
+}
+
+.badge--performance {
+  background-color: #f7931e !important;
+  color: white !important;
+}
+
+.badge--safety {
+  background-color: #00a651 !important;
+  color: white !important;
+}

@@ -2,7 +2,6 @@
 
 :::note The following business rules is fragmented and needed to be organized later.
 
-
 ## Room
 
 ### channel

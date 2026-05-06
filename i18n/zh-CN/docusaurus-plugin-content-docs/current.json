@@ -11,13 +11,17 @@
     "message": "帮助用户了解 oceanchat",
     "description": "The generated-index page description for category oceanchat - userdocs in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.oceanchat - devdocs": {
-    "message": "oceanchat - 开发者文档",
+  "sidebar.tutorialSidebar.category.devdocs": {
+    "message": "开发者文档",
     "description": "The label for category oceanchat - devdocs in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.ADR - Architecture Decision Records": {
-    "message": "ADR - 架构决策记录",
-    "description": "The label for category ADR - Architecture Decision Records in sidebar tutorialSidebar"
+  "sidebar.tutorialSidebar.category.Architecture Decision Records": {
+    "message": "决策记录",
+    "description": "The label for category Architecture Decision Records in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.coding spec": {
+    "message": "编码指引",
+    "description": "The label for category spec in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Auth Service": {
     "message": "认证服务",

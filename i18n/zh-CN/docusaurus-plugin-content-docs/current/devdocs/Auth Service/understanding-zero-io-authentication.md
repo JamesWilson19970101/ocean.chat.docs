@@ -2,21 +2,21 @@
 id: understanding-zero-io-authentication
 title: "理解零 I/O (Zero-I/O) 认证"
 sidebar_label: "零 I/O 认证"
-description: "解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在千万并发连接下消除网络瓶颈。"
+description: "解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在十万并发连接下消除网络瓶颈。"
 keywords:
-  [ocean chat, 零 i/o, 认证, 规模, 千万并发, rs256, 内存黑名单, 解释, 架构]
+  [ocean chat, 零 i/o, 认证, 规模, 十万并发, rs256, 内存黑名单, 解释, 架构]
 ---
 
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="理解零 I/O (Zero-I/O) 认证 | Ocean Chat" />
-  <meta property="og:description" content="解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在千万并发连接下消除网络瓶颈。" />
+  <meta property="og:description" content="解释 Ocean Chat 的零 I/O 认证架构，该架构利用 RS256 非对称加密和内存黑名单，在十万并发连接下消除网络瓶颈。" />
   <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/Auth%20Service/understanding-zero-io-authentication" />
 </head>
 
 # 理解零 I/O (Zero-I/O) 认证
 
-认证是 Ocean Chat 关键的访问关卡。然而，当平台扩展到 **数千万并发连接** 时，传统的远程认证验证将成为灾难性的瓶颈。
+认证是 Ocean Chat 关键的访问关卡。然而，当平台扩展到 **数十万并发连接** 时，传统的远程认证验证将成为灾难性的瓶颈。
 
 本文档解释了 Ocean Chat 的 **零 I/O 认证架构 (Zero-I/O Authentication Architecture)** 的概念基础，详细说明了它如何从受网络限制的检查转变为受 CPU 限制的加密运算，以确保无限的水平扩展性。
 

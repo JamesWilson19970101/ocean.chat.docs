@@ -2,7 +2,7 @@
 id: monkey-protocol-spec
 title: Monkey Protocol 协议规范
 sidebar_label: Monkey Protocol 协议规范
-description: Ocean Chat Monkey Protocol 综合参考规范。涵盖千万级并发 WebSocket 消息传递、推拉结合模型、微服务架构数据流及高可靠性保障机制。
+description: Ocean Chat Monkey Protocol 综合参考规范。涵盖十万级并发 WebSocket 消息传递、推拉结合模型、微服务架构数据流及高可靠性保障机制。
 keywords:
   [
     monkey protocol,
@@ -19,7 +19,7 @@ keywords:
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Monkey Protocol 协议规范 | Ocean Chat" />
-  <meta property="og:description" content="Ocean Chat Monkey Protocol 综合参考规范。涵盖千万级并发 WebSocket 消息传递、推拉结合模型、微服务架构数据流及高可靠性保障机制。" />
+  <meta property="og:description" content="Ocean Chat Monkey Protocol 综合参考规范。涵盖十万级并发 WebSocket 消息传递、推拉结合模型、微服务架构数据流及高可靠性保障机制。" />
   <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/monkey-protocol-spec" />
 </head>
 
@@ -91,7 +91,7 @@ graph TD
 | 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                 |
 
 :::warning 生产环境严禁使用 JSON
-为支撑千万级并发，严禁在 Payload 中进行 JSON 序列化。必须强制使用 **Protobuf**。这能节省 40% 以上的带宽，并极大降低网关的 CPU 解析开销。
+为支撑十万级并发，严禁在 Payload 中进行 JSON 序列化。必须强制使用 **Protobuf**。这能节省 40% 以上的带宽，并极大降低网关的 CPU 解析开销。
 :::
 
 ### 2.2 标志位 (`Flags`)

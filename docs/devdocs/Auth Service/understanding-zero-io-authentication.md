@@ -2,14 +2,14 @@
 id: understanding-zero-io-authentication
 title: "Understanding Zero-I/O Authentication"
 sidebar_label: "Zero-I/O Auth"
-description: "An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 10M concurrent connections."
+description: "An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 100k concurrent connections."
 keywords:
   [
     ocean chat,
     zero-io,
     authentication,
     scale,
-    10m concurrent,
+    100k concurrent,
     rs256,
     in-memory blacklist,
     explanation,
@@ -20,7 +20,7 @@ keywords:
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Understanding Zero-I/O Authentication | Ocean Chat" />
-  <meta property="og:description" content="An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 10M concurrent connections." />
+  <meta property="og:description" content="An explanation of Ocean Chat's Zero-I/O authentication, which uses RS256 asymmetric encryption and in-memory blacklists to eliminate network bottlenecks at 100k concurrent connections." />
   <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/Auth%20Service/understanding-zero-io-authentication" />
 </head>
 

@@ -2,7 +2,7 @@
 id: jetstream-strategy
 title: JetStream 拓扑与消费策略
 sidebar_label: JetStream 架构
-description: Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持千万级并发连接。
+description: Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。
 keywords:
   [ocean chat, nats, jetstream, 消息队列, 架构, 高并发, 发布订阅, 推拉结合]
 image: https://www.shutterstock.com/search/seo-cover
@@ -11,13 +11,13 @@ image: https://www.shutterstock.com/search/seo-cover
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="JetStream 拓扑与消费策略 | Ocean Chat" />
-  <meta property="og:description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持千万级并发连接。" />
+  <meta property="og:description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。" />
   <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" />
 </head>
 
 # NATS JetStream 拓扑与策略
 
-为了支持千万级并发连接，Ocean Chat 将 **NATS JetStream** 不仅作为消息中间件，更作为连接所有微服务的中枢神经系统。该拓扑严格隔离了高吞吐量数据流与控制流，并利用通配符路由实现精确的微服务消费策略。
+为了支持十万级并发连接，Ocean Chat 将 **NATS JetStream** 不仅作为消息中间件，更作为连接所有微服务的中枢神经系统。该拓扑严格隔离了高吞吐量数据流与控制流，并利用通配符路由实现精确的微服务消费策略。
 
 ## 架构概览图
 

@@ -3,7 +3,18 @@ id: auth-overview
 title: "Ocean Chat 认证架构"
 sidebar_label: "架构概览"
 description: "全面解析 Ocean Chat 认证服务，详细介绍 Zero-I/O 架构、JWT 混合策略以及最大化安全性与可扩展性的服务设计。"
-keywords: [ocean chat, 认证, auth 服务, 架构, zero-io, jwt 混合策略, 安全, 可扩展性, 概览]
+keywords:
+  [
+    ocean chat,
+    认证,
+    auth 服务,
+    架构,
+    zero-io,
+    jwt 混合策略,
+    安全,
+    可扩展性,
+    概览,
+  ]
 image: "https://www.shutterstock.com/search/seo-cover"
 ---
 
@@ -60,13 +71,13 @@ sequenceDiagram
     Gateway->>Auth: NATS RPC: auth.login
     Auth->>User: NATS RPC: user.verifyPassword
     User-->>Auth: 验证结果 (成功返回 UserID / 失败抛错)
-    
+
     rect rgb(230, 240, 255)
         Note over Auth: 生成令牌对
         Auth->>Auth: 签发 RS256 Access Token (AT)
         Auth->>DB: 存储 Refresh Token (RT) 状态
     end
-    
+
     Auth-->>Gateway: 返回 AT & RT
     Gateway-->>Client: HTTP 200 OK (Body: AT, Set-Cookie: RT)
 ```
@@ -84,13 +95,13 @@ sequenceDiagram
 
     Client->>Gateway: POST /api/v1/auth/refresh (Cookie: RT)
     Gateway->>Auth: NATS RPC: auth.refresh
-    
+
     rect rgb(255, 240, 230)
         Note over Auth,DB: 有状态验证
         Auth->>DB: 检查 RT 是否合法且未被撤销
         Auth->>DB: 轮换 RT (废弃旧 RT, 保存新 RT)
     end
-    
+
     Auth->>Auth: 签发新的 RS256 Access Token (AT)
     Auth-->>Gateway: 返回新的 AT & 新的 RT
     Gateway-->>Client: HTTP 200 OK (Body: 新 AT, Set-Cookie: 新 RT)
@@ -110,13 +121,13 @@ sequenceDiagram
     Client->>Gateway: POST /api/v1/auth/register
     Gateway->>Auth: NATS RPC: auth.register
     Auth->>User: NATS RPC: user.create
-    
+
     rect rgb(230, 240, 255)
         Note over User: 安全数据处理
         User->>User: Hash 加密密码
         User->>MongoDB: 插入 User 文档
     end
-    
+
     User-->>Auth: 安全的用户 DTO
     Auth-->>Gateway: 处理结果
     Gateway-->>Client: HTTP 201 Created
@@ -124,4 +135,4 @@ sequenceDiagram
 
 ## 总结
 
-通过严格的职责分离——将高频、无状态的验证工作下放给 `oceanchat-api-gateway`，将低频、有状态的会话管理交由 `oceanchat-auth` 服务负责——Ocean Chat 实现了一条高度安全的认证流水线，能够在不引发数据库 I/O 风暴的前提下，实现支撑千万级并发连接的水平扩展。
+通过严格的职责分离——将高频、无状态的验证工作下放给 `oceanchat-api-gateway`，将低频、有状态的会话管理交由 `oceanchat-auth` 服务负责——Ocean Chat 实现了一条高度安全的认证流水线，能够在不引发数据库 I/O 风暴的前提下，实现支撑十万级并发连接的水平扩展。

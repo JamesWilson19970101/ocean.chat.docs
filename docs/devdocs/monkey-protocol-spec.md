@@ -2,7 +2,7 @@
 id: monkey-protocol-spec
 title: Monkey Protocol Specification
 sidebar_label: Monkey Protocol Specification
-description: Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 10M+ concurrent users.
+description: Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 100k+ concurrent users.
 keywords:
   [
     monkey protocol,
@@ -19,7 +19,7 @@ keywords:
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Monkey Protocol Specification | Ocean Chat" />
-  <meta property="og:description" content="Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 10M+ concurrent users." />
+  <meta property="og:description" content="Comprehensive reference specification for the Ocean Chat Monkey Protocol. Covers high-concurrency WebSocket messaging, push-pull hybrid delivery, microservices architecture, and reliability mechanisms for 100k+ concurrent users." />
   <link rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/monkey-protocol-spec" />
 </head>
 
@@ -91,7 +91,7 @@ Every Monkey Protocol packet consists of a strict, fixed-length **12-byte Header
 | 12     | `Payload` | Variable | `Binary`  | **Protobuf** encoded payload.                                 |
 
 :::warning JSON is Prohibited in Production
-To achieve 10M concurrency, JSON serialization is strictly prohibited. You must use **Protobuf** for the `Payload`. This reduces bandwidth by 40%+ and drastically lowers CPU overhead on the gateway.
+To achieve 100k concurrency, JSON serialization is strictly prohibited. You must use **Protobuf** for the `Payload`. This reduces bandwidth by 40%+ and drastically lowers CPU overhead on the gateway.
 :::
 
 ### 2.2 Bit Flags (`Flags`)
@@ -266,7 +266,6 @@ sequenceDiagram
 
 For non-text messages, the Payload only carries metadata, typically including:
 
--   **Image:** URL, ThumbnailURL, Width, Height, Size, Format
--   **Voice:** URL, Duration (in seconds), Size
--   **File:** URL, FileName, Extension, Size
-
+- **Image:** URL, ThumbnailURL, Width, Height, Size, Format
+- **Voice:** URL, Duration (in seconds), Size
+- **File:** URL, FileName, Extension, Size

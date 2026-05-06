@@ -4,7 +4,7 @@ import TabItem from '@theme/TabItem';
 # Microservice Architecture
 
 :::info Architecture Overview
-The entire platform is a distributed microservice architecture designed to support 10 million-level (10M+) concurrency. It is divided into four logical layers, comprising 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
+The entire platform is a distributed microservice architecture designed to support 10 million-level (100k+) concurrency. It is divided into four logical layers, comprising 11 core microservices and 1 data processing pipeline, ensuring a clear separation of responsibilities.
 :::
 
 ## Technology Stack
@@ -35,7 +35,7 @@ This gateway is the sole entry point for external http requests.
 <TabItem value="resp" label="Core Responsibilities">
 
 - **Request Routing**: Core functionality. It serves as the sole entry point for all external RESTful API requests. Client HTTP requests for login, registration, retrieving user information, and querying history all arrive here first. Then, requests are forwarded to the appropriate services according to rules. For example, requests starting with `/auth/*` are forwarded to the `oceanchat-auth` service, and `/users/*` are forwarded to the `oceanchat-user` service.
-- **Authentication**: Implements **Zero-I/O Authentication**. It cryptographically verifies the RS256 Access Token and performs an `O(1)` local memory lookup against a token blacklist (populated via NATS JetStream events), entirely eliminating synchronous network I/O (like Redis queries) from the critical path to support 10M+ concurrency. Interfaces that do not require authentication are allowed directly.
+- **Authentication**: Implements **Zero-I/O Authentication**. It cryptographically verifies the RS256 Access Token and performs an `O(1)` local memory lookup against a token blacklist (populated via NATS JetStream events), entirely eliminating synchronous network I/O (like Redis queries) from the critical path to support 100k+ concurrency. Interfaces that do not require authentication are allowed directly.
 - **Rate Limiting**: For example, limiting the number of requests from the same IP address to 10 per second to protect backend services from overload.
 - **Logs and Monitoring**: Records all incoming and outgoing HTTP request logs for troubleshooting and performance analysis.
 

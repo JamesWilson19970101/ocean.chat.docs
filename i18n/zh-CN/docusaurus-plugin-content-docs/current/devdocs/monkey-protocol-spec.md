@@ -39,19 +39,22 @@ keywords:
 
 Ocean Chat 的架构严格将网络 I/O 与业务逻辑隔离。本协议依赖以下核心微服务运作：
 
-- **`oceanchat-ws-gateway`**: 绝对无状态。负责连接生命周期、协议编解码、微批处理（Micro-batching）、本地短缓存以及令牌桶限流。
+- **`oceanchat-ws-gateway`**: 绝对无状态。仅负责长连接生命周期、极简协议编解码、下行信令微批处理（Micro-batching）以及令牌桶限流。
+- **`oceanchat-api-gateway`**: 无状态 HTTP 网关。负责承接客户端 HTTP 请求（如增量数据拉取），提供限流与初步鉴权。
 - **`oceanchat-auth`**: 在初次建立连接握手时，负责校验 JWT。
 - **`oceanchat-presence`**: 管理 Redis 中的全局在线状态 (`UserId -> DeviceType -> Gateway IP`)。
 - **`oceanchat-router`**: 核心路由编排器，负责与 NATS JetStream 交互。
-- **`oceanchat-message`**: 强制执行写栅栏 (Write Fence) 机制，保障 MongoDB 的持久化，并生成全局唯一的 Sequence ID。
-- **`oceanchat-query`**: 负责处理离线用户或消息空洞情况下的历史消息同步 (`SYNC_REQ`)。
-- **`oceanchat-pusher-realtime`**: 通过 NATS 将下行消息 (`MSG_DOWN` / `MSG_NOTIFY`) 精准派发至对应的网关节点。
+- **`oceanchat-message`**: 负责生成全局唯一的 Sequence ID，并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
+- **`oceanchat-query`**: 负责处理离线唤醒或新消息到达、消息空洞情况下的增量消息同步 (基于 HTTP 短连接)。
+- **`oceanchat-orchestrator`**: 推送决策大脑，负责查询在线状态，并将消息拆分为在线唤醒通知 (`MSG_NOTIFY`) 或离线推送任务。
+- **`oceanchat-pusher-realtime`**: 负责在线信令的具体投递，将 `MSG_NOTIFY` 派发至指定的网关节点。
 
 ### 端到端数据流
 
 ```mermaid
 graph TD
     Client[客户端 App] -->|Monkey Protocol WS/TCP| Gateway[oceanchat-ws-gateway]
+    Client -->|HTTP/REST 短连接| APIGateway[oceanchat-api-gateway]
     Gateway -->|Monkey Protocol WS/TCP| Client
 
     subgraph 微服务集群
@@ -59,15 +62,17 @@ graph TD
         Gateway -->|NATS JetStream 交互| Router[oceanchat-router]
         Router -->|NATS JetStream 交互| Gateway
 
-        Router -->|存储消息| Message[oceanchat-message]
-        Message -->|写入| MongoDB[(MongoDB)]
+        Router -->|分发逻辑| Message[oceanchat-message]
+        Message -->|写入 WAL| NATS[NATS JetStream]
+        NATS -.->|Pull 拉取| Worker[MessagePersistence Worker]
+        Worker -.->|异步批量写入| MongoDB[(MongoDB)]
 
         Router -->|广播事件| Pusher[oceanchat-pusher-realtime]
         Pusher -->|查询路由| Presence[oceanchat-presence]
         Presence -->|读写会话数据| Redis[(Redis)]
         Redis -->|返回会话数据| Presence
 
-        Gateway -->|同步请求| Query[oceanchat-query]
+        APIGateway -->|HTTP 同步请求| Query[oceanchat-query]
         Query -->|读取| MongoDB
     end
 
@@ -80,15 +85,15 @@ graph TD
 
 ### 2.1 Header 布局
 
-| 偏移量 | 字段      | 大小     | 类型      | 说明                                          |
-| :----- | :-------- | :------- | :-------- | :-------------------------------------------- |
-| 0      | `Magic`   | 2 Bytes  | `UInt16`  | 魔数 `0x4D4B` ("MK")，用于标识协议。          |
-| 2      | `Version` | 1 Byte   | `UInt8`   | 协议版本号，用于前向兼容（当前：`0x01`）。    |
-| 3      | `Cmd`     | 1 Byte   | `UInt8`   | 指令类型标识符（参见指令注册表）。            |
-| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8 位标志位，用于控制协议特性（如压缩、ACK）。 |
-| 5      | `SeqId`   | 3 Bytes  | `UInt24`  | 序列号，用于匹配请求与响应。                  |
-| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（硬限制最大 16KB）。  |
-| 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                 |
+| 偏移量 | 字段      | 大小     | 类型      | 说明                                                             |
+| :----- | :-------- | :------- | :-------- | :--------------------------------------------------------------- |
+| 0      | `Magic`   | 2 Bytes  | `UInt16`  | 魔数 `0x4D4B` ("MK")，用于标识协议。                             |
+| 2      | `Version` | 1 Byte   | `UInt8`   | 协议版本号，用于前向兼容（当前：`0x01`）。                       |
+| 3      | `Cmd`     | 1 Byte   | `UInt8`   | 指令类型标识符（参见指令注册表）。                               |
+| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8 位标志位，用于控制协议特性（如压缩、ACK）。                    |
+| 5      | `ReqId`   | 3 Bytes  | `UInt24`  | Request ID，用于在当前连接中匹配请求与响应。达到上限后循环使用。 |
+| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（硬限制最大 16KB）。                     |
+| 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                                    |
 
 :::warning 生产环境严禁使用 JSON
 为支撑十万级并发，严禁在 Payload 中进行 JSON 序列化。必须强制使用 **Protobuf**。这能节省 40% 以上的带宽，并极大降低网关的 CPU 解析开销。
@@ -104,19 +109,16 @@ graph TD
 
 ## 3. 指令注册表 (`Cmd`)
 
-| Cmd Hex | 指令名         | 方向             | 说明                                                                      |
-| :------ | :------------- | :--------------- | :------------------------------------------------------------------------ |
-| `0x01`  | `AUTH_REQ`     | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId` 及 JWT。            |
-| `0x02`  | `AUTH_ACK`     | Server -> Client | 认证结果响应。                                                            |
-| `0x03`  | `PING`         | Client -> Server | 保活心跳请求（Payload 必须为空）。                                        |
-| `0x04`  | `PONG`         | Server -> Client | 保活心跳响应（Payload 必须为空）。                                        |
-| `0x05`  | `MSG_UP`       | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。           |
-| `0x06`  | `MSG_UP_ACK`   | Server -> Client | 服务端确认收到上行消息。                                                  |
-| `0x07`  | `MSG_DOWN`     | Server -> Client | 服务端下行推送消息（适用于私聊或小群聊）。                                |
-| `0x08`  | `MSG_NOTIFY`   | Server -> Client | 大群聊下的“推拉结合”新消息事件通知。Payload 仅包含 `GroupId` 和 `MsgId`。 |
-| `0x09`  | `SYNC_REQ`     | Client -> Server | 客户端请求拉取离线或出现空洞的消息。Payload 包含需同步的 `SeqId` 范围。   |
-| `0x0A`  | `SYNC_ACK`     | Server -> Client | 返回客户端拉取的具体消息数组。                                            |
-| `0x0B`  | `READ_RECEIPT` | Both             | 多端已读回执同步信令。                                                    |
+| Cmd Hex | 指令名         | 方向             | 说明                                                                                       |
+| :------ | :------------- | :--------------- | :----------------------------------------------------------------------------------------- |
+| `0x01`  | `AUTH_REQ`     | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId` 及 JWT。                             |
+| `0x02`  | `AUTH_ACK`     | Server -> Client | 认证结果响应。                                                                             |
+| `0x03`  | `PING`         | Client -> Server | 保活心跳请求（Payload 必须为空）。                                                         |
+| `0x04`  | `PONG`         | Server -> Client | 保活心跳响应（Payload 必须为空）。                                                         |
+| `0x05`  | `MSG_UP`       | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。                            |
+| `0x06`  | `MSG_UP_ACK`   | Server -> Client | 服务端确认收到上行消息。                                                                   |
+| `0x08`  | `MSG_NOTIFY`   | Server -> Client | 全局“推拉结合”新消息事件通知（仅唤醒，无实体）。Payload 仅包含目标会话和最新 `SyncSeqId`。 |
+| `0x0B`  | `READ_RECEIPT` | Both             | 多端已读回执同步信令。                                                                     |
 
 ## 4. 连接生命周期与安全防线
 
@@ -151,19 +153,22 @@ Ocean Chat 摒弃了僵化的定时心跳策略。
 
 ### 4.3 流量整形与防雪崩限流
 
-- **令牌桶限流：** 网关层限制单条连接的 `MSG_UP` 速率上限（例如 5次/秒）。违规数据包将被立即丢弃，并向客户端返回明确的错误码。
+- **分层令牌桶限流：**
+  - **连接层 (网关执行)：** 网关层基于单条物理连接限制总体请求速率上限（防恶意刷包，如 20次/秒）。违规数据包将被立即丢弃。
+  - **业务层 (路由执行)：** 路由层在解码后，基于 `UserId` 执行更高维度的业务限流（如限制用户每秒 100 条业务消息），以防止分布式协同攻击，拦截时可返回业务错误码。
 - **指数退避重连：** 当网络异常断开时，客户端**严禁**立即疯狂重连。必须实施带随机抖动的指数退避（Exponential Backoff，如 1s, 2s, 4s, 8s），以防止产生瞬间压垮 `oceanchat-auth` 的认证风暴。
 
 ## 5. 消息投递模型
 
-### 5.1 超大群聊：推拉结合 (Push-Pull Hybrid)
+### 5.1 全局消息投递：长短链推拉结合 (Push-Pull Hybrid)
 
-对于超过 1000 人的大群，**严禁使用写扩散模式 (Write-Diffusion)**。向 10 万名成员瞬间并发推送大载荷将导致出口带宽崩溃。Ocean Chat 采用**推拉结合**模型。
+为了保持长连接网关的极高吞吐并防止大载荷引发队头阻塞，Ocean Chat 摒弃了服务器直接将消息实体“塞”给客户端的做法，全局采用**长短链结合的推拉**模型。长连接只负责“推”极轻量的唤醒信令，短连接 (HTTP) 负责“拉”实际数据。
 
 ```mermaid
 sequenceDiagram
     participant Sender
     participant Gateway as ws-gateway
+    participant APIGateway as api-gateway
     participant Router as oceanchat-router
     participant Query as oceanchat-query
     participant Receiver
@@ -172,64 +177,71 @@ sequenceDiagram
     Gateway->>Router: 路由与持久化
     Router-->>Gateway: 通过 NATS 广播事件
 
-    note over Gateway, Receiver: 1. 极轻量级的事件推送 (写扩散通知)
-    Gateway->>Receiver: [0x08] MSG_NOTIFY (GroupId: G1, NewMsgId: 1001)
+    note over Gateway, Receiver: 1. 长连接只推极轻量级的唤醒信令
+    Gateway->>Receiver: [0x08] MSG_NOTIFY (GroupId: G1, SyncSeqId: 1001)
 
     note over Receiver: 若用户当前正注视 G1 的聊天界面:
-    note over Gateway, Receiver: 2. 客户端按需拉取实体内容 (读扩散内容)
-    Receiver->>Gateway: [0x09] SYNC_REQ (MsgId: 1001)
+    note over Receiver, APIGateway: 2. 客户端通过 HTTP 短连接拉取增量实体
+    Receiver->>APIGateway: GET /api/v1/messages/sync?seqId=1000
 
-    Gateway->>Query: 请求 MsgId 1001 的内容
-    Query-->>Gateway: 图片元数据及URL
+    APIGateway->>Query: 请求大于 1000 的消息
+    Query-->>APIGateway: 图片元数据及URL
 
-    note over Gateway: 3. 本地短缓存防御后端击穿
-    note over Gateway: 接下来 9999 个针对 MsgId 1001 的 SYNC_REQ 将直接由网关内存极速响应。
-
-    Gateway-->>Receiver: [0x0A] SYNC_ACK (Payload: 图片元数据及URL)
+    APIGateway-->>Receiver: HTTP 200 OK (Payload: 消息数组)
 ```
 
-**网关本地短缓存 (Local Short-Cache)：** 网关维持一个短生命周期（如 3 秒）的 LRU 缓存。它通过直接从内存响应后续相同消息的 `SYNC_REQ`，有效阻止了针对后端服务的“缓存击穿”。
+**防击穿缓存策略 (Cache Breakdown Defense)**： 大群消息瞬间通知海量用户时，客户端并发发起 HTTP 同步请求。oceanchat-query 服务或 API 网关必须利用 Redis 缓存及“分布式锁/单飞队列 (Singleflight)”机制合并针对相同 SyncSeqId 范围的并发查询，以避免击穿到底层 MongoDB。
 
-### 5.2 微批打包合并 (Micro-Batching)
+### 5.2 通知折叠与微批处理 (Notification Collapse & Micro-Batching)
 
-为最大化吞吐量并大幅减少软中断，`oceanchat-ws-gateway` 实行微批处理机制。如果从 NATS 总线上，在 200 毫秒的时间窗口内有 10 条发往同一用户的下行消息，网关会将它们打包为一个 Protobuf 数组 Payload，并仅附带**一个** 12 字节的 Header 下发给客户端。
+为最大化吞吐量并大幅减少软中断，`oceanchat-ws-gateway` 实行信令折叠与微批处理机制。如果从 NATS 总线上，在 200 毫秒的时间窗口内连续产生多条发往同一用户、同一会话的新消息事件，网关**不会**下发多个 `MSG_NOTIFY`。网关会自动进行折叠，仅保留带有最大 `SyncSeqId` 的那**一个** `MSG_NOTIFY` 唤醒信令下发。客户端收到后只需发起一次 HTTP Sync，即可拉取到这期间产生的所有增量。
 
 ## 6. 可靠性与时序保障
 
-### 6.1 确保绝对一致性的写栅栏 (Write Fence)
+### 6.1 写后持久化与最终一致性保障
 
-一条消息只有在完成持久化并成功进入高可用实时分发队列后，才会被视为“已成功处理”。
+为了支撑十万级高并发，Ocean Chat 采用**写后持久化 (Write-after-persistence)** 的异步方案。一条消息只要成功写入高可用的 NATS JetStream（预写日志 WAL）并返回 ACK，即向网关返回成功，不再等待 MongoDB 的持久化动作。
 
 ```mermaid
 sequenceDiagram
     participant Gateway
     participant Message as oceanchat-message
+    participant NATS as NATS JetStream (WAL)
+    participant Worker as MessagePersistence Worker
     participant DB as MongoDB
-    participant NATS as NATS JetStream
 
     Gateway->>Message: 路由转发 MSG_UP
-    Message->>DB: 1. 异步写入 MongoDB
-    Message->>NATS: 2. 异步发布至 NATS Subject
+    Message->>NATS: 1. 发布至 NATS Subject
 
-    note right of Message: 写栅栏 (Write Fence) 屏障
-    DB-->>Message: DB 写入确认
     NATS-->>Message: NATS 发布确认 (ACK)
 
-    note left of Message: 两个前置条件均满足
+    note left of Message: 写入高可用队列即视为成功
     Message-->>Gateway: 事务处理成功
     Gateway->>Client: [0x06] MSG_UP_ACK
+
+    note over NATS, DB: 后台异步持久化 (Write-after-persistence)
+    Worker->>NATS: 2. 批量 Pull 消息
+    Worker->>DB: 3. 批量写入 MongoDB
 ```
 
 ### 6.2 幂等性保障 (Idempotency)
 
 客户端每次发送 `MSG_UP` 必须生成唯一的 UUID (`ClientMsgId`)。若客户端在收到 `MSG_UP_ACK` 前因断网重试，后端通过 Redis 中的 SET 结构（`UserID + ClientMsgId`）优雅实现去重拦截，防止在数据库中产生重复记录。
 
-### 6.3 消息空洞检测与自愈 (Message Hole Detection)
+### 6.3 SyncSeqId 与消息空洞检测 (Self-Healing)
 
-客户端需在本地维护 `MaxReceivedSeqId`。如果下行的 `MSG_DOWN` 携带了 `SeqId=105`，而本地的最高纪录是 `103`，则说明产生了**消息空洞**。
+为了支撑极高并发，Ocean Chat 在消息同步上采用了**基于号段预分配**的机制（类似微信的 seqsvr）。
+为了避免混淆，协议中严格区分了两种 ID 概念：
 
-- 客户端**绝不能**直接在界面渲染消息 `105`。
-- 它必须暂存 `105`，并立刻发起针对 `104` 的 `SYNC_REQ` 请求，待序列完全连续后，方可合并渲染至聊天流中。
+1. **`ReqId` (Header 中，24 位)：** 仅用于底层 TCP/WS 连接的 RPC 匹配（如映射 `MSG_UP` 与 `MSG_UP_ACK`）。达到上限后循环使用，不持久化。
+2. **`SyncSeqId` (Payload 中，64 位)：** 由 `oceanchat-message` 分配的、会话级别的单调递增版本号。由于内存号段预分配机制，**`SyncSeqId` 可能是不连续的**（例如服务器重启后可能从 100 直接跳跃到 1000）。
+
+客户端需在本地维护 `MaxLocalSyncSeqId`。如果下行收到的 `MSG_NOTIFY` 携带的 `SyncSeqId` 大于本地的 `MaxLocalSyncSeqId`，则说明有**新消息**到达或产生了**消息空洞**。
+
+- 由于 `SyncSeqId` 允许合法跳跃，客户端**无法猜测**中间缺失了哪些 ID。
+- 客户端**绝不能**直接在界面渲染伪造的消息空壳。
+- 它必须暂存该唤醒通知，并立刻通过 **HTTP 短连接** 发起包含当前 `MaxLocalSyncSeqId` 的增量同步请求。
+- `oceanchat-query` 服务将通过 HTTP 响应从数据库中查出所有严格大于该 ID 的增量消息并返回。随后客户端将本地 `MaxLocalSyncSeqId` 游标更新为最新收到的值，并渲染真实消息。
 
 ## 7. 多端漫游同步
 

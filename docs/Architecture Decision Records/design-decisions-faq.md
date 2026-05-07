@@ -24,7 +24,7 @@ import DecisionCard from '@site/src/components/DecisionCard';
 <head>
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="og:title" content="Design Decisions & Architecture FAQ | Ocean Chat" />
-  <meta property="og:description" content="Deep dive into the core architectural decisions of Ocean Chat, covering NATS JetStream, event-driven authorization, and 10M+ concurrency patterns." />
+  <meta property="og:description" content="Deep dive into the core architectural decisions of Ocean Chat, covering NATS JetStream, event-driven authorization, and 100k+ concurrency patterns." />
   <link rel="canonical" href="https://docs.oceanchat.com/docs/devdocs/design-decisions-faq" />
 </head>
 
@@ -34,11 +34,12 @@ This document provides a technical deep dive into the architectural rationale be
 
 ## NATS & Event-Driven Architecture
 
-<DecisionCard 
-  title="Why isolate AUTH_STATE and AUTH_EVENTS into separate streams?" 
-  category="NATS" 
-  severity="critical"
-  summary="Strictly isolate Control Plane (revocations) from Data Plane (logins) to protect security signals from business traffic surges."
+<DecisionCard
+title="Why isolate AUTH_STATE and AUTH_EVENTS into separate streams?"
+category="NATS"
+severity="critical"
+summary="Strictly isolate Control Plane (revocations) from Data Plane (logins) to protect security signals from business traffic surges."
+
 >
 
 In NATS JetStream, a Stream is a lightweight logical construct. The true cost lies in network bandwidth and CPU cycles during consumption. We enforce strict isolation for three reasons:
@@ -49,23 +50,25 @@ In NATS JetStream, a Stream is a lightweight logical construct. The true cost li
 
 </DecisionCard>
 
-<DecisionCard 
-  title="Why publish loggedIn events via NATS instead of direct RPC?" 
-  category="NATS" 
-  severity="important"
-  summary="Eliminate synchronous blocking from the critical login path and enable infinite scalability for downstream consumers."
+<DecisionCard
+title="Why publish loggedIn events via NATS instead of direct RPC?"
+category="NATS"
+severity="important"
+summary="Eliminate synchronous blocking from the critical login path and enable infinite scalability for downstream consumers."
+
 >
 
 1.  **Extreme Decoupling**: The Auth Service remains unaware of downstream consumers (Presence, Analytics, etc.).
-2.  **Zero Synchronous Blocking**: To support 10M+ concurrency, the login API must respond in `< 50ms`. NATS removes all downstream network I/O from the critical path.
+2.  **Zero Synchronous Blocking**: To support 100k+ concurrency, the login API must respond in `< 50ms`. NATS removes all downstream network I/O from the critical path.
 3.  **Traffic Shaping**: During massive surges (e.g., global push notifications), NATS buffers events on disk, allowing downstream services to pull data at their maximum safe rate without crashing.
 
 </DecisionCard>
 
-<DecisionCard 
-  title="Why use the Modern NATS Consumer API over js.subscribe()?" 
-  category="NATS" 
-  summary="Leverage Ephemeral Ordered Consumers for better reliability and align with the Node.js event loop using async iteration."
+<DecisionCard
+title="Why use the Modern NATS Consumer API over js.subscribe()?"
+category="NATS"
+summary="Leverage Ephemeral Ordered Consumers for better reliability and align with the Node.js event loop using async iteration."
+
 >
 
 1.  **Ephemeral Ordered Consumers**: Automatically handles sequence tracking and sequence resets during network reconnects without manual server-side management.
@@ -75,11 +78,12 @@ In NATS JetStream, a Stream is a lightweight logical construct. The true cost li
 
 ## Performance & Memory Safety
 
-<DecisionCard 
-  title="Why use a custom BoundedPublisherService instead of p-limit?" 
-  category="Performance" 
-  severity="critical"
-  summary="Prevent V8 Heap Memory OOM by enforcing hard limits on the task backlog and prioritizing critical security traffic."
+<DecisionCard
+title="Why use a custom BoundedPublisherService instead of p-limit?"
+category="Performance"
+severity="critical"
+summary="Prevent V8 Heap Memory OOM by enforcing hard limits on the task backlog and prioritizing critical security traffic."
+
 >
 
 Standard concurrency libraries like `p-limit` use an **unbounded internal array** for task backlogs. Under extreme load, this array consumes the V8 heap until an **OOM (Out of Memory)** crash occurs. Our custom solution provides:
@@ -89,24 +93,26 @@ Standard concurrency libraries like `p-limit` use an **unbounded internal array*
 
 </DecisionCard>
 
-<DecisionCard 
-  title="Why enforce a strict 'POJO-only' policy in Repositories?" 
-  category="Performance" 
-  severity="important"
-  summary="Reduce Garbage Collection (GC) pressure and CPU overhead by entirely bypassing Mongoose Document instantiation."
+<DecisionCard
+title="Why enforce a strict 'POJO-only' policy in Repositories?"
+category="Performance"
+severity="important"
+summary="Reduce Garbage Collection (GC) pressure and CPU overhead by entirely bypassing Mongoose Document instantiation."
+
 >
 
-Mongoose `Document` instances are heavy classes with complex internal state. At 10M+ scale, they trigger massive Garbage Collection (GC) pressure.
+Mongoose `Document` instances are heavy classes with complex internal state. At 100k+ scale, they trigger massive Garbage Collection (GC) pressure.
 
 - **Read Operations**: Use `.lean()` to bypass Document instantiation at the driver level.
 - **Write Operations**: Immediately call `.toObject()` before returning to the Service layer.
 
 </DecisionCard>
 
-<DecisionCard 
-  title="Why perform 'Zero-Trust' validation on internal NATS messages?" 
-  category="Safety" 
-  summary="Treat internal infrastructure as an untrusted source to prevent malformed data from corrupting the primary database."
+<DecisionCard
+title="Why perform 'Zero-Trust' validation on internal NATS messages?"
+category="Safety"
+summary="Treat internal infrastructure as an untrusted source to prevent malformed data from corrupting the primary database."
+
 >
 
 We treat internal infrastructure as an untrusted source for data integrity.
@@ -118,11 +124,12 @@ We treat internal infrastructure as an untrusted source for data integrity.
 
 ## Caching Strategy
 
-<DecisionCard 
-  title="Authorization Cache Eventual Consistency" 
-  category="Caching" 
-  severity="important"
-  summary="Adopt L1/L2 dual-tier caching with a 10s TTL to protect MongoDB/Redis from request tidal waves."
+<DecisionCard
+title="Authorization Cache Eventual Consistency"
+category="Caching"
+severity="important"
+summary="Adopt L1/L2 dual-tier caching with a 10s TTL to protect MongoDB/Redis from request tidal waves."
+
 >
 
 Querying MongoDB or Redis for every permission check is impossible at our scale. We use a two-tier strategy in `RoleCacheService`:
@@ -138,29 +145,35 @@ Permission changes (e.g., revoking a member) take up to **10 seconds** to propag
 
 ## Messaging Architecture
 
-<DecisionCard 
-  title="Control Plane vs Data Plane" 
-  category="Messaging" 
-  severity="important"
-  summary="Use Pure WebSocket for high-frequency signaling and Hybrid HTTP/WS for rich media to prevent pipeline blocking."
+<DecisionCard
+title="Control Plane vs Data Plane"
+category="Messaging"
+severity="important"
+summary="Use Pure WebSocket for high-frequency signaling and Hybrid HTTP/WS for rich media to prevent pipeline blocking."
+
 >
 
 ### Control Plane: Pure Long Connection
+
 The `MSG_UP` command allows sending text directly over the WebSocket/TCP channel.
+
 - **Overhead Compression**: Uses a fixed 12-byte binary header + Protobuf, eliminating the massive overhead of HTTP headers.
 - **Smart Keep-Alive**: Every upstream message refreshes the connection TTL, allowing the client to skip dedicated PING heartbeats and save mobile battery.
 
 ### Data Plane: Hybrid Connections
+
 For rich media (images, voice), we avoid saturating the WebSocket pipeline:
+
 1.  **Upstream (HTTP)**: Clients upload chunks to OSS via standard HTTP `POST`/`PUT`.
 2.  **Downstream (WebSocket)**: The client delivers an ultra-lightweight Protobuf notification (URL + metadata) via `MSG_UP` for the gateway to push.
 
 </DecisionCard>
 
-<DecisionCard 
-  title="Statelessness & Idempotency" 
-  category="Messaging" 
-  summary="Architect for absolute horizontal scaling and full-chain idempotency to survive network jitter and traffic surges."
+<DecisionCard
+title="Statelessness & Idempotency"
+category="Messaging"
+summary="Architect for absolute horizontal scaling and full-chain idempotency to survive network jitter and traffic surges."
+
 >
 
 - **Stateless Gateway**: `oceanchat-ws-gateway` is a pure byte-stream packer. Business logic is isolated in the routing layer.

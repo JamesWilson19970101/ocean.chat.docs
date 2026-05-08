@@ -1,7 +1,7 @@
 ---
 id: online-message-reliability
 title: 如何保证在线消息的可靠性
-description: 指南：如何在 Ocean Chat 中实现应用层 ACK、幂等去重和序列号追踪，以确保消息零丢失。
+description: 如何在 Ocean Chat 中实现应用层 ACK、幂等去重和序列号追踪，以确保消息零丢失。
 keywords: [ocean chat, 消息可靠性, ack, 序列号, 幂等性, nats]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---

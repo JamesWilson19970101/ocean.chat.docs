@@ -1,11 +1,23 @@
 ---
 id: offline-message-reliability
 title: How to Guarantee Offline Message Reliability
-description: Guide: How to guarantee zero offline message loss in Ocean Chat using the NATS JetStream WAL, paginated HTTP Sync, and client-side deduplication.
-keywords: [ocean chat, offline messages, reliability, ack, deduplication, sync, nats, monkey protocol]
+description: How to guarantee zero offline message loss in Ocean Chat using the NATS JetStream WAL, paginated HTTP Sync, and client-side deduplication.
+keywords:
+  [
+    ocean chat,
+    offline messages,
+    reliability,
+    ack,
+    deduplication,
+    sync,
+    nats,
+    monkey protocol,
+  ]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 image: https://docs.oceanchat.com/img/social-card.png
 ---
+
+# How to Guarantee Offline Message Reliability
 
 This guide details how to implement absolute reliable delivery for offline messages in Ocean Chat. When users are offline, the system must safely persist messages and trigger third-party offline notifications. Upon reconnection, the system must guarantee the accurate delivery of messages without producing duplicates or causing network overload.
 

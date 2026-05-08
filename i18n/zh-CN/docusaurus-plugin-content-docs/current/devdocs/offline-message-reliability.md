@@ -1,11 +1,13 @@
 ---
 id: offline-message-reliability
 title: 如何保证离线消息的可靠性
-description: 指南：如何在 Ocean Chat 中利用 NATS JetStream WAL、分页 HTTP Sync 同步和客户端去重来确保离线消息零丢失。
+description: 如何在 Ocean Chat 中利用 NATS JetStream WAL、分页 HTTP Sync 同步和客户端去重来确保离线消息零丢失。
 keywords: [ocean chat, 离线消息, 可靠性, ack, 去重, 同步, nats, monkey protocol]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 image: https://docs.oceanchat.com/img/social-card.png
 ---
+
+# 如何保证离线消息的可靠性
 
 本指南详细介绍了如何在 Ocean Chat 中实现离线消息的绝对可靠投递。当用户离线时，系统必须安全地持久化消息并触发第三方离线通知。当用户重新连接时，系统必须保证消息的准确送达，同时避免产生重复消息或导致网络过载。
 

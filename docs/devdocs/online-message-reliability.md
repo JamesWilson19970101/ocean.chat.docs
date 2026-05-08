@@ -1,10 +1,13 @@
 ---
 id: online-message-reliability
 title: How to Guarantee Online Message Reliability
-description: Guide: How to implement application-layer ACKs, idempotent deduplication, and sequence number tracking in Ocean Chat to ensure zero message loss.
-keywords: [ocean chat, message reliability, ack, sequence number, idempotency, nats]
+description: How to implement application-layer ACKs, idempotent deduplication, and sequence number tracking in Ocean Chat to ensure zero message loss.
+keywords:
+  [ocean chat, message reliability, ack, sequence number, idempotency, nats]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
+
+# How to Guarantee Online Message Reliability
 
 This guide details how to implement absolute online message reliability in Ocean Chat. Due to issues such as "fake online" states, intermediate network packet loss, and application-layer crashes, relying solely on TCP-layer reliability is far from sufficient in an Instant Messaging (IM) system.
 

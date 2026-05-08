@@ -1,9 +1,18 @@
 ---
 id: message-sending-persistence-flow
 title: Message Sending and Persistence Flow
-description: Guide: How Ocean Chat microservices and JetStream work together to handle message sending and asynchronous persistence under hundreds of thousands of concurrent connections.
+description: How Ocean Chat microservices and JetStream work together to handle message sending and asynchronous persistence under hundreds of thousands of concurrent connections.
 keywords:
-  [ocean chat, message sending, persistence, database, microservices, nats jetstream, wal, write fence]
+  [
+    ocean chat,
+    message sending,
+    persistence,
+    database,
+    microservices,
+    nats jetstream,
+    wal,
+    write fence,
+  ]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
 

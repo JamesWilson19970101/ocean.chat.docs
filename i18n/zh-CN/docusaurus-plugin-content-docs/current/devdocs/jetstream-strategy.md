@@ -1,7 +1,6 @@
 ---
 id: jetstream-strategy
 title: JetStream 拓扑与消费策略
-sidebar_label: JetStream 架构
 description: Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。
 keywords:
   [ocean chat, nats, jetstream, 消息队列, 架构, 高并发, 发布订阅, 推拉结合]
@@ -274,7 +273,7 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
   - `max_age: 24h`:
     - **原因**: 离线推送任务如果因为某些极端原因积压超过了一天，通常也就没有继续补发的意义了。超过 24 小时的死任务会被自动清理。
 
-#### 主题 1: push.offline.{vendor}.{user_id} (例如 push.offline.apns.uid123)
+#### 主题 1: push.offline.\{vendor\}.\{user_id\} (例如 push.offline.apns.uid123)
 
 职责描述: 精确派发到特定设备厂商和特定用户的离线唤醒任务主题。
 

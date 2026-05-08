@@ -1,11 +1,10 @@
 ---
 id: id-generation-strategy-triad
-title: ADR - 分布式 ID 体系三层架构策略
-sidebar_label: 三层 ID 体系策略
+title: 分布式 ID 体系三层架构策略
 description: 架构决策记录：Ocean Chat 决定采用由 UUID v7、客户端 UUID 以及自研号段加 Sonyflake 组成的解耦式三层 ID 生成策略。
-keywords: [ocean chat, adr, id generation, uuid v7, sonyflake, syncseqid, 号段模式]
+keywords:
+  [ocean chat, adr, id generation, uuid v7, sonyflake, syncseqid, 号段模式]
 tags: ["ocean-chat", "adr", "decision-record"]
-sidebar_position: auto
 ---
 
 # 架构决策记录：分布式 ID 体系三层架构策略
@@ -41,26 +40,31 @@ Ocean Chat 将采用一种解耦的、针对具体业务场景定制的**三层 
 ## 决策依据与优势 (Rationale & Advantages)
 
 ### 1. 实体身份 (UUID v7)
+
 - **去中心化：** 微服务可以瞬间生成实体 ID，无需阻塞等待中心化的发号器分配。
 - **索引友好：** 与完全随机的 UUID v4 不同，UUID v7 内部包含时间戳组件，具有时间递增性。这极大地减少了数据库插入时的 B+ 树页分裂（Page Split），写入性能几乎媲美自增主键，同时保留了密码学级别的唯一性。
 - **防遍历：** 包含充足的随机熵，外部恶意攻击者无法通过遍历连续数字来爬取系统内的全量用户或群组信息。
 
 ### 2. 上行防重 (客户端 UUID)
+
 - **无服务端依赖：** 客户端发送消息前不需要向服务器请求分配 ID。
 - **严格幂等：** 如果客户端遭遇网络延迟并多次点击发送同一条消息，`ClientMsgId` 始终保持不变。服务端以此作为 Redis 防重锁，静默识别并去重，绝不向数据库写入重复记录。
 
 ### 3. 下行同步与存储 (号段 + Sonyflake)
+
 - **物理存储优化：** Sonyflake 作为 MongoDB 的物理主键 `_id` (`ServerMsgId`)。它生成的 64 位整型比 UUID 短得多，索引极快，且原生自带时间排序属性。
 - **业务逻辑优化：** 借助 Redis `INCRBY` 实现的自研号段分配器专门提供 `SyncSeqId`。它保证了 ID **在单一会话维度内**严格单调递增（群 A 是 1,2,3；群 B 也是 1,2,3）。这种隔离使得客户端能够执行“无脑”的数学空洞检测，直接增量拉取缺失的消息，彻底抛弃复杂的同步树计算。
 
 ## 考虑过的替代方案 (Alternatives Considered)
 
 ### 使用美团 Leaf 管理序列号
+
 - **优点：** 极其成熟、久经沙场的全局发号器。
 - **缺点：** 它是为全局业务标签（如“订单号”）设计的。而在 IM 中，我们需要上百万个动态创建和销毁的标签（每个单聊、群聊各一个）。在 Leaf 中管理这数百万个动态标签带来了巨大的运维复杂度，且每次拿号都会为核心发消息链路增加一次非必要的 HTTP/RPC 网络跳数。
 - **拒绝原因：** 在 `oceanchat-message` 内部直接利用 Redis `INCRBY` 编写轻量级的自研号段逻辑，对于会话级的递增发号来说，效率高得多且完全够用。
 
 ### 全局使用 UUID v4
+
 - **优点：** 方案最简单。
 - **缺点：** 绝对随机性会导致海量数据插入时引发灾难性的索引碎片化和性能暴跌。更致命的是，它无法为客户端提供任何消息的先后排序上下文。
 - **拒绝原因：** 对于高并发数据持久层和 IM 同步机制来说，此方案不可接受。

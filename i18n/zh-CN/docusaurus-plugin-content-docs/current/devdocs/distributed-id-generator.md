@@ -1,12 +1,11 @@
 ---
 id: distributed-id-generator
 title: 分布式 ID 生成策略 (SeqSvr)
-sidebar_label: 分布式 ID 策略
 description: 详细解释 Ocean Chat 如何借鉴微信 seqsvr 的“号段模式”架构，生成支撑推拉结合模型的全局唯一且严格单调递增的序列号 (SyncSeqId)。
-keywords: [ocean chat, 分布式 id, seqsvr, 序列号, syncseqid, 号段模式, 架构, 微信]
+keywords:
+  [ocean chat, 分布式 id, seqsvr, 序列号, syncseqid, 号段模式, 架构, 微信]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 image: https://docs.oceanchat.com/img/social-card.png
-sidebar_position: auto
 ---
 
 import Tabs from '@theme/Tabs';
@@ -31,8 +30,8 @@ import TabItem from '@theme/TabItem';
 
 Ocean Chat 通过将职责严格拆分给两种截然不同的 ID 来解决这个问题：
 
-*   **`ClientMsgId` (专职唯一性)：** 由**客户端**在用户点击“发送”按钮的瞬间生成的一个标准 UUID。它专属用于服务端和客户端在应对网络重试时的静默去重（幂等性）。
-*   **`SyncSeqId` (专职时序与同步)：** 由**服务端**（`oceanchat-message` 服务）生成的一个 64 位整型数字。它**在单一会话（某个特定单聊或某个特定群聊）的维度内，是严格单调递增的**。
+- **`ClientMsgId` (专职唯一性)：** 由**客户端**在用户点击“发送”按钮的瞬间生成的一个标准 UUID。它专属用于服务端和客户端在应对网络重试时的静默去重（幂等性）。
+- **`SyncSeqId` (专职时序与同步)：** 由**服务端**（`oceanchat-message` 服务）生成的一个 64 位整型数字。它**在单一会话（某个特定单聊或某个特定群聊）的维度内，是严格单调递增的**。
 
 正因为 `SyncSeqId` 是严格递增的（例如 100, 101, 102...），客户端才能够执行纯粹的数学空洞检测。如果客户端本地的最大 ID 是 100，而它收到了一个 ID 为 105 的唤醒信令，它就能在数学上绝对证明：101、102、103 和 104 这四条消息在网络传输中丢失了，必须发起 HTTP 请求将它们拉回来。
 
@@ -58,18 +57,18 @@ sequenceDiagram
     participant DB as MongoDB (发号器)
 
     note over MsgService: 内存初始: cur_seq=0, max_seq=0
-    
+
     MsgService->>DB: 申请新号段 (step=1000)
     DB-->>MsgService: 返回新上限 max_seq=1000
     note over MsgService: 内存更新: cur_seq=0, max_seq=1000
-    
+
     MsgService->>MsgService: 收到消息 1 -> 内存分配 1
     MsgService->>MsgService: 收到消息 2 -> 内存分配 2
     note right of MsgService: ...接下来的 997 条消息零网络 I/O...
     MsgService->>MsgService: 收到消息 1000 -> 内存分配 1000
-    
+
     note over MsgService: 号段耗尽 (cur_seq == max_seq)
-    
+
     MsgService->>DB: 申请新号段 (step=1000)
     DB-->>MsgService: 返回新上限 max_seq=2000
     note over MsgService: 内存更新: cur_seq=1000, max_seq=2000
@@ -83,17 +82,22 @@ sequenceDiagram
 
 ## 3. Section 块合并存储 (空间极致优化)
 
-如果 Ocean Chat 有 1 亿个活跃的群组和单聊会话，要在数据库里为这 1 亿个会话各自保存一条 `max_seq` 记录，将会浪费巨量的磁盘和内存索引空间。
+:::info 架构降级说明：当前体量无需引入此机制
+**Ocean Chat 目前的设计目标用户体量为最高几十万，活跃会话数量会更低。** 在这种量级下，直接在数据库中为每个会话独立保存一条 `max_seq` 记录，总数据量仅有数 MB，对现代数据库毫无压力，且代码逻辑更加清晰简单。因此，**在目前的实际开发中，完全不需要引入复杂的 Section 块合并存储思路**。
+本节内容依然保留，仅用以探讨微信等国民级 IM 在面对**十亿级**海量会话时，为了节约存储成本而采用的终极优化方案。
+:::
+
+如果大型 IM 系统有数以亿计的活跃群组和单聊会话，要在数据库里为这海量的会话各自保存一条 `max_seq` 记录，将会浪费巨量的磁盘和内存索引空间。
 
 为了优化这一点，Ocean Chat 将成千上万个会话打包成一个 **Section (号段块)**。
 
-例如，会话 ID 从 `0` 到 `99,999` 的这十万个会话，在数据库里共享同一条 `max_seq` 记录。
-当 `oceanchat-message` 服务需要为这个块里的*任何一个*会话申请新号段时，它都会让这个共享的 `max_seq` 增加 10,000。
+例如，UID相邻的用户在数据库里共享同一条 `max_seq` 记录。
+当 `oceanchat-message` 服务需要为这个块里的*任何一个*用户申请新号段时，它都会让这个共享的 `max_seq` 增加 10,000。
 
-*   群组 A 可能会分到 `100,000` 到 `109,999` 这个号段。
-*   群组 B（恰好在 A 之后申请号段）会分到 `110,000` 到 `119,999`。
+- 群组 A 可能会分到 `100,000` 到 `109,999` 这个号段。
+- 群组 B（恰好在 A 之后申请号段）会分到 `110,000` 到 `119,999`。
 
-这样一来，数据库需要存储的行数被压缩了十万倍，极大地降低了底层存储的维护压力。
+这样将极大地降低了底层存储的维护压力。
 
 ---
 
@@ -112,6 +116,7 @@ sequenceDiagram
 `SyncSeqId` 直接从 `1002` 跃升到了 `2001`。**这是完全符合设计的预期行为。**
 
 Monkey Protocol 严格规定：
+
 1.  **单调递增是底线：** ID 永远不能回退，必须越来越大。这保证了时序排列的绝对数学正确性。
 2.  **绝对连续是伪命题：** 客户端被**严禁**假设 ID 是连续的 (+1)。
 

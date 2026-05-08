@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">JetStream 拓扑与消费策略 | Oceanchat</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><meta data-rh="true" property="og:locale" content="zh_CN"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="zh-CN"><meta data-rh="true" name="docsearch:language" content="zh-CN"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。"><meta data-rh="true" name="keywords" content="ocean chat,nats,jetstream,消息队列,架构,高并发,发布订阅,推拉结合"><meta data-rh="true" property="og:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:title" content="JetStream 拓扑与消费策略 | Ocean Chat"><meta data-rh="true" property="og:description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。"><link data-rh="true" rel="icon" href="/ocean.chat.docs/zh-CN/img/favicon.ico"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="x-default"><link data-rh="true" rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"开发者文档","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/category/devdocs"},{"@type":"ListItem","position":2,"name":"JetStream 拓扑与消费策略","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"}]}</script><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/zh-CN/blog/rss.xml" title="Oceanchat RSS Feed">
-<link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/zh-CN/blog/atom.xml" title="Oceanchat Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/zh-CN/assets/css/styles.c0f32717.css">
-<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.70e3f203.js" defer="defer"></script>
-<script src="/ocean.chat.docs/zh-CN/assets/js/main.20736d7f.js" defer="defer"></script>
+<link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/zh-CN/blog/atom.xml" title="Oceanchat Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/zh-CN/assets/css/styles.c9f834ab.css">
+<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.473abdff.js" defer="defer"></script>
+<script src="/ocean.chat.docs/zh-CN/assets/js/main.e6a72e76.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
 <symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
 </defs></svg>
-<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/zh-CN/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/zh-CN/"><div class="navbar__logo"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/zh-CN/docs/intro">教程</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/zh-CN/blog">博客</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>简体中文</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="zh-CN">简体中文</a></li></ul></div></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="回到顶部" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="文档侧边栏" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/zh-CN/docs/intro"><span title="OceanChat 总览" class="linkLabel_WmDU">OceanChat 总览</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/zh-CN/docs/category/devdocs"><span title="开发者文档" class="categoryLinkLabel_W154">开发者文档</span></a><button aria-label="折叠侧边栏分类 &#x27;开发者文档&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/API/ocean-chat-api"><span title="接口" class="categoryLinkLabel_W154">接口</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Auth Service/auth-overview"><span title="认证服务" class="categoryLinkLabel_W154">认证服务</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Bussiness Logic/message-sending-persistence-flow"><span title="Bussiness Logic" class="categoryLinkLabel_W154">Bussiness Logic</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/cache"><span title="缓存" class="linkLabel_WmDU">缓存</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/concurrency considerations"><span title="并发问题的考虑" class="linkLabel_WmDU">并发问题的考虑</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/distributed"><span title="分布式相关问题" class="linkLabel_WmDU">分布式相关问题</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat"><span title="graphql vs http" class="linkLabel_WmDU">graphql vs http</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><span title="JetStream 拓扑与消费策略" class="linkLabel_WmDU">JetStream 拓扑与消费策略</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><span title="消息队列" class="linkLabel_WmDU">消息队列</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/microservice"><span title="微服务架构" class="linkLabel_WmDU">微服务架构</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/monkey-protocol-spec"><span title="Monkey Protocol 协议规范" class="linkLabel_WmDU">Monkey Protocol 协议规范</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/offline-message-reliability"><span title="如何保证离线消息的可靠性" class="linkLabel_WmDU">如何保证离线消息的可靠性</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/online-message-reliability"><span title="如何保证在线消息的可靠性" class="linkLabel_WmDU">如何保证在线消息的可靠性</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/architecture-decision-records"><span title="决策记录" class="categoryLinkLabel_W154">决策记录</span></a><button aria-label="展开侧边栏分类 &#x27;决策记录&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/coding-spec"><span title="编码指引" class="categoryLinkLabel_W154">编码指引</span></a><button aria-label="展开侧边栏分类 &#x27;编码指引&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_xLCN"><div class="docItemContainer_jfFK"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="页面路径"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="主页面" class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/docs/category/devdocs"><span>开发者文档</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">JetStream 拓扑与消费策略</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">本页总览</button></div><div class="theme-doc-markdown markdown"><div class="row"><div class="col col--12 markdown">
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/zh-CN/img/logo.svg"><div role="region" aria-label="跳到主要内容"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">跳到主要内容</a></div><nav aria-label="主导航" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="切换导航栏" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/zh-CN/"><div class="navbar__logo"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/zh-CN/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/zh-CN/docs/intro">教程</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/zh-CN/blog">博客</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>简体中文</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="zh-CN">简体中文</a></li></ul></div></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="切换浅色/暗黑模式（当前为system mode）"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="回到顶部" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="文档侧边栏" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/zh-CN/docs/intro"><span title="OceanChat 总览" class="linkLabel_WmDU">OceanChat 总览</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/zh-CN/docs/category/devdocs"><span title="开发者文档" class="categoryLinkLabel_W154">开发者文档</span></a><button aria-label="折叠侧边栏分类 &#x27;开发者文档&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/API/ocean-chat-api"><span title="接口" class="categoryLinkLabel_W154">接口</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Auth Service/auth-overview"><span title="认证服务" class="categoryLinkLabel_W154">认证服务</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/Bussiness Logic/message-sending-persistence-flow"><span title="Bussiness Logic" class="categoryLinkLabel_W154">Bussiness Logic</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/cache"><span title="缓存" class="linkLabel_WmDU">缓存</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/concurrency considerations"><span title="并发问题的考虑" class="linkLabel_WmDU">并发问题的考虑</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/distributed-id-generator"><span title="分布式 ID 生成策略 (SeqSvr)" class="linkLabel_WmDU">分布式 ID 生成策略 (SeqSvr)</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/distributed"><span title="分布式相关问题" class="linkLabel_WmDU">分布式相关问题</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat"><span title="graphql vs http" class="linkLabel_WmDU">graphql vs http</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><span title="JetStream 拓扑与消费策略" class="linkLabel_WmDU">JetStream 拓扑与消费策略</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><span title="消息队列" class="linkLabel_WmDU">消息队列</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/microservice"><span title="微服务架构" class="linkLabel_WmDU">微服务架构</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/monkey-protocol-spec"><span title="Monkey Protocol 协议规范" class="linkLabel_WmDU">Monkey Protocol 协议规范</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/offline-message-reliability"><span title="如何保证离线消息的可靠性" class="linkLabel_WmDU">如何保证离线消息的可靠性</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/zh-CN/docs/devdocs/online-message-reliability"><span title="如何保证在线消息的可靠性" class="linkLabel_WmDU">如何保证在线消息的可靠性</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/architecture-decision-records"><span title="决策记录" class="categoryLinkLabel_W154">决策记录</span></a><button aria-label="展开侧边栏分类 &#x27;决策记录&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/zh-CN/docs/category/coding-spec"><span title="编码指引" class="categoryLinkLabel_W154">编码指引</span></a><button aria-label="展开侧边栏分类 &#x27;编码指引&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_xLCN"><div class="docItemContainer_jfFK"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="页面路径"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="主页面" class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/ocean.chat.docs/zh-CN/docs/category/devdocs"><span>开发者文档</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">JetStream 拓扑与消费策略</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">本页总览</button></div><div class="theme-doc-markdown markdown"><div class="row"><div class="col col--12 markdown">
 <header><h1>NATS JetStream 拓扑与策略</h1></header>
 <p>为了支持十万级并发连接，Ocean Chat 将 <strong>NATS JetStream</strong> 不仅作为消息中间件，更作为连接所有微服务的中枢神经系统。该拓扑严格隔离了高吞吐量数据流与控制流，并利用通配符路由实现精确的微服务消费策略。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="架构概览图">架构概览图<a href="#架构概览图" class="hash-link" aria-label="架构概览图的直接链接" title="架构概览图的直接链接" translate="no">​</a></h2>
@@ -21,16 +21,137 @@
 <p>本文档详细介绍了 Ocean Chat 架构所需的流定义、主题命名空间以及交付语义（推/拉、至少一次、至多一次）。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-流定义">1. 流定义<a href="#1-流定义" class="hash-link" aria-label="1. 流定义的直接链接" title="1. 流定义的直接链接" translate="no">​</a></h2>
 <p>Ocean Chat 中的流按 <strong>业务域</strong> 和 <strong>数据保留生命周期</strong> 进行分区，绝不按用户或群组 ID 分区（否则会导致流爆炸）。</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_core-核心消息流"><strong>IM_CORE (核心消息流)</strong><a href="#im_core-核心消息流" class="hash-link" aria-label="im_core-核心消息流的直接链接" title="im_core-核心消息流的直接链接" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_core-网关上行接入流"><strong>IM_CORE (网关上行接入流)</strong><a href="#im_core-网关上行接入流" class="hash-link" aria-label="im_core-网关上行接入流的直接链接" title="im_core-网关上行接入流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
-<li class=""><strong>职责</strong>: 承载所有上行用户消息、微服务间路由以及下行系统推送。这是吞吐量最高的流。</li>
-<li class=""><strong>保留策略</strong>: 限制策略（如 3-7 天），由专门的 MessagePersistence 数据处理管道中的 Worker 进行 MongoDB 异步持久化备份。</li>
-<li class=""><strong>存储</strong>: 文件存储 (SSD)，用于高吞吐和持久化。</li>
-<li class=""><strong>生产者</strong>: WebSocket 网关 (上行消息), 路由及消息逻辑服务 (内部交接), 推送编排服务 (下行指令)。</li>
-<li class=""><strong>消费者</strong>: 路由及各业务服务 (Pull Queue), WebSocket 网关 (下行 Push)。</li>
-<li class=""><strong>写入屏障约束</strong>: 进入此流的所有上行消息受写入屏障约束，NATS JetStream 作为预写日志 (WAL) 保证高可靠性及最终一致性，消息落入队列后即向客户端 ACK，数据库落库则完全异步进行，详情参见 <a class="" href="/ocean.chat.docs/zh-CN/docs/devdocs/monkey-protocol-spec">Monkey 协议写栅栏</a>。</li>
+<li class="">核心职责: 整个 IM 系统的流量入口（接入 Ingestion），专门承接 WebSocket 网关接收到的大量原始客户端上行包。这是整个系统中吞吐量极高的流。</li>
+<li class="">保留策略 (Retention Strategy): <code>RetentionPolicy.Limits</code> (基于限制的保留)。<!-- -->
+<ul>
+<li class="">原因: 数据保留期较短（如 1-3 天即可）。因为这仅仅是网关的原始字节缓冲流，一旦后端的路由服务 (Router) 拉取、解码并交接给 <code>IM_HANDOFF</code> 流，这些原始数据的历史使命就完成了。保留短期的存量仅用于极端异常或系统崩溃时的故障排查。</li>
+</ul>
+</li>
+<li class="">存储介质 (Storage): <code>StorageType.File</code> (磁盘文件/SSD)。<!-- -->
+<ul>
+<li class="">原因: 虽然保留期短，但在十万级甚至百万级并发洪峰（如重大赛事直播时的大群互动）下，如果后端的微服务解析变慢，上行消息会瞬间在 NATS 积压。使用基于 SSD 的文件存储可以安全地把突发流量缓冲在磁盘中，彻底避免内存溢出 (OOM) 崩溃。</li>
+</ul>
+</li>
+<li class="">关键配置与设计细节:<!-- -->
+<ul>
+<li class="">边缘无状态极速缓冲: 网关在此阶段完全不关心具体的业务逻辑，剥离 WebSocket 协议后瞬间落入此流。极高的 I/O 效率大幅提升了单台网关能承载的长连接数量上限。</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="主题-1-imup-例如-imupp2p-imupgroup">主题 1: im.up.&gt; (例如 im.up.p2p, im.up.group)<a href="#主题-1-imup-例如-imupp2p-imupgroup" class="hash-link" aria-label="主题 1: im.up.&gt; (例如 im.up.p2p, im.up.group)的直接链接" title="主题 1: im.up.&gt; (例如 im.up.p2p, im.up.group)的直接链接" translate="no">​</a></h4>
+<p>职责描述: 原始接入缓冲池。承载尚未被解码的 Protobuf 原始业务载荷包。</p>
+<ul>
+<li class="">
+<p>生产者配置 (Producer: <code>oceanchat-ws-gateway</code> 连接网关)</p>
+<ul>
+<li class="">发布逻辑: 解析到合法的 WebSocket/TCP 帧后，仅附加必要的系统级元数据（如 <code>gatewayId</code> 和 <code>connectionId</code>），将核心原始字节 Payload 高速发布至此主题。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class="">纯管道传输: 这个过程不涉及任何数据库查询与写操作。客户端在此阶段<strong>不会</strong>收到 <code>MSG_UP_ACK</code>，只有当消息流经下游到达写屏障后才会返回确认。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p>消费者配置 (Consumer: <code>oceanchat-router</code> 路由服务)</p>
+<ul>
+<li class="">消费逻辑: Pull 模式 (Pull Queue Group)。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class="">消费者组负载均衡: 多个 Router 实例组成一个相同的消费者组，共同瓜分这个海量上行流量，确保同一条消息只被一个 Router 解析。</li>
+<li class="">批量拉取与解码: Router 不是一条条拉取，而是通过内部循环一次性批量 Pull 拉取（例如数百条），利用 CPU 算力高效解码 Protobuf，并执行基础校验。</li>
+<li class="">延迟交接 ACK 机制: Router 服务在从 <code>im.up.&gt;</code> 拉取消息后，只有当它成功将解码后的消息路由分发并投递到下方的 <code>im.route.*</code> (<code>IM_HANDOFF</code> 流) 之后，才会对这条 <code>im.up.&gt;</code> 消息发送显式的 ACK。这完美保证了数据在“边缘接入层”向“内部业务层”交接的途中绝对不丢。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_handoff-内部路由与-wal-核心流"><strong>IM_HANDOFF (内部路由与 WAL 核心流)</strong><a href="#im_handoff-内部路由与-wal-核心流" class="hash-link" aria-label="im_handoff-内部路由与-wal-核心流的直接链接" title="im_handoff-内部路由与-wal-核心流的直接链接" translate="no">​</a></h3>
+<!-- -->
+<ul>
+<li class="">
+<p>核心职责: 系统最关键的流，不仅是微服务之间传递业务负载的“接力棒”，更充当着整个系统的<strong>写屏障 (Write Fence)</strong> 和<strong>预写日志 (WAL)</strong>。</p>
+<ul>
+<li class="">当 <code>oceanchat-router</code> 解析完网关上报的数据后，会交接给此流以触发下层核心业务处理。</li>
+<li class="">业务服务处理完毕后，再次写入此流，利用 NATS 的高可靠性确保消息不丢失，随后分离为 <a class="" href="/ocean.chat.docs/zh-CN/docs/devdocs/Bussiness Logic/message-sending-persistence-flow">消息发送与落库</a> 和“实时派发推送”两条支线。</li>
+</ul>
+</li>
+<li class="">
+<p>保留策略 (Retention Strategy): <code>RetentionPolicy.Limits</code> (基于限制的保留)。</p>
+<ul>
+<li class="">原因: 数据需要被多个不同的微服务消费者组（如推送编排服务、持久化 Worker）独立且全量地消费。Limits 策略确保了即使某个消费者（如 MongoDB 批量落库）出现延迟或宕机，消息依然安全保留在队列中，直到所有订阅者都成功推进消费游标。</li>
+</ul>
+</li>
+<li class="">
+<p>存储介质 (Storage): <code>StorageType.File</code> (磁盘文件/SSD)。</p>
+<ul>
+<li class="">原因: 极致的可靠性要求。这是写屏障（WAL）的所在，服务端只要收到此流的 NATS ACK，就会给客户端返回发送成功的确认。如果发生机房断电或 NATS 宕机，这部分尚未落库 MongoDB 的消息数据必须能从磁盘恢复，绝对不能丢失。</li>
+</ul>
+</li>
+<li class="">
+<p>关键配置与设计细节:</p>
+<ul>
+<li class="">写后持久化架构 (Write-after-persistence): 将快速的客户端响应（跨越写屏障即返回 ACK）与缓慢的数据库落盘（后台异步大批量 Pull 消费并插入）彻底解耦，这是 Ocean Chat 支撑十万级并发写操作的性能基石。</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="主题-1-imroute-例如-imroutep2p-imroutegroup">主题 1: im.route.* (例如 im.route.p2p, im.route.group)<a href="#主题-1-imroute-例如-imroutep2p-imroutegroup" class="hash-link" aria-label="主题 1: im.route.* (例如 im.route.p2p, im.route.group)的直接链接" title="主题 1: im.route.* (例如 im.route.p2p, im.route.group)的直接链接" translate="no">​</a></h4>
+<p>职责描述: 内部业务路由交接。<code>oceanchat-router</code> 完成原始数据包解析后，将业务 Payload 路由投递给对应的具体业务逻辑服务。</p>
+<ul>
+<li class="">生产者配置 (Producer: <code>oceanchat-router</code> 服务)<!-- -->
+<ul>
+<li class="">发布逻辑: 解析 Protobuf 数据帧、完成初步业务级限流与基础校验后，根据业务类型定向发布。</li>
+</ul>
+</li>
+<li class="">消费者配置 (Consumer: <code>oceanchat-message</code> 或 <code>oceanchat-group</code> 服务)<!-- -->
+<ul>
+<li class="">消费逻辑: Pull 模式。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class="">队列组 (Queue Group): 相同业务服务的多个实例组成拉取队列组，共享消费游标，实现水平扩展和负载均衡。一条消息只会被一个业务实例拉取处理。</li>
+<li class="">至少一次投递 (At-Least-Once): 如果业务服务在处理中途（如校验权限时）崩溃，未能回传明确的 ACK，NATS 会在等待超时后将该消息重新投递给其他健康的实例，确保核心业务逻辑不中断、消息绝对不丢。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="主题-2-imorchestratemsg">主题 2: im.orchestrate.msg<a href="#主题-2-imorchestratemsg" class="hash-link" aria-label="主题 2: im.orchestrate.msg的直接链接" title="主题 2: im.orchestrate.msg的直接链接" translate="no">​</a></h4>
+<p>职责描述: <strong>关键写屏障所在！</strong> 处理完毕的合法消息会投递到此，作为“已安全接收”的最终凭证。它同时为下游的异步落库和消息派发推送提供数据源。</p>
+<ul>
+<li class="">
+<p>生产者配置 (Producer: <code>oceanchat-message</code> 服务)</p>
+<ul>
+<li class="">发布逻辑: 完成好友/群组鉴权、内容合规审查、并分配全局单调递增的 <code>SyncSeqId</code> 后，将最终业务消息体发布至此主题。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class="">同步等待 ACK: 消息服务发布时，必须等待 NATS JetStream 返回持久化成功的 ACK 回执。只有越过了这个写屏障边界，服务才会通知网关向客户端下发 <code>[0x06] MSG_UP_ACK</code>。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p>消费者配置 (具备两个独立的持久化消费者组 / Consumer Groups)</p>
+<ul>
+<li class="">消费者 A: <code>oceanchat-orchestrator</code> (推送编排服务)<!-- -->
+<ul>
+<li class="">消费逻辑: 实时 Pull 拉取。</li>
+<li class="">配置详情与原因: 编排服务拉取消息后，会查询 Redis 在线状态图谱来评估接收方的网络状态。由此决定是将消息转化为轻量级的 <code>MSG_NOTIFY</code> 发往下行流，还是转化为离线唤醒任务转移到 <code>OFFLINE_PUSH</code> 流进行厂商推送。</li>
+</ul>
+</li>
+<li class="">消费者 B: <code>MessagePersistence Worker</code> (消息持久化管道)<!-- -->
+<ul>
+<li class="">消费逻辑: 后台异步大批量 Pull 拉取 (Batch Pull)。</li>
+<li class="">配置详情与原因: 这个 Worker 彻底将慢速的磁盘 I/O 解耦出了主链路。通过一次性批量拉取数百条消息，利用 MongoDB 的 Bulk Insert 接口执行批量写入，极大地降低了数据库的 IOPS 瓶颈压力。只有落库成功后，Worker 才会向 NATS 发送显式 ACK，推进当前消费组的进度，保障了海量并发下的最终一致性。</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_state-全局安全流"><strong>AUTH_STATE (全局安全流)</strong><a href="#auth_state-全局安全流" class="hash-link" aria-label="auth_state-全局安全流的直接链接" title="auth_state-全局安全流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class="">
 <p>核心职责: 用于在微服务之间高速广播全局关键的安全状态变更。</p>
@@ -112,6 +233,7 @@
 </li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_events-认证事件流"><strong>AUTH_EVENTS (认证事件流)</strong><a href="#auth_events-认证事件流" class="hash-link" aria-label="auth_events-认证事件流的直接链接" title="auth_events-认证事件流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class="">
 <p>核心职责: 用于记录和分发系统业务层面的行为与事件。</p>
@@ -176,6 +298,7 @@
 </li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_dlq-死信队列流"><strong>AUTH_DLQ (死信队列流)</strong><a href="#auth_dlq-死信队列流" class="hash-link" aria-label="auth_dlq-死信队列流的直接链接" title="auth_dlq-死信队列流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class="">
 <p>核心职责: 系统的错误兜底仓库 (Dead Letter Queue)。集中存放因为种种原因（代码 Bug、脏数据、下游数据库崩溃）经过多次重试依然无法被正常处理的“毒消息（Poison Message）”。</p>
@@ -236,7 +359,74 @@
 </ul>
 </li>
 </ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="cursor_state-游标状态持久化流"><strong>CURSOR_STATE (游标状态持久化流)</strong><a href="#cursor_state-游标状态持久化流" class="hash-link" aria-label="cursor_state-游标状态持久化流的直接链接" title="cursor_state-游标状态持久化流的直接链接" translate="no">​</a></h3>
+<!-- -->
+<ul>
+<li class="">
+<p><strong>核心职责</strong>: 作为极高频的已读/接收游标（ACK/Read Cursor）的<strong>异步写缓冲 (Write-behind Cache)</strong>，保护底层数据库（MongoDB）和缓存层（Redis）免受“确认风暴”导致的 IOPS 过载。</p>
+<ul>
+<li class="">在大群聊或极度活跃的单聊中，客户端拉取消息后会高频发送 <code>[0x0B] READ_RECEIPT</code> 确认信令。网关/路由仅将这些状态变更投递到此流，彻底实现网关层的零 I/O 阻塞。</li>
+<li class="">持久化工作单元（Worker）在后台以批量模式消费，将最终去重折叠后的游标状态统一同步至 Redis 并落盘到 MongoDB。</li>
+</ul>
+</li>
+<li class="">
+<p><strong>保留策略 (Retention Strategy)</strong>: <code>RetentionPolicy.Limits</code> (基于限制的保留)。</p>
+<ul>
+<li class=""><strong>原因</strong>: 游标数据属于典型的**“状态数据 (State)”<strong>而非</strong>“事件数据 (Event)”**。我们只关心用户的最终状态（最新看到了哪条消息），而完全不在乎过程（中间经过了哪些 SeqId）。Limits 策略配合后续的 <code>MaxMsgsPerSubject=1</code> 黑科技，实现了完美的内存与磁盘削峰。</li>
+</ul>
+</li>
+<li class="">
+<p><strong>存储介质 (Storage)</strong>: <code>StorageType.Memory</code> (内存)。</p>
+<ul>
+<li class=""><strong>原因</strong>: 即便使用文件存储，由于极致的队列去重特性，它也几乎不占用空间。哪怕极端情况下系统全量宕机丢失了一两秒内的游标 ACK 数据，系统大不了从上次 Redis 或 MongoDB 记录的位置重新开始，由于客户端在下次收发消息或断线重连时具备天然的去重机制，因此不必担心消息重复拉取的问题，完全可以激进地采用 Memory 存储来换取无敌的吞吐量。</li>
+</ul>
+</li>
+<li class="">
+<p><strong>关键配置与设计细节</strong>:</p>
+<ul>
+<li class=""><code>max_msgs_per_subject: 1</code> (极客级风暴折叠机制) 🌟:<!-- -->
+<ul>
+<li class=""><strong>原因</strong>: <strong>这是解决群聊 ACK 写风暴的最核心黑科技。</strong> 如果一个用户在 1 秒内疯狂滑动万人大群的聊天记录，触发了 50 次游标更新（如 SeqId 从 101 一路更新到 150）。当这 50 个更新事件被发布到精准定位该用户的同一个 Subject 下时，NATS 会自动将旧值丢弃。整个流中，针对该群该用户的游标队列里，<strong>永远只有最新的一条数据（SeqId 150）</strong>。</li>
+</ul>
+</li>
+<li class=""><strong>异步大批次落盘 (BulkWrite)</strong>:<!-- -->
+<ul>
+<li class=""><strong>原因</strong>: 持久化 Worker 不需要关心过程中的那 49 次无用更新。它只要定期（如每秒一次）从流中 Pull 拉取被折叠后最精简的状态合集。拿到 1000 个用户的最新游标后，不仅调用一次 MongoDB 的 <code>bulkWrite</code>，同时利用 Redis 的 Pipeline 功能批量更新缓存，将原本 50,000 次高频随机写操作降维打击成极少次数的网络 I/O。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="主题-1-cursorackgroupiduserid--cursorreadgroupiduserid">主题 1: cursor.ack.{groupId}.{userId} / cursor.read.{groupId}.{userId}<a href="#主题-1-cursorackgroupiduserid--cursorreadgroupiduserid" class="hash-link" aria-label="主题 1: cursor.ack.{groupId}.{userId} / cursor.read.{groupId}.{userId}的直接链接" title="主题 1: cursor.ack.{groupId}.{userId} / cursor.read.{groupId}.{userId}的直接链接" translate="no">​</a></h4>
+<p>职责描述: 接收与合并特定用户在特定会话（群组/单聊）的最新游标状态。</p>
+<ul>
+<li class="">
+<p>生产者配置 (Producer: <code>oceanchat-router</code> 或 <code>oceanchat-api-gateway</code>)</p>
+<ul>
+<li class="">发布逻辑: 接收到客户端的 ACK/Read 信令后，<strong>不进行任何同步数据库或 Redis 操作</strong>，直接将 Payload（如 <code>{&quot;seqId&quot;: 1005}</code>）异步发布至精确的通配符主题。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class=""><strong>高度具粒度的主题</strong>: 必须把 <code>groupId</code> 和 <code>userId</code> 都写进主题名称里（如 <code>cursor.ack.G1.U1</code>）。这是 <code>max_msgs_per_subject: 1</code> 能够精确执行“只为 U1 保留在 G1 的最新一条记录”的大前提。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p>消费者配置 (Consumer: <code>MessagePersistence Worker</code> 消息持久化工作单元)</p>
+<ul>
+<li class="">消费逻辑: Pull 模式订阅 <code>cursor.&gt;</code>。</li>
+<li class="">配置详情与原因:<!-- -->
+<ul>
+<li class=""><strong>批量拉取与双写同步 (Batch Pull &amp; Dual Write)</strong>: Worker 通过长轮询批量拉取（如 <code>batch: 1000</code>），将系统折叠后最精简的游标状态一把抓出。随后，Worker 利用 Redis Pipeline 批量更新 Redis 中的游标缓存，并执行 MongoDB BulkWrite 持久化。</li>
+<li class=""><strong>显式 ACK (Explicit ACK)</strong>: 只有在 Redis 和 MongoDB 的批量写入都执行成功后，Worker 才会向 NATS 批量回传 ACK。由于客户端具备幂等去重能力，即使此处发生部分失败导致重试，也不会影响最终业务一致性。</li>
+<li class=""><strong>持久化队列组 (Durable Queue Group)</strong>: 多个 Worker 实例共同分担全网的游标落盘压力，一条精简后的游标状态只会被落库一次。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sys_presence-状态与事件流"><strong>SYS_PRESENCE (状态与事件流)</strong><a href="#sys_presence-状态与事件流" class="hash-link" aria-label="sys_presence-状态与事件流的直接链接" title="sys_presence-状态与事件流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class=""><strong>职责</strong>: 处理用户在线/下线事件和连接心跳。</li>
 <li class=""><strong>保留策略</strong>: Interest（仅在有服务监听时保留）或短时间限制。</li>
@@ -246,6 +436,7 @@
 <li class=""><strong>策略</strong>: 带队列组的 Pull 消费者 (至少一次交付)。</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="group_hybrid-超大群降级流"><strong>GROUP_HYBRID (超大群降级流)</strong><a href="#group_hybrid-超大群降级流" class="hash-link" aria-label="group_hybrid-超大群降级流的直接链接" title="group_hybrid-超大群降级流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class=""><strong>职责</strong>: 专门用于万人以上超大群的 <strong>推拉结合 (Push-Pull Hybrid)</strong> 策略，防止扇出雪崩。</li>
 <li class=""><strong>生产者</strong>: 路由服务。</li>
@@ -253,6 +444,7 @@
 <li class=""><strong>策略</strong>: 信令推 + 客户端拉 (抖动化的 HTTP/RPC)。</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="offline_push-第三方推送流"><strong>OFFLINE_PUSH (第三方推送流)</strong><a href="#offline_push-第三方推送流" class="hash-link" aria-label="offline_push-第三方推送流的直接链接" title="offline_push-第三方推送流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class="">
 <p><strong>核心职责</strong>: 处理发往 Apple APNs、Google FCM 以及国内厂商 API 的离线唤醒通知。</p>
@@ -344,6 +536,7 @@
 </li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="data_pipeline-异构数据流"><strong>DATA_PIPELINE (异构数据流)</strong><a href="#data_pipeline-异构数据流" class="hash-link" aria-label="data_pipeline-异构数据流的直接链接" title="data_pipeline-异构数据流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class=""><strong>职责</strong>: 作为数据管道，将聊天记录同步到 Elasticsearch 以进行全局搜索。</li>
 <li class=""><strong>保留策略</strong>: 限制策略（保留数据直至成功索引）。</li>
@@ -353,6 +546,7 @@
 <li class=""><strong>策略</strong>: <strong>大批次 Pull</strong>。工作单元一次获取数千条消息，并使用 Elasticsearch Bulk API 进行高效索引。</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="background_tasks-多媒体与审计流"><strong>BACKGROUND_TASKS (多媒体与审计流)</strong><a href="#background_tasks-多媒体与审计流" class="hash-link" aria-label="background_tasks-多媒体与审计流的直接链接" title="background_tasks-多媒体与审计流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class=""><strong>职责</strong>: 管理 CPU 密集型后台作业，如媒体转码、缩略图生成和内容审计（NSFW 过滤）。</li>
 <li class=""><strong>保留策略</strong>: 工作队列 (WorkQueue)。</li>
@@ -362,6 +556,7 @@
 <li class=""><strong>策略</strong>: <strong>带显式 NAK 的 Pull 消费者</strong>。如果视频转码任务失败，消费者向 NATS 发送否定确认 (NAK)，立即将任务重新入队到另一个健康的实例，而不是等待超时。</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="device_sync-设备同步流"><strong>DEVICE_SYNC (设备同步流)</strong><a href="#device_sync-设备同步流" class="hash-link" aria-label="device_sync-设备同步流的直接链接" title="device_sync-设备同步流的直接链接" translate="no">​</a></h3>
+<!-- -->
 <ul>
 <li class=""><strong>职责</strong>: 同步已读游标并清除多端通知标记。</li>
 <li class=""><strong>保留策略</strong>: 限制策略或 Interest。</li>
@@ -404,6 +599,6 @@
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-可靠性时序图">5. 可靠性时序图<a href="#5-可靠性时序图" class="hash-link" aria-label="5. 可靠性时序图的直接链接" title="5. 可靠性时序图的直接链接" translate="no">​</a></h2>
 <p>下图展示了微服务与 JetStream 之间的交互，以确保 <strong>写入屏障 (Write Fence)</strong> 保证。</p>
-</div></div></div><div class="row"><div class="col col--12"></div></div></article><div class="row"><div class="col col--12"><nav class="docusaurus-mt-lg pagination-nav" aria-label="文件选项卡"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat"><div class="pagination-nav__sublabel">上一页</div><div class="pagination-nav__label">graphql vs http</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><div class="pagination-nav__sublabel">下一页</div><div class="pagination-nav__label">消息队列</div></a></nav></div></div></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#架构概览图" class="table-of-contents__link toc-highlight">架构概览图</a></li><li><a href="#1-流定义" class="table-of-contents__link toc-highlight">1. 流定义</a><ul><li><a href="#im_core-核心消息流" class="table-of-contents__link toc-highlight"><strong>IM_CORE (核心消息流)</strong></a></li><li><a href="#auth_state-全局安全流" class="table-of-contents__link toc-highlight"><strong>AUTH_STATE (全局安全流)</strong></a></li><li><a href="#auth_events-认证事件流" class="table-of-contents__link toc-highlight"><strong>AUTH_EVENTS (认证事件流)</strong></a></li><li><a href="#auth_dlq-死信队列流" class="table-of-contents__link toc-highlight"><strong>AUTH_DLQ (死信队列流)</strong></a></li><li><a href="#sys_presence-状态与事件流" class="table-of-contents__link toc-highlight"><strong>SYS_PRESENCE (状态与事件流)</strong></a></li><li><a href="#group_hybrid-超大群降级流" class="table-of-contents__link toc-highlight"><strong>GROUP_HYBRID (超大群降级流)</strong></a></li><li><a href="#offline_push-第三方推送流" class="table-of-contents__link toc-highlight"><strong>OFFLINE_PUSH (第三方推送流)</strong></a></li><li><a href="#data_pipeline-异构数据流" class="table-of-contents__link toc-highlight"><strong>DATA_PIPELINE (异构数据流)</strong></a></li><li><a href="#background_tasks-多媒体与审计流" class="table-of-contents__link toc-highlight"><strong>BACKGROUND_TASKS (多媒体与审计流)</strong></a></li><li><a href="#device_sync-设备同步流" class="table-of-contents__link toc-highlight"><strong>DEVICE_SYNC (设备同步流)</strong></a></li></ul></li><li><a href="#2-主题命名空间设计" class="table-of-contents__link toc-highlight">2. 主题命名空间设计</a></li><li><a href="#5-可靠性时序图" class="table-of-contents__link toc-highlight">5. 可靠性时序图</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">文档</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/docs/intro">教程</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">社区</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://x.com/OceanChat" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">更多</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/blog">博客</a></li><li class="footer__item"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Ocean Chat, Inc.</div></div></div></footer></div>
+</div></div></div><div class="row"><div class="col col--12"></div></div></article><div class="row"><div class="col col--12"><nav class="docusaurus-mt-lg pagination-nav" aria-label="文件选项卡"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/zh-CN/docs/devdocs/graphql vs http in oceanchat"><div class="pagination-nav__sublabel">上一页</div><div class="pagination-nav__label">graphql vs http</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/zh-CN/docs/devdocs/message queue"><div class="pagination-nav__sublabel">下一页</div><div class="pagination-nav__label">消息队列</div></a></nav></div></div></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#架构概览图" class="table-of-contents__link toc-highlight">架构概览图</a></li><li><a href="#1-流定义" class="table-of-contents__link toc-highlight">1. 流定义</a><ul><li><a href="#im_core-网关上行接入流" class="table-of-contents__link toc-highlight"><strong>IM_CORE (网关上行接入流)</strong></a></li><li><a href="#im_handoff-内部路由与-wal-核心流" class="table-of-contents__link toc-highlight"><strong>IM_HANDOFF (内部路由与 WAL 核心流)</strong></a></li><li><a href="#auth_state-全局安全流" class="table-of-contents__link toc-highlight"><strong>AUTH_STATE (全局安全流)</strong></a></li><li><a href="#auth_events-认证事件流" class="table-of-contents__link toc-highlight"><strong>AUTH_EVENTS (认证事件流)</strong></a></li><li><a href="#auth_dlq-死信队列流" class="table-of-contents__link toc-highlight"><strong>AUTH_DLQ (死信队列流)</strong></a></li><li><a href="#cursor_state-游标状态持久化流" class="table-of-contents__link toc-highlight"><strong>CURSOR_STATE (游标状态持久化流)</strong></a></li><li><a href="#sys_presence-状态与事件流" class="table-of-contents__link toc-highlight"><strong>SYS_PRESENCE (状态与事件流)</strong></a></li><li><a href="#group_hybrid-超大群降级流" class="table-of-contents__link toc-highlight"><strong>GROUP_HYBRID (超大群降级流)</strong></a></li><li><a href="#offline_push-第三方推送流" class="table-of-contents__link toc-highlight"><strong>OFFLINE_PUSH (第三方推送流)</strong></a></li><li><a href="#data_pipeline-异构数据流" class="table-of-contents__link toc-highlight"><strong>DATA_PIPELINE (异构数据流)</strong></a></li><li><a href="#background_tasks-多媒体与审计流" class="table-of-contents__link toc-highlight"><strong>BACKGROUND_TASKS (多媒体与审计流)</strong></a></li><li><a href="#device_sync-设备同步流" class="table-of-contents__link toc-highlight"><strong>DEVICE_SYNC (设备同步流)</strong></a></li></ul></li><li><a href="#2-主题命名空间设计" class="table-of-contents__link toc-highlight">2. 主题命名空间设计</a></li><li><a href="#5-可靠性时序图" class="table-of-contents__link toc-highlight">5. 可靠性时序图</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">文档</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/docs/intro">教程</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">社区</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://x.com/OceanChat" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">更多</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/zh-CN/blog">博客</a></li><li class="footer__item"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Ocean Chat, Inc.</div></div></div></footer></div>
 </body>
 </html>

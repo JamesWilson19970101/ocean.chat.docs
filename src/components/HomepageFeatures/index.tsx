@@ -12,7 +12,10 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: translate({ id: "homepage.feature.secure.title", message: "Secure & Private" }),
+    title: translate({
+      id: "homepage.feature.secure.title",
+      message: "Secure & Private",
+    }),
     Svg: require("@site/static/img/secure.svg").default,
     description: (
       <Translate id="homepage.feature.secure.description">
@@ -22,17 +25,24 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: translate({ id: "homepage.feature.fast.title", message: "Fast & Reliable" }),
+    title: translate({
+      id: "homepage.feature.fast.title",
+      message: "Fast & Reliable",
+    }),
     Svg: require("@site/static/img/fast.svg").default,
     description: (
       <Translate id="homepage.feature.fast.description">
-        Built on a distributed microservice architecture, OceanChat ensures high
-        performance, low latency, and maximum uptime for all your messages.
+        Built on a distributed microservice architecture, OceanChat guarantees
+        highly reliable message delivery, zero message loss, and maximum uptime
+        for all your communications.
       </Translate>
     ),
   },
   {
-    title: translate({ id: "homepage.feature.extensible.title", message: "Extensible & Open" }),
+    title: translate({
+      id: "homepage.feature.extensible.title",
+      message: "Extensible & Open",
+    }),
     Svg: require("@site/static/img/extensible.svg").default,
     description: (
       <Translate id="homepage.feature.extensible.description">

@@ -23,97 +23,49 @@ image: https://www.shutterstock.com/search/seo-cover
 下图展示了 Ocean Chat 微服务与 NATS JetStream 主题之间的生产和消费流程。
 
 ```mermaid
----
-config:
-  layout: elk
----
-flowchart LR
-    classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
-    classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+flowchart TB
     classDef stream fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#000;
     classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
-    %% Producers
-    subgraph Producers [Message Producers]
-        WSG_P[WebSocket Gateway]:::gateway
-        RS_P[Router Service]:::service
-        MS_P[Message Service]:::service
-        ORCH_P[Orchestrator Service]:::service
-        AS_P[Auth Service]:::service
-        API_P[API Gateway]:::gateway
-    end
-
-    %% JetStream Topology
-    subgraph JetStream [NATS JetStream]
-        subgraph S_CORE [Stream: IM_CORE]
-            UP(im.up.>):::subject
-            ROUTE(im.route.>):::subject
-            ORCH(im.orchestrate.>):::subject
-            DOWN(im.down.node.*):::subject
+    subgraph JetStream ["NATS JetStream 拓扑全景 (仅展示流与主题)"]
+        subgraph S_CORE ["Stream: IM_CORE"]
+            UP("im.up.>"):::subject
         end
-
-        subgraph S_HYBRID [Stream: GROUP_HYBRID]
-            TICK(group.tick.*):::subject
+        subgraph S_HANDOFF ["Stream: IM_HANDOFF"]
+            ROUTE("im.route.*"):::subject
+            ORCH("im.orchestrate.msg"):::subject
         end
-
-        subgraph S_PUSH [Stream: OFFLINE_PUSH]
-            PUSH(push.offline.>):::subject
+        subgraph S_AUTH ["Stream: AUTH_STATE"]
+            REVOKE("auth.jwt.revoke"):::subject
         end
-
-        subgraph S_AUTH [Stream: AUTH_STATE]
-            REVOKE(auth.jwt.revoke):::subject
+        subgraph S_AUTH_EVENTS ["Stream: AUTH_EVENTS"]
+            LOGGEDIN("auth.event.user.loggedIn"):::subject
         end
-
-        subgraph S_PIPE [Stream: DATA_PIPELINE]
-            INDEX(pipeline.index.msg):::subject
+        subgraph S_AUTH_DLQ ["Stream: AUTH_DLQ"]
+            DLQ("dlq.>"):::subject
         end
-
-        subgraph S_TASK [Stream: BACKGROUND_TASKS]
-            TASK(task.*):::subject
+        subgraph S_CURSOR ["Stream: CURSOR_STATE"]
+            CURSOR("cursor.*"):::subject
         end
-
-        subgraph S_SYNC [Stream: DEVICE_SYNC]
-            SYNC(sync.cursor.read.*):::subject
+        subgraph S_SYS ["Stream: SYS_PRESENCE"]
+            CONN("presence.conn.*"):::subject
+        end
+        subgraph S_HYBRID ["Stream: GROUP_HYBRID"]
+            TICK("group.tick.*"):::subject
+        end
+        subgraph S_PUSH ["Stream: OFFLINE_PUSH"]
+            PUSH("push.offline.>"):::subject
+        end
+        subgraph S_PIPE ["Stream: DATA_PIPELINE"]
+            INDEX("pipeline.index.msg"):::subject
+        end
+        subgraph S_TASK ["Stream: BACKGROUND_TASKS"]
+            TASK("task.*"):::subject
+        end
+        subgraph S_SYNC ["Stream: DEVICE_SYNC"]
+            SYNC("sync.cursor.read.*"):::subject
         end
     end
-
-    %% Consumers
-    subgraph Consumers [Message Consumers]
-        RS_C[Router Service]:::service
-        MS_C[Message Service]:::service
-        ORCH_C[Orchestrator Service]:::service
-        REAL_C[Realtime Pusher]:::service
-        WSG_C[WebSocket Gateway]:::gateway
-        PUSH_C[Push Service]:::service
-        DP_C[Data Pipeline Worker]:::service
-        MEDIA_C[Media / Audit Service]:::service
-    end
-
-    %% Production Flows
-    WSG_P -- Micro-batch --> UP
-    RS_P -- Business Route --> ROUTE
-    MS_P -- Processed --> ORCH
-    ORCH_P -- Targeted Push --> DOWN
-    RS_P -- Tick --> TICK
-    RS_P -- Offline Event --> PUSH
-    AS_P -- Revoke --> REVOKE
-    MS_P -- Persisted --> INDEX
-    API_P -- Upload Event --> TASK
-    API_P -- Read Receipt --> SYNC
-    WSG_P -- WS Receipt --> SYNC
-
-    %% Consumption Flows
-    UP -- Pull Queue Group --> RS_C
-    ROUTE -- Pull Queue Group --> MS_C
-    ORCH -- Pull Queue Group --> ORCH_C
-    DOWN -- Ephemeral Push --> WSG_C
-    REVOKE -- Fan-out Broadcast --> WSG_C
-    REVOKE -- Fan-out Broadcast --> API_P
-    TICK -- Signal Push --> WSG_C
-    PUSH -- Pull Consumer --> PUSH_C
-    INDEX -- Large Batch Pull --> DP_C
-    TASK -- Pull Explicit NAK --> MEDIA_C
-    SYNC -- Ephemeral Push --> WSG_C
 ```
 
 本文档详细介绍了 Ocean Chat 架构所需的流定义、主题命名空间以及交付语义（推/拉、至少一次、至多一次）。
@@ -122,16 +74,129 @@ flowchart LR
 
 Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分区，绝不按用户或群组 ID 分区（否则会导致流爆炸）。
 
-### **IM_CORE (核心消息流)**
+### **IM_CORE (网关上行接入流)**
 
-- **职责**: 承载所有上行用户消息、微服务间路由以及下行系统推送。这是吞吐量最高的流。
-- **保留策略**: 限制策略（如 3-7 天），由专门的 MessagePersistence 数据处理管道中的 Worker 进行 MongoDB 异步持久化备份。
-- **存储**: 文件存储 (SSD)，用于高吞吐和持久化。
-- **生产者**: WebSocket 网关 (上行消息), 路由及消息逻辑服务 (内部交接), 推送编排服务 (下行指令)。
-- **消费者**: 路由及各业务服务 (Pull Queue), WebSocket 网关 (下行 Push)。
-- **写入屏障约束**: 进入此流的所有上行消息受写入屏障约束，NATS JetStream 作为预写日志 (WAL) 保证高可靠性及最终一致性，消息落入队列后即向客户端 ACK，数据库落库则完全异步进行，详情参见 [Monkey 协议写栅栏](./monkey-protocol-spec.md)。
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+  P[oceanchat-ws-gateway]:::gateway
+  C[oceanchat-router]:::service
+  subgraph Stream: IM_CORE
+    SUB(im.up.>):::subject
+  end
+
+  P -- Publish 原始载荷 --> SUB
+  SUB -- Consume 消费 --> C
+```
+
+- 核心职责: 整个 IM 系统的流量入口（接入 Ingestion），专门承接 WebSocket 网关接收到的大量原始客户端上行包。这是整个系统中吞吐量极高的流。
+- 保留策略 (Retention Strategy): `RetentionPolicy.Limits` (基于限制的保留)。
+  - 原因: 数据保留期较短（如 1-3 天即可）。因为这仅仅是网关的原始字节缓冲流，一旦后端的路由服务 (Router) 拉取、解码并交接给 `IM_HANDOFF` 流，这些原始数据的历史使命就完成了。保留短期的存量仅用于极端异常或系统崩溃时的故障排查。
+- 存储介质 (Storage): `StorageType.File` (磁盘文件/SSD)。
+  - 原因: 虽然保留期短，但在十万级甚至百万级并发洪峰（如重大赛事直播时的大群互动）下，如果后端的微服务解析变慢，上行消息会瞬间在 NATS 积压。使用基于 SSD 的文件存储可以安全地把突发流量缓冲在磁盘中，彻底避免内存溢出 (OOM) 崩溃。
+- 关键配置与设计细节:
+  - 边缘无状态极速缓冲: 网关在此阶段完全不关心具体的业务逻辑，剥离 WebSocket 协议后瞬间落入此流。极高的 I/O 效率大幅提升了单台网关能承载的长连接数量上限。
+
+#### 主题 1: im.up.> (例如 im.up.p2p, im.up.group)
+
+职责描述: 原始接入缓冲池。承载尚未被解码的 Protobuf 原始业务载荷包。
+
+- 生产者配置 (Producer: `oceanchat-ws-gateway` 连接网关)
+  - 发布逻辑: 解析到合法的 WebSocket/TCP 帧后，仅附加必要的系统级元数据（如 `gatewayId` 和 `connectionId`），将核心原始字节 Payload 高速发布至此主题。
+  - 配置详情与原因:
+    - 纯管道传输: 这个过程不涉及任何数据库查询与写操作。客户端在此阶段**不会**收到 `MSG_UP_ACK`，只有当消息流经下游到达写屏障后才会返回确认。
+
+- 消费者配置 (Consumer: `oceanchat-router` 路由服务)
+  - 消费逻辑: Pull 模式 (Pull Queue Group)。
+  - 配置详情与原因:
+    - 消费者组负载均衡: 多个 Router 实例组成一个相同的消费者组，共同瓜分这个海量上行流量，确保同一条消息只被一个 Router 解析。
+    - 批量拉取与解码: Router 不是一条条拉取，而是通过内部循环一次性批量 Pull 拉取（例如数百条），利用 CPU 算力高效解码 Protobuf，并执行基础校验。
+    - 延迟交接 ACK 机制: Router 服务在从 `im.up.>` 拉取消息后，只有当它成功将解码后的消息路由分发并投递到下方的 `im.route.*` (`IM_HANDOFF` 流) 之后，才会对这条 `im.up.>` 消息发送显式的 ACK。这完美保证了数据在“边缘接入层”向“内部业务层”交接的途中绝对不丢。
+
+### **IM_HANDOFF (内部路由与 WAL 核心流)**
+
+```mermaid
+flowchart LR
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+  P_R[oceanchat-router]:::service
+  P_M[oceanchat-message]:::service
+  C_MG[oceanchat-message]:::service
+  C_O[oceanchat-orchestrator]:::service
+  C_W[MessagePersistence Worker]:::service
+  subgraph Stream: IM_HANDOFF
+    SUB1(im.route.*):::subject
+    SUB2(im.orchestrate.msg):::subject
+  end
+  P_R -- 发布业务路由 --> SUB1
+  SUB1 -- Consume 拉取 --> C_MG
+  P_M -- 发布消息 (写屏障) --> SUB2
+  SUB2 -- Consume 拉取 --> C_O
+  SUB2 -- 异步大批量 Pull --> C_W
+```
+
+- 核心职责: 系统最关键的流，不仅是微服务之间传递业务负载的“接力棒”，更充当着整个系统的**写屏障 (Write Fence)** 和**预写日志 (WAL)**。
+  - 当 `oceanchat-router` 解析完网关上报的数据后，会交接给此流以触发下层核心业务处理。
+  - 业务服务处理完毕后，再次写入此流，利用 NATS 的高可靠性确保消息不丢失，随后分离为 [消息发送与落库](./Bussiness%20Logic/Message%20sending%20and%20database%20storage.md) 和“实时派发推送”两条支线。
+
+- 保留策略 (Retention Strategy): `RetentionPolicy.Limits` (基于限制的保留)。
+  - 原因: 数据需要被多个不同的微服务消费者组（如推送编排服务、持久化 Worker）独立且全量地消费。Limits 策略确保了即使某个消费者（如 MongoDB 批量落库）出现延迟或宕机，消息依然安全保留在队列中，直到所有订阅者都成功推进消费游标。
+
+- 存储介质 (Storage): `StorageType.File` (磁盘文件/SSD)。
+  - 原因: 极致的可靠性要求。这是写屏障（WAL）的所在，服务端只要收到此流的 NATS ACK，就会给客户端返回发送成功的确认。如果发生机房断电或 NATS 宕机，这部分尚未落库 MongoDB 的消息数据必须能从磁盘恢复，绝对不能丢失。
+
+- 关键配置与设计细节:
+  - 写后持久化架构 (Write-after-persistence): 将快速的客户端响应（跨越写屏障即返回 ACK）与缓慢的数据库落盘（后台异步大批量 Pull 消费并插入）彻底解耦，这是 Ocean Chat 支撑十万级并发写操作的性能基石。
+
+#### 主题 1: im.route.\* (例如 im.route.p2p, im.route.group)
+
+职责描述: 内部业务路由交接。`oceanchat-router` 完成原始数据包解析后，将业务 Payload 路由投递给对应的具体业务逻辑服务。
+
+- 生产者配置 (Producer: `oceanchat-router` 服务)
+  - 发布逻辑: 解析 Protobuf 数据帧、完成初步业务级限流与基础校验后，根据业务类型定向发布。
+- 消费者配置 (Consumer: `oceanchat-message` 或 `oceanchat-group` 服务)
+  - 消费逻辑: Pull 模式。
+  - 配置详情与原因:
+    - 队列组 (Queue Group): 相同业务服务的多个实例组成拉取队列组，共享消费游标，实现水平扩展和负载均衡。一条消息只会被一个业务实例拉取处理。
+    - 至少一次投递 (At-Least-Once): 如果业务服务在处理中途（如校验权限时）崩溃，未能回传明确的 ACK，NATS 会在等待超时后将该消息重新投递给其他健康的实例，确保核心业务逻辑不中断、消息绝对不丢。
+
+#### 主题 2: im.orchestrate.msg
+
+职责描述: **关键写屏障所在！** 处理完毕的合法消息会投递到此，作为“已安全接收”的最终凭证。它同时为下游的异步落库和消息派发推送提供数据源。
+
+- 生产者配置 (Producer: `oceanchat-message` 服务)
+  - 发布逻辑: 完成好友/群组鉴权、内容合规审查、并分配全局单调递增的 `SyncSeqId` 后，将最终业务消息体发布至此主题。
+  - 配置详情与原因:
+    - 同步等待 ACK: 消息服务发布时，必须等待 NATS JetStream 返回持久化成功的 ACK 回执。只有越过了这个写屏障边界，服务才会通知网关向客户端下发 `[0x06] MSG_UP_ACK`。
+
+- 消费者配置 (具备两个独立的持久化消费者组 / Consumer Groups)
+  - 消费者 A: `oceanchat-orchestrator` (推送编排服务)
+    - 消费逻辑: 实时 Pull 拉取。
+    - 配置详情与原因: 编排服务拉取消息后，会查询 Redis 在线状态图谱来评估接收方的网络状态。由此决定是将消息转化为轻量级的 `MSG_NOTIFY` 发往下行流，还是转化为离线唤醒任务转移到 `OFFLINE_PUSH` 流进行厂商推送。
+  - 消费者 B: `MessagePersistence Worker` (消息持久化管道)
+    - 消费逻辑: 后台异步大批量 Pull 拉取 (Batch Pull)。
+    - 配置详情与原因: 这个 Worker 彻底将慢速的磁盘 I/O 解耦出了主链路。通过一次性批量拉取数百条消息，利用 MongoDB 的 Bulk Insert 接口执行批量写入，极大地降低了数据库的 IOPS 瓶颈压力。只有落库成功后，Worker 才会向 NATS 发送显式 ACK，推进当前消费组的进度，保障了海量并发下的最终一致性。
 
 ### **AUTH_STATE (全局安全流)**
+
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-auth]:::service
+  C[oceanchat-api-gateway]:::gateway
+
+  subgraph Stream: AUTH_STATE
+    SUB(auth.jwt.revoke):::subject
+  end
+
+  P -- 发布令牌撤销指令 --> SUB
+  SUB -- 临时全量拉取广播 (Fan-out) --> C
+```
 
 - 核心职责: 用于在微服务之间高速广播全局关键的安全状态变更。
   - 目前专用于 JWT 令牌的黑名单撤销同步 (`auth.jwt.revoke`)。
@@ -174,6 +239,22 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 
 ### **AUTH_EVENTS (认证事件流)**
 
+```mermaid
+flowchart LR
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-auth]:::service
+  C[oceanchat-user]:::service
+
+  subgraph Stream: AUTH_EVENTS
+    SUB(auth.event.user.loggedIn):::subject
+  end
+
+  P -- 异步发布登录事件 --> SUB
+  SUB -- 持久化单播拉取 (Durable Pull) --> C
+```
+
 - 核心职责: 用于记录和分发系统业务层面的行为与事件。
   - 目前主要用于广播用户登录成功事件 (auth.event.user.loggedIn)。
   - 属于典型的异步解耦设计。Auth 模块专注于高并发的鉴权和发证，至于“记录用户的最后登录时间”、“更新登录设备历史”这些耗时但不影响用户当前请求的操作，会被作为事件抛入此流，由 oceanchat-user 服务在后台异步、慢慢地消费处理。
@@ -207,6 +288,22 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 
 ### **AUTH_DLQ (死信队列流)**
 
+```mermaid
+flowchart LR
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[各类微服务底座拦截器]:::service
+  C[运维恢复 / 告警系统]:::service
+
+  subgraph Stream: AUTH_DLQ
+    SUB(dlq.>):::subject
+  end
+
+  P -- 重试耗尽 / 发布异常转存 --> SUB
+  SUB -. 人工介入 / 提取重放 .-> C
+```
+
 - 核心职责: 系统的错误兜底仓库 (Dead Letter Queue)。集中存放因为种种原因（代码 Bug、脏数据、下游数据库崩溃）经过多次重试依然无法被正常处理的“毒消息（Poison Message）”。
 - 保留策略 (Retention Strategy): RetentionPolicy.Limits。
   - 原因: 错误现场的原始数据，不能被其他消费者意外消耗，必须在存储范围内永久保留，等待人工或自动化系统介入。
@@ -239,7 +336,75 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
   - 原因：死信队列绝对不能被自动消费。进入 DLQ 的消息意味着经过了系统的反复挣扎依然无法处理。它必须长期静静躺在硬盘上（max_age: 7天）。
   - 未来演进: 通常的做法是，触发 DLQ 的写入会直接联动公司的告警系统（飞书、钉钉机器人）。开发人员看到报警后，排查日志，修复 Bug，最后通过一个 Admin 后台管理界面，点击“一键重放（Replay）”，系统在后台把 dlq. 前缀去掉，重新发回对应的流。
 
+### **CURSOR_STATE (游标状态持久化流)**
+
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-router]:::service
+  C[MessagePersistence Worker]:::service
+
+  subgraph Stream: CURSOR_STATE
+    SUB(cursor.ack.* / cursor.read.*):::subject
+  end
+
+  P -- 极速抛入状态更新 --> SUB
+  SUB -- 折叠去重后批量 Pull --> C
+```
+
+- **核心职责**: 作为极高频的已读/接收游标（ACK/Read Cursor）的**异步写缓冲 (Write-behind Cache)**，保护底层数据库（MongoDB）和缓存层（Redis）免受“确认风暴”导致的 IOPS 过载。
+  - 在大群聊或极度活跃的单聊中，客户端拉取消息后会高频发送 `[0x0B] READ_RECEIPT` 确认信令。网关/路由仅将这些状态变更投递到此流，彻底实现网关层的零 I/O 阻塞。
+  - 持久化工作单元（Worker）在后台以批量模式消费，将最终去重折叠后的游标状态统一同步至 Redis 并落盘到 MongoDB。
+
+- **保留策略 (Retention Strategy)**: `RetentionPolicy.Limits` (基于限制的保留)。
+  - **原因**: 游标数据属于典型的**“状态数据 (State)”**而非**“事件数据 (Event)”**。我们只关心用户的最终状态（最新看到了哪条消息），而完全不在乎过程（中间经过了哪些 SeqId）。Limits 策略配合后续的 `MaxMsgsPerSubject=1` 黑科技，实现了完美的内存与磁盘削峰。
+
+- **存储介质 (Storage)**: `StorageType.Memory` (内存)。
+  - **原因**: 即便使用文件存储，由于极致的队列去重特性，它也几乎不占用空间。哪怕极端情况下系统全量宕机丢失了一两秒内的游标 ACK 数据，系统大不了从上次 Redis 或 MongoDB 记录的位置重新开始，由于客户端在下次收发消息或断线重连时具备天然的去重机制，因此不必担心消息重复拉取的问题，完全可以激进地采用 Memory 存储来换取无敌的吞吐量。
+
+- **关键配置与设计细节**:
+  - `max_msgs_per_subject: 1` (极客级风暴折叠机制) 🌟:
+    - **原因**: **这是解决群聊 ACK 写风暴的最核心黑科技。** 如果一个用户在 1 秒内疯狂滑动万人大群的聊天记录，触发了 50 次游标更新（如 SeqId 从 101 一路更新到 150）。当这 50 个更新事件被发布到精准定位该用户的同一个 Subject 下时，NATS 会自动将旧值丢弃。整个流中，针对该群该用户的游标队列里，**永远只有最新的一条数据（SeqId 150）**。
+  - **异步大批次落盘 (BulkWrite)**:
+    - **原因**: 持久化 Worker 不需要关心过程中的那 49 次无用更新。它只要定期（如每秒一次）从流中 Pull 拉取被折叠后最精简的状态合集。拿到 1000 个用户的最新游标后，不仅调用一次 MongoDB 的 `bulkWrite`，同时利用 Redis 的 Pipeline 功能批量更新缓存，将原本 50,000 次高频随机写操作降维打击成极少次数的网络 I/O。
+
+#### 主题 1: cursor.ack.\{groupId\}.\{userId\} / cursor.read.\{groupId\}.\{userId\}
+
+职责描述: 接收与合并特定用户在特定会话（群组/单聊）的最新游标状态。
+
+- 生产者配置 (Producer: `oceanchat-router` 或 `oceanchat-api-gateway`)
+  - 发布逻辑: 接收到客户端的 ACK/Read 信令后，**不进行任何同步数据库或 Redis 操作**，直接将 Payload（如 `{"seqId": 1005}`）异步发布至精确的通配符主题。
+  - 配置详情与原因:
+    - **高度具粒度的主题**: 必须把 `groupId` 和 `userId` 都写进主题名称里（如 `cursor.ack.G1.U1`）。这是 `max_msgs_per_subject: 1` 能够精确执行“只为 U1 保留在 G1 的最新一条记录”的大前提。
+
+- 消费者配置 (Consumer: `MessagePersistence Worker` 消息持久化工作单元)
+  - 消费逻辑: Pull 模式订阅 `cursor.>`。
+  - 配置详情与原因:
+    - **批量拉取与双写同步 (Batch Pull & Dual Write)**: Worker 通过长轮询批量拉取（如 `batch: 1000`），将系统折叠后最精简的游标状态一把抓出。随后，Worker 利用 Redis Pipeline 批量更新 Redis 中的游标缓存，并执行 MongoDB BulkWrite 持久化。
+    - **显式 ACK (Explicit ACK)**: 只有在 Redis 和 MongoDB 的批量写入都执行成功后，Worker 才会向 NATS 批量回传 ACK。由于客户端具备幂等去重能力，即使此处发生部分失败导致重试，也不会影响最终业务一致性。
+    - **持久化队列组 (Durable Queue Group)**: 多个 Worker 实例共同分担全网的游标落盘压力，一条精简后的游标状态只会被落库一次。
+
 ### **SYS_PRESENCE (状态与事件流)**
+
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-ws-gateway]:::gateway
+  C[oceanchat-presence / orchestrator]:::service
+
+  subgraph Stream: SYS_PRESENCE
+    SUB(presence.conn.*):::subject
+  end
+
+  P -- 发布上下线/心跳事件 --> SUB
+  SUB -- Pull 拉取同步 --> C
+```
 
 - **职责**: 处理用户在线/下线事件和连接心跳。
 - **保留策略**: Interest（仅在有服务监听时保留）或短时间限制。
@@ -250,12 +415,45 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 
 ### **GROUP_HYBRID (超大群降级流)**
 
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-router]:::service
+  C[oceanchat-ws-gateway]:::gateway
+
+  subgraph Stream: GROUP_HYBRID
+    SUB(group.tick.*):::subject
+  end
+
+  P -- 发布群互动降级信令 --> SUB
+  SUB -- 下发 Push 推送 --> C
+```
+
 - **职责**: 专门用于万人以上超大群的 **推拉结合 (Push-Pull Hybrid)** 策略，防止扇出雪崩。
 - **生产者**: 路由服务。
 - **消费者**: WebSocket 网关（并间接传递给客户端）。
 - **策略**: 信令推 + 客户端拉 (抖动化的 HTTP/RPC)。
 
 ### **OFFLINE_PUSH (第三方推送流)**
+
+```mermaid
+flowchart LR
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-orchestrator]:::service
+  C[oceanchat-pusher-offline]:::service
+
+  subgraph Stream: OFFLINE_PUSH
+    SUB(push.offline.*):::subject
+  end
+
+  P -- 发布唤醒任务 --> SUB
+  SUB -- WorkQueue Pull拉取 --> C
+```
 
 - **核心职责**: 处理发往 Apple APNs、Google FCM 以及国内厂商 API 的离线唤醒通知。
   - 当 `oceanchat-orchestrator` 检测到目标用户离线（无活跃 TCP/WS 连接）时，会将一条轻量级的唤醒任务发布到此流。
@@ -299,6 +497,22 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 
 ### **DATA_PIPELINE (异构数据流)**
 
+```mermaid
+flowchart LR
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[MessagePersistence Worker]:::service
+  C[Data Pipeline Worker]:::service
+
+  subgraph Stream: DATA_PIPELINE
+    SUB(pipeline.index.msg):::subject
+  end
+
+  P -- 落库成功后触发索引 --> SUB
+  SUB -- 大批次 Pull 拉取 --> C
+```
+
 - **职责**: 作为数据管道，将聊天记录同步到 Elasticsearch 以进行全局搜索。
 - **保留策略**: 限制策略（保留数据直至成功索引）。
 - **存储**: 文件存储 (SSD)。
@@ -308,6 +522,23 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 
 ### **BACKGROUND_TASKS (多媒体与审计流)**
 
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[API网关 / 其他业务服务]:::gateway
+  C[媒体服务 / 审计服务]:::service
+
+  subgraph Stream: BACKGROUND_TASKS
+    SUB(task.*):::subject
+  end
+
+  P -- 抛出耗时任务 --> SUB
+  SUB -- Pull (带显式 NAK 回退) --> C
+```
+
 - **职责**: 管理 CPU 密集型后台作业，如媒体转码、缩略图生成和内容审计（NSFW 过滤）。
 - **保留策略**: 工作队列 (WorkQueue)。
 - **存储**: 文件存储 (SSD)。
@@ -316,6 +547,22 @@ Ocean Chat 中的流按 **业务域** 和 **数据保留生命周期** 进行分
 - **策略**: **带显式 NAK 的 Pull 消费者**。如果视频转码任务失败，消费者向 NATS 发送否定确认 (NAK)，立即将任务重新入队到另一个健康的实例，而不是等待超时。
 
 ### **DEVICE_SYNC (设备同步流)**
+
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[API网关 / 连接网关]:::gateway
+  C[oceanchat-ws-gateway]:::gateway
+
+  subgraph Stream: DEVICE_SYNC
+    SUB(sync.cursor.read.*):::subject
+  end
+
+  P -- 发布多端游标事件 --> SUB
+  SUB -- 临时下行 Push 推送 --> C
+```
 
 - **职责**: 同步已读游标并清除多端通知标记。
 - **保留策略**: 限制策略或 Interest。

@@ -3,7 +3,17 @@ id: microservice-architecture
 title: Microservice Architecture
 sidebar_label: Microservice Architecture
 description: Overview of the Ocean Chat distributed microservice architecture designed to support 10 million-level concurrency.
-keywords: [ocean chat, microservices, architecture, nestjs, nats, jetstream, redis, mongodb]
+keywords:
+  [
+    ocean chat,
+    microservices,
+    architecture,
+    nestjs,
+    nats,
+    jetstream,
+    redis,
+    mongodb,
+  ]
 ---
 
 import Tabs from '@theme/Tabs';
@@ -33,7 +43,45 @@ This project is built on a modern and robust technology stack, chosen for its pe
 
 ## IM Architecture Diagram
 
-// TODO: Diagram
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+    subgraph System ["Ocean Chat Microservice Architecture Panorama"]
+        direction TB
+
+        subgraph Layer1 ["Layer 1: Gateway & Ingestion Layer (Massive concurrent connections & entry routing)"]
+            direction LR
+            API("API Gateway\n(oceanchat-api-gateway)") ~~~ WS("Connection Gateway\n(oceanchat-ws-gateway)") ~~~ Router("Message Router Service\n(oceanchat-router)")
+        end
+
+        subgraph Layer2 ["Layer 2: Core Business Logic Layer (Stateless core business processing)"]
+            direction LR
+            Auth("Auth Service\n(oceanchat-auth)") ~~~ User("User & Relation Service\n(oceanchat-user)") ~~~ Group("Group Service\n(oceanchat-group)") ~~~ Msg("Message Logic Service\n(oceanchat-message)")
+        end
+
+        subgraph Layer3 ["Layer 3: Message Push Pipeline (Asynchronous & highly reliable message delivery)"]
+            direction LR
+            Orch("Push Orchestrator Service\n(oceanchat-orchestrator)") ~~~ PushRT("Realtime Push Worker\n(oceanchat-pusher-realtime)") ~~~ PushOff("Offline Push Worker\n(oceanchat-pusher-offline)")
+        end
+
+        subgraph Layer4 ["Layer 4: Foundational Support Services (High-performance state & data support)"]
+            direction LR
+            Presence("Presence Service\n(oceanchat-presence)") ~~~ Query("Data Query Service\n(oceanchat-query)") ~~~ DBWorker("Message Persistence Pipeline\n(MessagePersistence)")
+        end
+
+        Layer1 --> Layer2
+        Layer2 --> Layer3
+        Layer3 --> Layer4
+    end
+
+    classDef layer fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#334155;
+    classDef system fill:#ffffff,stroke:#94a3b8,stroke-width:2px,stroke-dasharray: 5 5;
+    class Layer1,Layer2,Layer3,Layer4 layer;
+    class System system;
+```
 
 ## Layer 1: Gateway and Access Layer
 

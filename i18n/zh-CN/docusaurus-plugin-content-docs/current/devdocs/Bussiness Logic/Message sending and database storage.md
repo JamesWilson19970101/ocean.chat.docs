@@ -27,7 +27,8 @@ import TabItem from '@theme/TabItem';
     1. 连接网关 (oceanchat-ws-gateway)：无状态边缘节点。接收 WebSocket 的 MSG_UP 数据帧，剥离传输层，直接转发原始负载。
     2. 路由服务 (oceanchat-router)：流量调度器。拉取原始数据包，解码 Protobuf，并将其路由到正确的业务服务（单聊或群聊）。
     3. 消息逻辑服务 (oceanchat-message)：业务大脑。负责权限校验、内容过滤以及分配基于号段模式的会话级 SyncSeqId。它负责把控写屏障 (Write Fence)。
-    4. 消息持久化 Worker (MessagePersistence)：后台消费者。从 NATS 批量拉取消息并写入 MongoDB。
+    4. 群组/关系服务 (oceanchat-group / oceanchat-user)：决策者。由消息服务在校验权限时通过高速内部 RPC 调用，用于判断群成员身份、禁言状态或单聊好友关系。
+    5. 消息持久化 Worker (MessagePersistence)：后台消费者。从 NATS 批量拉取消息并写入 MongoDB。
   </TabItem>
   <TabItem value="streams" label="必需的 JetStream">
     1.  IM_CORE Stream:
@@ -55,24 +56,30 @@ sequenceDiagram
     participant Gateway as WS 网关
     participant Router as 路由服务
     participant Message as 消息服务
+    participant GroupUser as 群组/关系服务
 Client->>Gateway: [0x05] MSG_UP (Header: ReqId, Payload: ClientMsgId)
 
 rect rgb(243, 232, 255)
     note right of Gateway: 阶段 1: 接入 (Ingestion)
-    Gateway->>NATS: 将原始字节发布至 im.up.p2p
+    Gateway->>NATS: 将原始字节发布至 im.up.p2p 或 im.up.group
 end
 
 rect rgb(219, 234, 254)
     note right of Router: 阶段 2: 路由 (Routing)
-    NATS-->>Router: 从 im.up.p2p 拉取
+    NATS-->>Router: 从 im.up.> 拉取
     Router->>Router: 解码 Protobuf & 基础校验
-    Router->>NATS: 发布至 im.route.p2p
+    Router->>NATS: 发布至 im.route.p2p 或 im.route.group
 end
 
 rect rgb(220, 252, 231)
     note right of Message: 阶段 3: 业务逻辑 & 写屏障 (Write Fence)
-    NATS-->>Message: 从 im.route.p2p 拉取
-    Message->>Message: 权限校验 & 分配 SyncSeqId (号段模式)
+    NATS-->>Message: 从 im.route.* 拉取
+    alt 是群聊消息 (im.route.group)
+        Message->>GroupUser: RPC: 校验是否为群成员及禁言状态
+    else 是单聊消息 (im.route.p2p)
+        Message->>GroupUser: RPC: 校验是否为好友及黑名单状态
+    end
+    Message->>Message: 内容审查 & 分配 SyncSeqId (号段模式)
     Message->>NATS: 发布至 im.orchestrate.msg
     NATS-->>Message: 返回持久化 ACK 回执
 

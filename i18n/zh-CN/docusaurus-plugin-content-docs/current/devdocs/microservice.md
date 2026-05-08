@@ -25,7 +25,46 @@ import TabItem from '@theme/TabItem';
 
 ## IM 架构图
 
-// TODO: 图示
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+    subgraph System ["Ocean Chat 微服务架构全景"]
+        direction TB
+
+        subgraph Layer1 ["第一层：网关与接入层 (专职海量并发连接与入口路由)"]
+            direction LR
+            API("API 网关\n(oceanchat-api-gateway)") ~~~ WS("连接网关\n(oceanchat-ws-gateway)") ~~~ Router("消息路由服务\n(oceanchat-router)")
+        end
+
+        subgraph Layer2 ["第二层：核心业务逻辑层 (专职无状态的核心业务处理)"]
+            direction LR
+            Auth("认证服务\n(oceanchat-auth)") ~~~ User("用户关系服务\n(oceanchat-user)") ~~~ Group("群组服务\n(oceanchat-group)") ~~~ Msg("消息逻辑服务\n(oceanchat-message)")
+        end
+
+        subgraph Layer3 ["第三层：消息推送管道 (专职异步、高可靠的消息下发)"]
+            direction LR
+            Orch("推送编排服务\n(oceanchat-orchestrator)") ~~~ PushRT("实时推送 Worker\n(oceanchat-pusher-realtime)") ~~~ PushOff("离线推送 Worker\n(oceanchat-pusher-offline)")
+        end
+
+        subgraph Layer4 ["第四层：基础支撑服务 (提供高性能状态与数据支撑)"]
+            direction LR
+            Presence("在线状态服务\n(oceanchat-presence)") ~~~ Query("数据查询服务\n(oceanchat-query)") ~~~ DBWorker("消息持久化管道\n(MessagePersistence)")
+        end
+
+        Layer1 --> Layer2
+        Layer2 --> Layer3
+        Layer3 --> Layer4
+    end
+
+    classDef layer fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#334155;
+    classDef system fill:#ffffff,stroke:#94a3b8,stroke-width:2px,stroke-dasharray: 5 5;
+    class Layer1,Layer2,Layer3,Layer4 layer;
+    class System system;
+
+```
 
 ## 第一层：网关与接入层
 

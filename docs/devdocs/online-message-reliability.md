@@ -83,6 +83,10 @@ The receiving client **must** implement Hole Detection:
 5. The `oceanchat-query` service will precisely return the incremental data of the missing messages via an HTTP response.
 6. Render the synchronized message stream and update the `MaxLocalSyncSeqId`.
 
+:::info Online Notification Display Format
+Currently, the plan is for **all online notifications to be implemented via in-app local notifications (such as custom banners or notification sounds within the app).** How to utilize the system's notification bar for notifications while the user is "online" will be re-planned later.
+:::
+
 ## Expected Outcome
 
 By integrating the `ClientMsgId` for deduplication, JetStream for absolute persistence, and `SyncSeqId` for gap detection, the system guarantees zero message loss and precise ordering across distributed nodes, remaining completely independent of the fluctuations of the underlying TCP/WebSocket connections.

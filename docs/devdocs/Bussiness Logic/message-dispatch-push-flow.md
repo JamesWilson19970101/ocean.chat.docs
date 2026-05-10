@@ -67,7 +67,7 @@ If an active session is found on a specific `gateway_node_uuid`, the real-time n
 
 1.  **Signal Dispatch**: The orchestrator service publishes a lightweight `MSG_NOTIFY` signal to the `im.down.node.{gateway_node_uuid}` topic.
 2.  **WebSocket Push**: The `oceanchat-pusher-realtime` service routes the signal to the exact `oceanchat-ws-gateway` instance holding the connection. The gateway pushes a binary `MSG_NOTIFY` packet containing only the `SyncSeqId` to the client.
-3.  **HTTP Sync (Pull)**: Upon receiving the notification, the client immediately initiates an **HTTP Sync** request to the `oceanchat-query` service to pull the actual message payload.
+3.  **HTTP Sync (Pull)**: Upon receiving a notification, the client **should not** immediately pull the message. Instead, it should implement a **200ms intelligent debounce window**. If multiple notifications are received consecutively during this period, the client only needs to extract the largest `SyncSeqId` and send a **HTTP Sync** request to the `oceanchat-query` service to incrementally pull the actual message load in batches.
 
 :::tip Why Use a Push-Pull Hybrid?
 By only pushing extremely small wake-up signals and having the client pull heavy payloads via HTTP, the system avoids "Head-of-Line Blocking" on WebSocket connections and fully leverages standard HTTP caching and load balancing mechanisms.

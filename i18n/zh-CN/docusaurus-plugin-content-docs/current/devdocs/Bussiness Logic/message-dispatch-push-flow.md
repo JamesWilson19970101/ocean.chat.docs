@@ -67,7 +67,7 @@ import TabItem from '@theme/TabItem';
 
 1.  **信令派发**：编排服务向 `im.down.node.{gateway_node_uuid}` 主题发布一个轻量级的 `MSG_NOTIFY` 信号。
 2.  **WebSocket 推送**：`oceanchat-pusher-realtime` 服务将信令路由到持有该连接的精准 `oceanchat-ws-gateway` 实例。网关向客户端推送仅包含 `SyncSeqId` 的二进制 `MSG_NOTIFY` 包。
-3.  **HTTP Sync (拉取)**：客户端收到通知后，立即向 `oceanchat-query` 服务发起 **HTTP Sync** 请求，以拉取实际的消息负载。
+3.  **HTTP Sync (拉取)**：客户端收到通知后，**不应**立即拉取，而是需实现一个 **200ms 的智能防抖 (Debounce) 窗口**。如果在此期间连续收到多个通知，客户端仅需提取其中最大的 `SyncSeqId`，向 `oceanchat-query` 服务发起一次 **HTTP Sync** 请求，以批量增量拉取实际的消息负载。
 
 :::tip 为什么使用推拉结合？
 通过只推送极小的唤醒信令并让客户端通过 HTTP 拉取重型负载，系统避免了 WebSocket 上的“队头阻塞 (Head-of-Line Blocking)”，并能充分利用标准的 HTTP 缓存与负载均衡机制。

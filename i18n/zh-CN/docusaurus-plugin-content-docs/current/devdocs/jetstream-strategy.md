@@ -41,7 +41,7 @@ flowchart TB
         subgraph S_AUTH_EVENTS ["Stream: AUTH_EVENTS"]
             LOGGEDIN("auth.event.user.loggedIn"):::subject
         end
-        subgraph S_AUTH_DLQ ["Stream: AUTH_DLQ"]
+        subgraph S_DLQ ["Stream: DLQ"]
             DLQ("dlq.>"):::subject
         end
         subgraph S_CURSOR ["Stream: CURSOR_STATE"]
@@ -55,9 +55,6 @@ flowchart TB
         end
         subgraph S_PUSH ["Stream: OFFLINE_PUSH"]
             PUSH("push.offline.>"):::subject
-        end
-        subgraph S_PIPE ["Stream: DATA_PIPELINE"]
-            INDEX("pipeline.index.msg"):::subject
         end
         subgraph S_TASK ["Stream: BACKGROUND_TASKS"]
             TASK("task.*"):::subject
@@ -286,7 +283,7 @@ flowchart LR
     - durableName: `oceanchat-user-auth-events` (持久化消费者 / Durable)
       - 原因: 这是一个工作队列/单播模式。不管后台部署了多少个 `oceanchat-user` 服务实例，一条登录事件只能被一个实例处理一次（否则会疯狂并发写数据库）。同名的 Durable 会让 NATS 服务端自动在这些实例间做负载均衡 (Load Balancing)。并且，持久化记录了消费游标（Offset），如果所有 user 服务宕机一小时，重启后它们会接着一小时前的地方继续处理，绝不漏单。
 
-### **AUTH_DLQ (死信队列流)**
+### **DLQ (死信队列流)**
 
 ```mermaid
 flowchart LR
@@ -296,7 +293,7 @@ flowchart LR
   P[各类微服务底座拦截器]:::service
   C[运维恢复 / 告警系统]:::service
 
-  subgraph Stream: AUTH_DLQ
+  subgraph Stream: DLQ
     SUB(dlq.>):::subject
   end
 
@@ -348,7 +345,7 @@ flowchart LR
   C[MessagePersistence Worker]:::service
 
   subgraph Stream: CURSOR_STATE
-    SUB(cursor.ack.* / cursor.read.*):::subject
+    SUB(cursor.read.*):::subject
   end
 
   P -- 极速抛入状态更新 --> SUB
@@ -371,14 +368,14 @@ flowchart LR
   - **异步大批次落盘 (BulkWrite)**:
     - **原因**: 持久化 Worker 不需要关心过程中的那 49 次无用更新。它只要定期（如每秒一次）从流中 Pull 拉取被折叠后最精简的状态合集。拿到 1000 个用户的最新游标后，不仅调用一次 MongoDB 的 `bulkWrite`，同时利用 Redis 的 Pipeline 功能批量更新缓存，将原本 50,000 次高频随机写操作降维打击成极少次数的网络 I/O。
 
-#### 主题 1: cursor.ack.\{groupId\}.\{userId\} / cursor.read.\{groupId\}.\{userId\}
+#### 主题 1: cursor.read.\{groupId\}.\{userId\}
 
 职责描述: 接收与合并特定用户在特定会话（群组/单聊）的最新游标状态。
 
 - 生产者配置 (Producer: `oceanchat-router` 或 `oceanchat-api-gateway`)
   - 发布逻辑: 接收到客户端的 ACK/Read 信令后，**不进行任何同步数据库或 Redis 操作**，直接将 Payload（如 `{"seqId": 1005}`）异步发布至精确的通配符主题。
   - 配置详情与原因:
-    - **高度具粒度的主题**: 必须把 `groupId` 和 `userId` 都写进主题名称里（如 `cursor.ack.G1.U1`）。这是 `max_msgs_per_subject: 1` 能够精确执行“只为 U1 保留在 G1 的最新一条记录”的大前提。
+    - **高度具粒度的主题**: 必须把 `groupId` 和 `userId` 都写进主题名称里（如 `cursor.read.G1.U1`）。这是 `max_msgs_per_subject: 1` 能够精确执行“只为 U1 保留在 G1 的最新一条记录”的大前提。
 
 - 消费者配置 (Consumer: `MessagePersistence Worker` 消息持久化工作单元)
   - 消费逻辑: Pull 模式订阅 `cursor.>`。
@@ -488,37 +485,12 @@ flowchart LR
       - **原因**: 离线推送服务需要调用苹果或谷歌的外部 HTTP API，网络延迟不可控且有严重的限流（Rate Limit）惩罚。Pull 模式允许消费者根据自身的处理能力和厂商限额“量力而行”地拉取任务，实现削峰填谷，彻底避免被海量离线任务压垮（解决 OOM 风险）。
     - **`ack_policy: "explicit"` (显式确认) 与 `ack_wait: "10s"`**:
       - **原因**: 只有当明确收到 APNs 或 FCM 返回的 HTTP 200 OK 且推送成功后，工作单元才向 NATS 发送 ACK。如果外部接口卡死、超时或返回了 5xx 错误，服务绝不发 ACK，10 秒后 NATS 会自动把该任务重新放回工作队列，交给其他健康的 worker 实例进行重试。
-    - **`max_deliver: 5` (最大投递次数)**:
+    - **`max_deliver: 3` (最大投递次数)**:
       - **原因**: 防止死循环。如果某个用户的 DeviceToken 已经彻底失效（例如卸载了 App），导致苹果服务器持续返回 400 BadDeviceToken，连续 5 次重试依然失败后，NATS 消费者框架会将任务作为毒消息转入死信队列（DLQ），避免该任务永久卡在队列中空耗系统资源。
     - **`durable_name: "offline-pusher-group"` (持久化消费者组)**:
       - **原因**: 必须配置一个固定的 Durable Name。这样 NATS 会将所有启动的 `oceanchat-pusher-offline` 实例视为同一个“消费者组（Consumer Group）”。它们在 NATS 服务端共享同一个消费游标，天然实现**负载均衡**。一条推送通知只会被其中一个空闲实例拉走，绝不会导致用户收到 n 次重复推送。
     - **`deliver_policy: "all"`**:
       - **原因**: 此策略**仅在消费者组首次创建时生效**。它指示 NATS 将该消费者组的初始共享游标指向流中最旧的消息。配合上面的 Durable 机制，可以确保哪怕所有推送实例都停机维护了一段时间，重新上线后整个集群也能从最早的积压任务开始，不漏不重地清空推送队列。
-
-### **DATA_PIPELINE (异构数据流)**
-
-```mermaid
-flowchart LR
-  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
-  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
-
-  P[MessagePersistence Worker]:::service
-  C[Data Pipeline Worker]:::service
-
-  subgraph Stream: DATA_PIPELINE
-    SUB(pipeline.index.msg):::subject
-  end
-
-  P -- 落库成功后触发索引 --> SUB
-  SUB -- 大批次 Pull 拉取 --> C
-```
-
-- **职责**: 作为数据管道，将聊天记录同步到 Elasticsearch 以进行全局搜索。
-- **保留策略**: 限制策略（保留数据直至成功索引）。
-- **存储**: 文件存储 (SSD)。
-- **生产者**: MessagePersistence Worker（保存到 MongoDB 后立即触发）。
-- **消费者**: 数据管道工作单元。
-- **策略**: **大批次 Pull**。工作单元一次获取数千条消息，并使用 Elasticsearch Bulk API 进行高效索引。
 
 ### **BACKGROUND_TASKS (多媒体与审计流)**
 
@@ -539,81 +511,70 @@ flowchart LR
   SUB -- Pull (带显式 NAK 回退) --> C
 ```
 
-- **职责**: 管理 CPU 密集型后台作业，如媒体转码、缩略图生成和内容审计（NSFW 过滤）。
-- **保留策略**: 工作队列 (WorkQueue)。
-- **存储**: 文件存储 (SSD)。
-- **生产者**: API 网关或业务微服务（文件上传成功后触发）。
-- **消费者**: 多媒体服务 / 审计服务。
-- **策略**: **带显式 NAK 的 Pull 消费者**。如果视频转码任务失败，消费者向 NATS 发送否定确认 (NAK)，立即将任务重新入队到另一个健康的实例，而不是等待超时。
+- 核心职责: 处理 CPU 密集型计算（音视频转码、缩略图生成）与耗时的外部 I/O 调用（第三方 AI 鉴黄、暴恐识别）。
+  - 通过将这些繁重的多媒体与合规任务抛入专用的后台流，核心的 IM_CORE 实时聊天链路免受了“雪崩”拖垮和队头阻塞的影响，实现了“长短链协同”完美物理隔离。
+- 保留策略 (Retention Strategy): RetentionPolicy.WorkQueue (工作队列)。
+  - 原因: 这是一个纯粹的任务分发场景。一个转码或审核任务一旦被 Worker 成功执行并返回 ACK，就应该立刻从流中移除。工作队列模式天生支持竞争消费，如果后台部署了 10 台转码 Worker，任务会自动在它们之间进行负载均衡。
+- 存储介质 (Storage): StorageType.File (磁盘文件)。
+  - 原因: 多媒体转码等任务耗时较长（通常长达数十秒到数分钟）。如果遇到海量视频并发上传，任务积压在内存中极易引发 NATS OOM。落盘存储能安全地应对突发的上传洪峰。
+- 关键配置与设计细节:
+  - 显式 NAK 回退 (Explicit NAK):
+    - 原因: 视频转码过程中 ffmpeg 极易因为文件格式异常等原因崩溃，调用外部鉴黄 API 也极易波动超时。消费者工作单元捕获到这些异常后，会立即向 NATS 发送否定确认 (NAK)。NATS 收到 NAK 后会将任务立即（或根据退避策略延迟）重新投入队列首部，转交给另一个健康的节点重试，而不是死等 Ack Wait 超时，极大提升了容错恢复速度。
+  - max_deliver: 3 (最大投递次数):
+    - 原因: 防止“毒文件”（如彻底损坏的非法视频文件）无限循环导致整个转码集群陷入瘫痪。超过 3 次重试失败的任务，将触发框架兜底机制，被转发至 DLQ (死信队列) 进行隔离，等待人工介入。
+
+#### 主题 1: task.\* (例如 task.media.transcode, task.audit.nsfw)
+
+职责描述: 触发特定后台异步计算的工作单元任务队列。
+
+- 生产者配置 (Producer: oceanchat-api-gateway 或 oceanchat-message 服务)
+  - 发布逻辑: 客户端通过 HTTP 短连接将大文件成功上传至 OSS 后，网关将文件的 OSS URL 和元数据组装为任务抛入此主题。
+  - 配置详情与原因:
+    - 异步 Fire-and-Forget: 业务微服务抛出任务后立刻放行，绝不等待后台转码或 AI 审核结束。这极大提升了前端请求的吞吐率，完美支持“先发后审”的业务模型。
+- 消费者配置 (Consumer: 多媒体服务 / 审计服务 独立工作单元)
+  - 消费逻辑: 使用 Pull 模式精确订阅所需的任务类型（如 task.media.> 或 task.audit.>）。
+    - 配置详情与原因:
+      - Pull 模式 (拉取消费) 与削峰填谷:
+        - **原因**: 媒体处理极度消耗 CPU 和内存。Pull 模式允许这些工作单元严格根据自身的硬件负载和并发处理能力（例如限制 `batch: 1`）“量力而行”地拉取任务。这样无论前端并发多高，都不会压垮后端的 Worker 节点。
+      - durable_name (持久化消费者组):
+        - **原因**: 媒体服务和审计服务必须分别配置对应的 Durable Name（如 `media-worker-group` 和 `audit-worker-group`）。确保同种任务在多实例部署下不被重复处理。
+      - 延长 ack_wait 时间:
+        - **原因**: 相比普通的聊天信令，转码任务的执行时间较长。必须将消费者的 `ack_wait` 参数设置得足够大（例如 `5m` 或 `10m`），防止任务还在正常执行中，NATS 就误以为节点宕机而触发重新投递。
 
 ### **DEVICE_SYNC (设备同步流)**
 
 ```mermaid
 flowchart LR
   classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
   classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
-  P[API网关 / 连接网关]:::gateway
+  P[oceanchat-router]:::service
   C[oceanchat-ws-gateway]:::gateway
 
   subgraph Stream: DEVICE_SYNC
     SUB(sync.cursor.read.*):::subject
   end
 
-  P -- 发布多端游标事件 --> SUB
-  SUB -- 临时下行 Push 推送 --> C
+  P -- 广播跨端游标漫游事件 --> SUB
+  SUB -- 临时订阅 (At-Most-Once) 收到事件 --> C
 ```
 
-- **职责**: 同步已读游标并清除多端通知标记。
-- **保留策略**: 限制策略或 Interest。
-- **存储**: 内存（针对极端 IOPS 优化；由于客户端在重新连接后会进行自动同步，因此在 NATS 重启期间丢失是安全的）。
-- **生产者**: API 网关（HTTP 回执）及 WebSocket 网关（WS 信令回执）。
-- **消费者**: WebSocket 网关。
-- **策略**: **临时至多一次 (At-Most-Once) Push**。网关监听游标更新，并静默传递给连接的客户端以清除 UI 标记。
+- **核心职责**: 漫游同步已读游标并清除多端通知标记。当用户在某台设备上（如手机端）阅读消息后，触发多端状态同步，让该用户登录的其他活跃设备（如电脑端、平板端）瞬间静默消除对应的未读红点。
+- **保留策略 (Retention Strategy)**: `RetentionPolicy.Interest` (基于兴趣的保留)。
+  - **原因**: 只有当目标用户在其他设备上确实在线（即网关存在对该 `userId` 的订阅）时，该漫游事件才有派发价值。如果没有订阅者，消息可以直接丢弃，不占用队列存储空间。
+- **存储介质 (Storage)**: `StorageType.Memory` (内存)。
+  - **原因**: 这仅仅是一个用于提升体验的“瞬时在线通知”。即便是发生 NATS 故障导致事件在投递前丢失，客户端在新设备重连时也会自动从后端拉取一次完整的最新同步游标（通过 HTTP 同步）。因此这部分数据允许丢失，可放心地放在内存里换取极致的 IOPS。
 
-## 2. 主题命名空间设计
+#### 主题 1: sync.cursor.read.\{userId\}
 
-主题层级利用 NATS 通配符 (`*` 和 `>`) 实现精确路由。
+职责描述: 广播特定用户的跨设备游标同步事件。
 
-- **上行消息 (网关 -> 后端)**
-  - 点对点聊天: `im.up.p2p`
-  - 群聊: `im.up.group`
-  - 信令 (已读、撤回): `im.up.signal.*`
-- **内部流转 (内部微服务交接)**
-  - 业务路由: `im.route.{service}` (如 `im.route.message`, `im.route.group`)
-  - 推送编排: `im.orchestrate.{push_type}`
-- **下行推送 (推送服务 -> 网关)**
-  - 定向节点推送: `im.down.node.{gateway_node_uuid}`
-- **系统状态**
-  - 连接事件: `presence.conn.online`, `presence.conn.offline`
-- **身份验证控制**
-  - 令牌撤销: `auth.jwt.revoke`
+- 生产者配置 (Producer: `oceanchat-router` 路由服务)
+  - 发布逻辑: 在处理来自网关透传的 `[0x0B] READ_RECEIPT` 协议包时，`oceanchat-router` 除了将游标异步放入 `CURSOR_STATE` 进行持久化折叠外，还会向此流的 `sync.cursor.read.{userId}` 主题广播一条跨端同步事件。
 
-## 5. 可靠性时序图
-
-下图展示了微服务与 JetStream 之间的交互，以确保 **写入屏障 (Write Fence)** 保证。
-
-```mermaid
-sequenceDiagram
-    participant C as 客户端
-    participant G as 网关
-    participant R as 路由
-    participant N as NATS JetStream (WAL)
-    participant W as MessagePersistence Worker
-    participant DB as MongoDB
-
-    C->>G: 发送消息
-    G->>R: 转发负载
-    R->>N: 1. 发布到 IM_CORE 队列 (Write-Ahead Log)
-
-    note right of R: 写入屏障 (Write Fence)
-    N-->>R: NATS 发布确认 (ACK)
-
-    note left of R: 消息安全落入高可靠队列
-    R-->>G: 事务处理成功
-    G-->>C: 确认并返回 SeqId
-
-    note over W, DB: 异步持久化 (Write-after-persistence)
-    W->>N: Pull 批量拉取消息
-    W->>DB: 2. 批量写入 MongoDB
-```
+- 消费者配置 (Consumer: `oceanchat-ws-gateway` 连接网关)
+  - 消费逻辑: 临时、至多一次 (At-Most-Once) 订阅模式监听。
+  - 配置详情与原因:
+    - **无 durableName (临时订阅)**: 该用户可能同时在线于多个不同的网关实例（如 PC 连在网关A，iPad 连在网关B）。每个网关实例都需要收到这份广播（Fan-out），因此不能组建 Queue Group，必须使用独立的临时订阅。
+    - **静默下发与红点消除**: 网关收到该主题事件后，立刻组装跨端清除指令并向对应的长连接下发。电脑端等接收到指令后，静默更新本地数据库中对应群组的 `MaxLocalSyncSeqId` 游标，并在 UI 界面上瞬间消除未读红点，无需人工干预。

@@ -19,7 +19,7 @@ tags: ["ocean-chat", "adr", "decision-record"]
 
 ## 上下文 (Context)
 
-在 Ocean Chat 的架构中，客户端在拉取消息后会极其频繁地发送 `[0x0B] READ_RECEIPT` 确认信令。为了保护底层的 MongoDB 和 Redis 免遭 IOPS“写入风暴”的冲击，这些游标更新指令（`lastAckSeqId` 和 `lastReadSeqId`）被异步路由到了一个专属的 NATS JetStream 流中，命名为 `CURSOR_STATE`。
+在 Ocean Chat 的架构中，客户端在拉取消息后会极其频繁地发送 `[0x0B] READ_RECEIPT` 确认信令。为了保护底层的 MongoDB 和 Redis 免遭 IOPS“写入风暴”的冲击，这些游标更新指令（`lastReadSeqId`）被异步路由到了一个专属的 NATS JetStream 流中，命名为 `CURSOR_STATE`。
 
 该流通过配置 `MaxMsgsPerSubject=1`，能够在队列层面对高频更新进行自动折叠，使得每个用户在每个群组中永远只保留最终的游标状态。随后，`MessagePersistence` 工作单元会批量拉取这些去重后的状态，并向 Redis 和 MongoDB 执行双写落盘（BulkWrite / Pipeline）。
 
@@ -35,7 +35,7 @@ tags: ["ocean-chat", "adr", "decision-record"]
 
 内存存储的固有风险在于：一旦 NATS 服务器发生灾难性宕机（或断电），系统将会丢失尚未被 Worker 拉取落盘的这几秒钟的游标确认数据。然而，在当前的业务领域模型下，这种微小的数据丢失是**绝对无害**的，这得益于系统精妙的最终一致性设计：
 
-1.  **客户端游标回退：** 如果服务端丢失了最新的一批 `lastAckSeqId`，当客户端下次发起同步请求时，服务端只能基于 Redis/MongoDB 中记录的较老位置进行查库。这会导致服务端将一部分客户端已经见过的历史消息重新下发。
+1.  **客户端游标回退：** 如果服务端丢失了最新的一批 `lastReadSeqId`，当客户端下次发起同步请求时，服务端只能基于 Redis/MongoDB 中记录的较老位置进行查库。这会导致服务端将一部分客户端已经见过的历史消息重新下发。
 2.  **客户端静默去重 (Idempotent Discard)：** 客户端内部严格依赖本地的 SQLite 数据库以及唯一的 `ClientMsgId` 进行天然去重。当它发现拉取下来的数组中包含已存在的 ID 时，会直接将重复消息静默丢弃，绝不会在 UI 上呈现重复内容。
 3.  **状态自愈 (Self-Healing)：** 客户端在处理完这批数据后（或在断线重连时），会立刻基于本地最新的序列号再次向服务端发送一次 `READ_RECEIPT` 信令，瞬间将服务端的游标状态修复至最新。
 

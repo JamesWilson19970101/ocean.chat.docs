@@ -4,7 +4,7 @@ import TabItem from '@theme/TabItem';
 # 微服务架构
 
 :::info 架构概览
-整个平台采用分布式微服务架构，旨在支持十万级（1000万+）并发。它分为四个逻辑层，包含11个核心微服务和1条数据处理管道，确保职责清晰分离。
+整个平台采用分布式微服务架构，旨在支持十万级（1000万+）并发。它分为五个逻辑层，包含11个核心微服务、2个独立后台工作单元和1条数据处理管道，确保职责清晰分离。
 :::
 
 ## 技术栈
@@ -54,14 +54,20 @@ flowchart TB
             Presence("在线状态服务\n(oceanchat-presence)") ~~~ Query("数据查询服务\n(oceanchat-query)") ~~~ DBWorker("消息持久化管道\n(MessagePersistence)")
         end
 
+        subgraph Layer5 ["第五层：后台处理单元 (专职 CPU 密集型与外部调用)"]
+            direction LR
+            Media("多媒体服务\n(Media Worker)") ~~~ Audit("合规审计服务\n(Audit Worker)")
+        end
+
         Layer1 --> Layer2
         Layer2 --> Layer3
         Layer3 --> Layer4
+        Layer1 -. 异步触发 .-> Layer5
     end
 
     classDef layer fill:#f8fafc,stroke:#cbd5e1,stroke-width:2px,color:#334155;
     classDef system fill:#ffffff,stroke:#94a3b8,stroke-width:2px,stroke-dasharray: 5 5;
-    class Layer1,Layer2,Layer3,Layer4 layer;
+    class Layer1,Layer2,Layer3,Layer4,Layer5 layer;
     class System system;
 
 ```
@@ -289,7 +295,36 @@ graph TD
 :::note 这是一个异步处理流程，而非独立服务
 
 - **核心职责**: **消息逻辑服务** 处理完消息后，除了调用推送服务，还会将消息副本发送到专用于持久化的 NATS 主题（由 JetStream 支持）。一个或多个独立的**订阅者进程 (Writer)** 会监听此队列，批量将消息写入数据库。
-
 - **分离原因**: 彻底的异步化。消息的发送和接收不应等待数据库写入完成。这种“写后持久化”的设计，最大程度地保证了消息的实时性。
 
 :::
+
+## 第五层：后台处理单元
+
+### 13. **多媒体服务（Media Worker）** (无状态工作单元)
+
+<Tabs>
+<TabItem value="resp" label="核心职责" default>
+
+- **任务消费**: 订阅 NATS JetStream 的 `BACKGROUND_TASKS` 工作队列拉取任务。
+- **媒体处理**: 执行 CPU 密集型任务，如视频/音频转码、提取视频首帧、生成图片缩略图等，并将处理后的结果保存回 OSS。
+
+</TabItem>
+<TabItem value="reason" label="分离原因">
+视频转码极度消耗 CPU 资源。如果把它放在普通的业务微服务中处理，一个大的视频文件可能会将整个容器的 CPU 打满，从而拖垮同节点的长连接或核心信令，引发极其严重的“雪崩”。必须将其隔离至独立的 Worker 集群进行异步拉取处理。
+</TabItem>
+</Tabs>
+
+### 14. **合规审计服务（Audit Worker）** (无状态工作单元)
+
+<Tabs>
+<TabItem value="resp" label="核心职责" default>
+
+- **内容合规**: 订阅 `BACKGROUND_TASKS` 队列，对上传的图片或音视频 URL 调用第三方鉴黄、暴恐识别 AI 模型（NSFW 审核）。
+- **状态回写**: 将最终的审核结果（合规/违规）回写至数据库或 Redis，供后续的消息逻辑服务决策是否拦截、放行或全网撤回。
+
+</TabItem>
+<TabItem value="reason" label="分离原因">
+调用外部 AI 审核模型通常会有数百毫秒到数秒的网络延迟，网络极易波动。独立出 Audit Worker 可避免业务系统发生队头阻塞，完美实现“先发后审”或“异步机审”的业务容错。
+</TabItem>
+</Tabs>

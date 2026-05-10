@@ -1,7 +1,7 @@
 ---
 id: offline-push-badge-calculation
 title: Accurate Calculation of Offline Push Unread Badges
-description: Guide: How to use Redis ZSET in Ocean Chat to accurately and efficiently calculate unread counts (Badges) for offline devices (APNs/FCM).
+description: How to use Redis ZSET in Ocean Chat to accurately and efficiently calculate unread counts (Badges) for offline devices (APNs/FCM).
 keywords: [ocean chat, offline push, badge, apns, fcm, zset, unread count]
 ---
 
@@ -46,7 +46,7 @@ The orchestrator queries the target recipient's online status in Redis. If it fi
 
 To calculate the unread count, the system first needs to know where the user last left off.
 
-Thanks to the `CURSOR_STATE` asynchronous persistence stream designed in our *Cross-Device Read Receipt Sync* strategy, the user's latest read cursor is safely recorded. The orchestrator rapidly extracts the latest read sequence number (`lastReadSeqId`) for that user in the target group (e.g., `G1001`) from MongoDB or the Redis cache.
+Thanks to the `CURSOR_STATE` asynchronous persistence stream designed in our _Cross-Device Read Receipt Sync_ strategy, the user's latest read cursor is safely recorded. The orchestrator rapidly extracts the latest read sequence number (`lastReadSeqId`) for that user in the target group (e.g., `G1001`) from MongoDB or the Redis cache.
 
 ## 3. Core: Using ZCOUNT for Rapid Group Unread Calculation
 

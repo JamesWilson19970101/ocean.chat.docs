@@ -1,9 +1,17 @@
 ---
 id: cross-device-roaming-recovery
 title: Cross-Device Roaming and Progress Recovery
-description: Guide: How to implement seamless roaming recovery of chat progress and read cursors in Ocean Chat after changing to a new phone or reinstalling the App.
+description: How to implement seamless roaming recovery of chat progress and read cursors in Ocean Chat after changing to a new phone or reinstalling the App.
 keywords:
-  [ocean chat, roaming, recovery, progress recovery, read cursor, cursor, sqlite]
+  [
+    ocean chat,
+    roaming,
+    recovery,
+    progress recovery,
+    read cursor,
+    cursor,
+    sqlite,
+  ]
 ---
 
 import Tabs from '@theme/Tabs';

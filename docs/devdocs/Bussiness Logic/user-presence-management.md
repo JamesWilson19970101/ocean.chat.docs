@@ -1,7 +1,7 @@
 ---
 id: user-presence-management
 title: User Presence Management and Global Presence Map
-description: Guide: Deep dive into how Ocean Chat perceives user connections and disconnections in real-time and maintains a global presence map supporting tens of millions of concurrent connections.
+description: Deep dive into how Ocean Chat perceives user connections and disconnections in real-time and maintains a global presence map supporting tens of millions of concurrent connections.
 keywords:
   [
     ocean chat,

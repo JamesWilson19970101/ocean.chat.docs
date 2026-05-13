@@ -109,16 +109,17 @@ To minimize payload redundancy, boolean states are encoded into the `Flags` byte
 
 ## 3. Command Registry (`Cmd`)
 
-| Cmd Hex | Command Name   | Direction        | Description                                                                                                                                      |
-| :------ | :------------- | :--------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0x01`  | `AUTH_REQ`     | Client -> Server | Request connection authentication. Payload MUST contain `DeviceType`, `DeviceId`, and JWT.                                                       |
-| `0x02`  | `AUTH_ACK`     | Server -> Client | Authentication result response.                                                                                                                  |
-| `0x03`  | `PING`         | Client -> Server | Keep-alive heartbeat request (Payload MUST be empty).                                                                                            |
-| `0x04`  | `PONG`         | Server -> Client | Keep-alive heartbeat response (Payload MUST be empty).                                                                                           |
-| `0x05`  | `MSG_UP`       | Client -> Server | Client upbound chat message. Payload MUST carry `ClientMsgId` to ensure idempotency.                                                             |
-| `0x06`  | `MSG_UP_ACK`   | Server -> Client | Server confirmation of receiving the upbound message.                                                                                            |
-| `0x08`  | `MSG_NOTIFY`   | Server -> Client | Global "Push-Pull Hybrid" new message event notification (wake-up only, no entity). Payload contains only the target session and latest `SyncSeqId`. |
-| `0x0B`  | `READ_RECEIPT` | Both             | Multi-device read receipt sync signaling.                                                                                                        |
+| Cmd Hex | Command Name    | Direction        | Description                                                                                                                                                 |
+| :------ | :-------------- | :--------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0x01`  | `AUTH_REQ`      | Client -> Server | Request connection authentication. Payload MUST contain `DeviceType`, `DeviceId`, and JWT.                                                                  |
+| `0x02`  | `AUTH_ACK`      | Server -> Client | Authentication result response.                                                                                                                             |
+| `0x03`  | `PING`          | Client -> Server | Keep-alive heartbeat request (Payload MUST be empty).                                                                                                       |
+| `0x04`  | `PONG`          | Server -> Client | Keep-alive heartbeat response (Payload MUST be empty).                                                                                                      |
+| `0x05`  | `MSG_UP`        | Client -> Server | Client upbound chat message. Payload MUST carry `ClientMsgId` to ensure idempotency.                                                                        |
+| `0x06`  | `MSG_UP_ACK`    | Server -> Client | Server confirmation of receiving the upbound message.                                                                                                       |
+| `0x08`  | `MSG_NOTIFY`    | Server -> Client | Global "Push-Pull Hybrid" new message event notification (wake-up only, no entity). Payload contains only the target session and latest `SyncSeqId`.        |
+| `0x0B`  | `READ_RECEIPT`  | Both             | Multi-device read receipt sync signaling.                                                                                                                   |
+| `0x0C`  | `EXCEPTION_ACK` | Server -> Client | Global exception response. Used to send secure error messages and status codes to the client when an exception occurs at the protocol layer/business layer. |
 
 ## 4. Connection Lifecycle & Security Defenses
 
@@ -242,6 +243,15 @@ Clients MUST maintain a local `MaxLocalSyncSeqId`. If a downbound `MSG_NOTIFY` c
 - Clients **MUST NOT** directly render fake message stubs on the UI.
 - They MUST buffer the wake-up notification and immediately initiate an incremental sync request via **HTTP Short Connection**, including their current `MaxLocalSyncSeqId`.
 - The `oceanchat-query` service will query the database and return all incremental messages strictly greater than that ID via HTTP. The client then updates its local `MaxLocalSyncSeqId` cursor to the latest received value and renders the real messages.
+
+### 6.4 Global Exception Handling (EXCEPTION_ACK)
+
+When the server encounters a business exception (e.g., insufficient permissions, incorrect request parameters) or an infrastructure exception (e.g., Redis is temporarily unavailable) while processing binary frames in the long-connection gateway, the underlying interceptor will safely isolate the error and convert it into a valid `[0x0C] EXCEPTION_ACK` instruction, which is then sent to the client.
+
+When the client handles `EXCEPTION_ACK`:
+
+1. **Protocol Matching**: Locate the specific long-connection RPC request that failed using the `ReqId` in the header.
+2. **User Interaction**: Based on the `errorCode` provided by the payload and the secure `message` field, provide feedback to the user at the UI level (e.g., a weak Toast message or pop-up) without causing the entire application or long-connection to crash.
 
 ## 7. Multi-Device Roaming Synchronization
 

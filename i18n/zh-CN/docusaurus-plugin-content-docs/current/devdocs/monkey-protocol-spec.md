@@ -109,16 +109,17 @@ graph TD
 
 ## 3. 指令注册表 (`Cmd`)
 
-| Cmd Hex | 指令名         | 方向             | 说明                                                                                       |
-| :------ | :------------- | :--------------- | :----------------------------------------------------------------------------------------- |
-| `0x01`  | `AUTH_REQ`     | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId` 及 JWT。                             |
-| `0x02`  | `AUTH_ACK`     | Server -> Client | 认证结果响应。                                                                             |
-| `0x03`  | `PING`         | Client -> Server | 保活心跳请求（Payload 必须为空）。                                                         |
-| `0x04`  | `PONG`         | Server -> Client | 保活心跳响应（Payload 必须为空）。                                                         |
-| `0x05`  | `MSG_UP`       | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。                            |
-| `0x06`  | `MSG_UP_ACK`   | Server -> Client | 服务端确认收到上行消息。                                                                   |
-| `0x08`  | `MSG_NOTIFY`   | Server -> Client | 全局“推拉结合”新消息事件通知（仅唤醒，无实体）。Payload 仅包含目标会话和最新 `SyncSeqId`。 |
-| `0x0B`  | `READ_RECEIPT` | Both             | 多端已读回执同步信令。                                                                     |
+| Cmd Hex | 指令名          | 方向             | 说明                                                                                       |
+| :------ | :-------------- | :--------------- | :----------------------------------------------------------------------------------------- |
+| `0x01`  | `AUTH_REQ`      | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId` 及 JWT。                             |
+| `0x02`  | `AUTH_ACK`      | Server -> Client | 认证结果响应。                                                                             |
+| `0x03`  | `PING`          | Client -> Server | 保活心跳请求（Payload 必须为空）。                                                         |
+| `0x04`  | `PONG`          | Server -> Client | 保活心跳响应（Payload 必须为空）。                                                         |
+| `0x05`  | `MSG_UP`        | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。                            |
+| `0x06`  | `MSG_UP_ACK`    | Server -> Client | 服务端确认收到上行消息。                                                                   |
+| `0x08`  | `MSG_NOTIFY`    | Server -> Client | 全局“推拉结合”新消息事件通知（仅唤醒，无实体）。Payload 仅包含目标会话和最新 `SyncSeqId`。 |
+| `0x0B`  | `READ_RECEIPT`  | Both             | 多端已读回执同步信令。                                                                     |
+| `0x0C`  | `EXCEPTION_ACK` | Server -> Client | 全局异常响应。用于在协议层/业务层发生异常时向客户端下发安全的错误信息与状态码。            |
 
 ## 4. 连接生命周期与安全防线
 
@@ -242,6 +243,15 @@ sequenceDiagram
 - 客户端**绝不能**直接在界面渲染伪造的消息空壳。
 - 它必须暂存该唤醒通知，并立刻通过 **HTTP 短连接** 发起包含当前 `MaxLocalSyncSeqId` 的增量同步请求。
 - `oceanchat-query` 服务将通过 HTTP 响应从数据库中查出所有严格大于该 ID 的增量消息并返回。随后客户端将本地 `MaxLocalSyncSeqId` 游标更新为最新收到的值，并渲染真实消息。
+
+### 6.4 全局异常处理 (EXCEPTION_ACK)
+
+当服务端在长连接网关中处理二进制帧遇到业务异常（如：权限不足、请求参数错误）或基础设施异常（如：Redis 暂时不可用）时，底层拦截器会将错误安全隔离，并转换为合法的 `[0x0C] EXCEPTION_ACK` 指令下发给客户端。
+
+客户端在处理 `EXCEPTION_ACK` 时：
+
+1. **协议匹配**：通过 Header 中的 `ReqId` 定位到是哪一次具体的长连接 RPC 请求失败。
+2. **用户交互**：根据 Payload 提供的 `errorCode` 及安全的 `message` 字段，在 UI 层面（如 Toast 弱提示或弹窗）给予用户反馈，而不会导致整个应用或长连接崩溃。
 
 ## 7. 多端漫游同步
 

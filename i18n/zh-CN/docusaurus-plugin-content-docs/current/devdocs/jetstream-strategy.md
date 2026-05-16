@@ -53,6 +53,9 @@ flowchart TB
         subgraph S_HYBRID ["Stream: GROUP_HYBRID"]
             TICK("group.tick.*"):::subject
         end
+        subgraph S_DOWNBOUND ["Stream: IM_DOWNBOUND"]
+            DOWN("im.down.node.*"):::subject
+        end
         subgraph S_PUSH ["Stream: OFFLINE_PUSH"]
             PUSH("push.offline.>"):::subject
         end
@@ -433,6 +436,55 @@ flowchart LR
 - **生产者**: 路由服务。
 - **消费者**: WebSocket 网关（并间接传递给客户端）。
 - **策略**: 信令推 + 客户端拉 (抖动化的 HTTP/RPC)。
+
+### **IM_DOWNBOUND (实时在线下发流)**
+
+```mermaid
+flowchart LR
+  classDef gateway fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#000;
+  classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
+  classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
+
+  P[oceanchat-pusher-realtime]:::service
+  C1[oceanchat-ws-gateway Pod A]:::gateway
+  C2[oceanchat-ws-gateway Pod B]:::gateway
+
+  subgraph Stream: IM_DOWNBOUND
+    SUB1(im.down.node.podA_uuid):::subject
+    SUB2(im.down.node.podB_uuid):::subject
+  end
+
+  P -- 精准路由定向下发 --> SUB1
+  P -- 精准路由定向下发 --> SUB2
+  SUB1 -- 临时订阅下发信令 --> C1
+  SUB2 -- 临时订阅下发信令 --> C2
+```
+
+- **核心职责**: 在分布式架构中，负责将下行信令（如 `MSG_NOTIFY` 唤醒通知、`MSG_UP_ACK` 消息回执）**精准投递（Unicast）**到持有目标用户 WebSocket 长连接的特定网关实例上。
+  - 这是“无状态网关”与“中心化状态服务”协同工作的纽带。核心编排服务 (`orchestrator`) 只需查阅 Redis 在线图谱找到对应设备的 `gatewayId`，即可将数据像送快递一样精准发往对应的 Pod。
+- **保留策略 (Retention Strategy)**: `RetentionPolicy.Interest` (基于兴趣的保留) 或极短的 `Limits`。
+  - **原因**: 下发信令强依赖特定的物理网关进程。如果 `Pod A` 崩溃，其内存中的 WebSocket 连接也会随之全部断开。此时再向 `im.down.node.podA_uuid` 堆积消息不仅毫无意义，还会造成数据黑洞。Interest 策略确保只要网关下线，流中的无主消息就会被立刻丢弃。
+- **存储介质 (Storage)**: `StorageType.Memory` (内存)。
+  - **原因**: 极致的下发延迟要求。在线推送的信令属于“易失性数据”，根据推拉结合机制 (Push-Pull Hybrid)，即使信令在内存中因为极端情况丢失，客户端重连或打开会话时依然会通过主动的 HTTP Sync 接口拉取历史实体数据，因此放心地采用内存以换取最高 IOPS。
+- **关键配置与设计细节**:
+  - **零载荷推送 (Zero-Payload Push)**: 在这里传输的 `MSG_NOTIFY` 不包含任何业务消息实体，仅携带 `GroupId` 和 `SyncSeqId`（游标）。这彻底消除了高并发群聊下的网络扇出雪崩和队头阻塞问题。
+
+#### 主题 1: im.down.node.\{gatewayId\}
+
+职责描述: 微服务间跨节点通信的精准快递地址，用于向单个特定的网关节点下发实时二进制协议帧。
+
+- 生产者配置 (Producer: `oceanchat-pusher-realtime` 或 `oceanchat-orchestrator`)
+  - **发布逻辑**: 从 Redis `oceanchat-presence` 查到目标用户的在线节点 ID 后，向该 UUID 对应的专属主题发布事件。
+  - **配置详情与原因**:
+    - **异步解耦 (Fire-and-Forget)**: 推送服务发布轻量级信令后立刻放行，无需等待网关的 ACK，充分保障在高频派发时的超高吞吐量。
+
+- 消费者配置 (Consumer: `oceanchat-ws-gateway` 连接网关)
+  - **消费逻辑**: 每个网关实例在启动时，提取自身的 UUID，动态监听只属于自己的 `im.down.node.{this.gatewayId}` 主题。
+  - **配置详情与原因**:
+    - **临时消费者 (Ephemeral Consumer)**: **绝不配置 `durable_name`**。
+      - **原因**: 网关是无状态的物理层代理，进程销毁即代表连接断开。如果不设置 `durable_name`，这就是一个至多一次（At-Most-Once）的临时订阅。网关一死，它的私有信箱自动销毁，绝不在服务端遗留不可触达的垃圾队列。
+    - **纯内存反向路由**: 收到 NATS 消息后，网关不查任何数据库，直接在本地内存树 (`userRoutingTree`: `Map<UserId, Map<DeviceId, ClientConnection>>`) 中执行 O(1) 查找，找到对应的 TCP socket。
+    - **智能微批处理 (Micro-batching)**: 为了防止瞬间爆炸的大群消息引发推送风暴，网关收到信令后不立即下发，而是写入单条连接的折叠池，在 200ms 防抖窗口 (`collapseTimer`) 内将同一个群的多条 `MSG_NOTIFY` 自动折叠为单个携带最大 `SyncSeqId` 的下行数据包。
 
 ### **OFFLINE_PUSH (第三方推送流)**
 

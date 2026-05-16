@@ -4,7 +4,7 @@ import TabItem from '@theme/TabItem';
 # Microservice Architecture
 
 :::info Architecture Overview
-The entire platform adopts a distributed microservice architecture, designed to support tens of millions (10M+) of concurrent connections. It is divided into five logical layers, comprising 11 core microservices, 2 independent background work units, and 1 data processing pipeline, ensuring clear separation of responsibilities.
+The entire platform adopts a distributed microservice architecture, designed to support One hundred thousand (100K+) of concurrent connections. It is divided into five logical layers, comprising 11 core microservices, 2 independent background work units, and 1 data processing pipeline, ensuring clear separation of responsibilities.
 :::
 
 ## Technology Stack

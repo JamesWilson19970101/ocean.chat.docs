@@ -14,6 +14,7 @@ keywords:
     ocean chat,
     微服务,
   ]
+sidebar_position: 1
 ---
 
 <head>
@@ -85,15 +86,15 @@ graph TD
 
 ### 2.1 Header 布局
 
-| 偏移量 | 字段      | 大小     | 类型      | 说明                                                             |
-| :----- | :-------- | :------- | :-------- | :--------------------------------------------------------------- |
-| 0      | `Magic`   | 2 Bytes  | `UInt16`  | 魔数 `0x4D4B` ("MK")，用于标识协议。                             |
-| 2      | `Version` | 1 Byte   | `UInt8`   | 协议版本号，用于前向兼容（当前：`0x01`）。                       |
-| 3      | `Cmd`     | 1 Byte   | `UInt8`   | 指令类型标识符（参见指令注册表）。                               |
-| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8 位标志位，用于控制协议特性（如压缩、ACK）。                    |
-| 5      | `ReqId`   | 3 Bytes  | `UInt24`  | Request ID，用于在当前连接中匹配请求与响应。达到上限后循环使用。 |
-| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（硬限制最大 16KB）。                     |
-| 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                                    |
+| 偏移量 | 字段      | 大小     | 类型      | 说明                                                                                 |
+| :----- | :-------- | :------- | :-------- | :----------------------------------------------------------------------------------- |
+| 0      | `Magic`   | 2 Bytes  | `UInt16`  | 魔数 `0x4D4B` ("MK")，用于标识协议。                                                 |
+| 2      | `Version` | 1 Byte   | `UInt8`   | 协议版本号，用于前向兼容（当前：`0x01`）。                                           |
+| 3      | `Cmd`     | 1 Byte   | `UInt8`   | 指令类型标识符（参见指令注册表）。                                                   |
+| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8 位标志位，用于控制协议特性（如压缩、ACK）。                                        |
+| 5      | `ReqId`   | 3 Bytes  | `UInt24`  | Request ID，用于在当前连接中匹配请求与响应。达到上限后循环使用。从1开始，0已被占用。 |
+| 8      | `Length`  | 4 Bytes  | `UInt32`  | 变长 Payload 的字节长度（硬限制最大 16KB）。                                         |
+| 12     | `Payload` | Variable | `Binary`  | **Protobuf** 编码的业务载荷。                                                        |
 
 :::warning 生产环境严禁使用 JSON
 为支撑十万级并发，严禁在 Payload 中进行 JSON 序列化。必须强制使用 **Protobuf**。这能节省 40% 以上的带宽，并极大降低网关的 CPU 解析开销。
@@ -106,20 +107,34 @@ graph TD
 - **Bit 0 (`0x01`) - `REQUIRE_ACK`**: 如果置为 1，接收方必须显式发送确认包（ACK）。
 - **Bit 1 (`0x02`) - `COMPRESSED`**: 如果置为 1，表明 Payload 已使用 Zstd 或 Gzip 压缩。
 - **Bit 2 (`0x04`) - `ENCRYPTED`**: 如果置为 1，表明 Payload 已进行对称加密（如 AES-GCM）。
+- **Bit 3 (`0x08`) - `NO_RETRY`**: 如果置为 1，表明该信令具有极强的时效性（如“对方正在输入...”）。在发生断网重连、底层的飞行中队列 (In-Flight Queue) 自动重放时，客户端 SDK 将直接丢弃带有此标志的数据包，以节省网络恢复瞬间的带宽。
+
+### 2.3 ReqId 匹配机制与服务端主动推送 (Server Push)
+
+在正常的 RPC（远程过程调用）交互流中，`ReqId` 用于实现严格的“请求-响应”匹配（如客户端发送 `MSG_UP` 携带 `ReqId: 123`，服务端回传的 `MSG_UP_ACK` 也会严格带回相同的 `ReqId: 123`）。
+
+但在实际业务中，存在大量由**服务端主动推送（Server Push）**或**单向事件广播**的场景，此时客户端并没有发起任何前置请求。典型场景包括：
+
+- 服务端节点因滚动更新等原因停机前，主动下发 `503 Service Unavailable` 的 `EXCEPTION_ACK` 通知。
+- 因安全原因或密码修改导致 JWT Token 动态吊销，服务端主动踢人下发 `401 Unauthorized` 的断连通知。
+- 多端状态同步下发跨端已读回执事件。
+
+**协议约定：** 对于所有服务端主动发起的、非响应客户端特定请求的单向推送或广播帧，其 Header 中的 **`ReqId` 必须严格置为 `0`**。
+客户端在解析底层协议发现 `ReqId: 0` 时，应当明确这不是某个具体业务接口的回调响应。客户端不应去本地的 Request-Promise 匹配队列中寻址，而应将其作为全局异步事件或系统级通知，直接上抛给全局事件总线或状态机处理。
 
 ## 3. 指令注册表 (`Cmd`)
 
-| Cmd Hex | 指令名          | 方向             | 说明                                                                                       |
-| :------ | :-------------- | :--------------- | :----------------------------------------------------------------------------------------- |
-| `0x01`  | `AUTH_REQ`      | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId` 及 JWT。                             |
-| `0x02`  | `AUTH_ACK`      | Server -> Client | 认证结果响应。                                                                             |
-| `0x03`  | `PING`          | Client -> Server | 保活心跳请求（Payload 必须为空）。                                                         |
-| `0x04`  | `PONG`          | Server -> Client | 保活心跳响应（Payload 必须为空）。                                                         |
-| `0x05`  | `MSG_UP`        | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。                            |
-| `0x06`  | `MSG_UP_ACK`    | Server -> Client | 服务端确认收到上行消息。                                                                   |
-| `0x08`  | `MSG_NOTIFY`    | Server -> Client | 全局“推拉结合”新消息事件通知（仅唤醒，无实体）。Payload 仅包含目标会话和最新 `SyncSeqId`。 |
-| `0x0B`  | `READ_RECEIPT`  | Both             | 多端已读回执同步信令。                                                                     |
-| `0x0C`  | `EXCEPTION_ACK` | Server -> Client | 全局异常响应。用于在协议层/业务层发生异常时向客户端下发安全的错误信息与状态码。            |
+| Cmd Hex | 指令名          | 方向             | 说明                                                                                        |
+| :------ | :-------------- | :--------------- | :------------------------------------------------------------------------------------------ |
+| `0x01`  | `AUTH_REQ`      | Client -> Server | 请求连接认证。Payload 需包含 `DeviceType`, `DeviceId`, JWT 及客户端 `supported_versions`。  |
+| `0x02`  | `AUTH_ACK`      | Server -> Client | 认证结果响应。                                                                              |
+| `0x03`  | `PING`          | Client -> Server | 保活心跳请求（Payload 必须为空）。                                                          |
+| `0x04`  | `PONG`          | Server -> Client | 保活心跳响应（Payload 必须为空）。                                                          |
+| `0x05`  | `MSG_UP`        | Client -> Server | 客户端上行聊天消息。Payload 必须携带 `ClientMsgId` 保证幂等性。                             |
+| `0x06`  | `MSG_UP_ACK`    | Server -> Client | 服务端确认收到上行消息。Payload 需包含分配的 `SyncSeqId` 及 `ServerTimestamp`。             |
+| `0x08`  | `MSG_NOTIFY`    | Server -> Client | 全局“推拉结合”新消息事件通知（仅唤醒，无实体）。Payload 仅包含目标会话和最新 `SyncSeqId`。  |
+| `0x0B`  | `READ_RECEIPT`  | Both             | 多端已读回执同步信令。                                                                      |
+| `0x0C`  | `EXCEPTION_ACK` | Server -> Client | 全局异常响应。用于下发错误信息、状态码（如 426 版本不匹配）及 `server_supported_versions`。 |
 
 ## 4. 连接生命周期与安全防线
 
@@ -158,6 +173,16 @@ Ocean Chat 摒弃了僵化的定时心跳策略。
   - **连接层 (网关执行)：** 网关层基于单条物理连接限制总体请求速率上限（防恶意刷包，如 20次/秒）。违规数据包将被立即丢弃。
   - **业务层 (路由执行)：** 路由层在解码后，基于 `UserId` 执行更高维度的业务限流（如限制用户每秒 100 条业务消息），以防止分布式协同攻击，拦截时可返回业务错误码。
 - **指数退避重连：** 当网络异常断开时，客户端**严禁**立即疯狂重连。必须实施带随机抖动的指数退避（Exponential Backoff，如 1s, 2s, 4s, 8s），以防止产生瞬间压垮 `oceanchat-auth` 的认证风暴。
+
+### 4.4 平滑版本协商 (Smooth Version Negotiation)
+
+为避免服务端不兼容升级导致旧版客户端陷入重连死循环，Monkey Protocol 在握手阶段实施版本协商机制：
+
+1. **兼容性探针**：客户端在 `AUTH_REQ` 中主动上报本地支持的协议版本列表（`supported_versions`）。
+2. **优雅拒绝**：如果网关不支持 Header 中首选的 `Version`，将主动下发 `[0x0C] EXCEPTION_ACK`（错误码 `426 Protocol Mismatch`），并附带网关当前支持的版本列表。
+3. **静默降级与强制更新**：客户端 SDK 拦截到 426 错误后，计算版本交集，若存在交集则静默降级协议版本并重新握手；若无交集则断开连接并强制要求用户更新 App。
+
+_详见 Monkey Protocol：握手阶段的平滑“版本协商”机制_。
 
 ## 5. 消息投递模型
 
@@ -225,9 +250,14 @@ sequenceDiagram
     Worker->>DB: 3. 批量写入 MongoDB
 ```
 
-### 6.2 幂等性保障 (Idempotency)
+### 6.2 幂等性保障与乐观 UI 锚点 (Idempotency & Optimistic UI Anchor)
 
-客户端每次发送 `MSG_UP` 必须生成唯一的 UUID (`ClientMsgId`)。若客户端在收到 `MSG_UP_ACK` 前因断网重试，后端通过 Redis 中的 SET 结构（`UserID + ClientMsgId`）优雅实现去重拦截，防止在数据库中产生重复记录。
+客户端每次发送 MSG_UP 必须生成唯一的 UUID (ClientMsgId)。该 ID 具有双重关键作用：
+
+1. 服务端幂等去重：若客户端在收到 MSG_UP_ACK 前因断网重试，后端通过 Redis 中的 SET 结构（UserID + ClientMsgId）优雅实现去重拦截，防止在数据库中产生重复记录。
+2. 客户端乐观 UI 回环：作为本地临时状态（发送中）与服务端真状态关联的唯一纽带。在极端弱网下，若 ACK 丢失，客户端可通过后续的 HTTP 增量拉取，利用此 ID 将自己发送的消息在本地完美“状态转正”。
+
+详见 [Monkey Protocol：乐观 UI (Optimistic UI) 的辅助设计](./monkey-optimistic-ui.md)
 
 ### 6.3 SyncSeqId 与消息空洞检测 (Self-Healing)
 
@@ -250,8 +280,9 @@ sequenceDiagram
 
 客户端在处理 `EXCEPTION_ACK` 时：
 
-1. **协议匹配**：通过 Header 中的 `ReqId` 定位到是哪一次具体的长连接 RPC 请求失败。
-2. **用户交互**：根据 Payload 提供的 `errorCode` 及安全的 `message` 字段，在 UI 层面（如 Toast 弱提示或弹窗）给予用户反馈，而不会导致整个应用或长连接崩溃。
+1. **特殊协议拦截（版本协商）**：检查 Payload 中的 `errorCode`。如果为 `426`，客户端应立即触发版本协商状态机，利用 `serverSupportedVersions` 计算交集并执行静默重连或阻断。
+2. **普通协议匹配**：对于其他错误，通过 Header 中的 `ReqId` 定位到是哪一次具体的长连接 RPC 请求（如 `MSG_UP`）失败。
+3. **用户交互**：根据 Payload 提供的 `errorCode` 及安全的 `message` 字段，在 UI 层面（如消息旁边的红色感叹号、Toast 提示等）给予用户反馈，而不会导致长连接崩溃。
 
 ## 7. 多端漫游同步
 

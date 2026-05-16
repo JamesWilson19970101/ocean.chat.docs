@@ -30,5 +30,13 @@
   "sidebar.tutorialSidebar.category.API": {
     "message": "接口",
     "description": "The label for category API in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Bussiness Logic": {
+    "message": "业务逻辑",
+    "description": "The label for category Bussiness Logic in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Monkey Protocol": {
+    "message": "侯子协议",
+    "description": "The label for category Monkey Protocol in sidebar tutorialSidebar"
   }
 }

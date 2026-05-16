@@ -3,148 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.0">
-<title data-rh="true">JetStream Topology and Consumption Strategy | Oceanchat</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" property="og:locale:alternate" content="zh_CN"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="description" content="Detailed explanation of Ocean Chat NATS JetStream topology, subject namespaces, and distributed consumption strategies, supporting 100k+ concurrent connections."><meta data-rh="true" name="keywords" content="ocean chat,nats,jetstream,message queue,architecture,high concurrency,pub-sub,push-pull hybrid"><meta data-rh="true" property="og:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:title" content="JetStream Topology and Consumption Strategy | Ocean Chat"><meta data-rh="true" property="og:description" content="Detailed explanation of Ocean Chat NATS JetStream topology, subject namespaces, and distributed consumption strategies, supporting 100k+ concurrent connections."><link data-rh="true" rel="icon" href="/ocean.chat.docs/img/favicon.ico"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="x-default"><link data-rh="true" rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"devdocs","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/docs/category/devdocs"},{"@type":"ListItem","position":2,"name":"JetStream Topology and Consumption Strategy","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"}]}</script><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/blog/rss.xml" title="Oceanchat RSS Feed">
+<title data-rh="true">JetStream Topology and Consumption Strategy | Oceanchat</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" property="og:locale:alternate" content="zh_CN"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="description" content="Detailed explanation of Ocean Chat NATS JetStream topology, subject namespaces, and distributed consumption strategies, supporting 100,000+ concurrent connections."><meta data-rh="true" name="keywords" content="ocean chat,nats,jetstream,message queue,architecture,high concurrency,pub-sub,push-pull hybrid"><meta data-rh="true" property="og:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:title" content="JetStream Topology and Consumption Strategy | Ocean Chat"><meta data-rh="true" property="og:description" content="Detailed explanation of Ocean Chat NATS JetStream topology, subject namespaces, and distributed consumption strategies, supporting 100,000+ concurrent connections."><link data-rh="true" rel="icon" href="/ocean.chat.docs/img/favicon.ico"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="x-default"><link data-rh="true" rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"devdocs","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/docs/category/devdocs"},{"@type":"ListItem","position":2,"name":"JetStream Topology and Consumption Strategy","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy"}]}</script><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/blog/rss.xml" title="Oceanchat RSS Feed">
 <link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/blog/atom.xml" title="Oceanchat Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/assets/css/styles.dd1061d3.css">
-<script src="/ocean.chat.docs/assets/js/runtime~main.5b08abaa.js" defer="defer"></script>
-<script src="/ocean.chat.docs/assets/js/main.bb4cc13e.js" defer="defer"></script>
+<script src="/ocean.chat.docs/assets/js/runtime~main.81cba204.js" defer="defer"></script>
+<script src="/ocean.chat.docs/assets/js/main.c6b4dc54.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
 <symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
 </defs></svg>
-<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/img/logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/"><div class="navbar__logo"><img src="/ocean.chat.docs/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/docs/intro">Tutorial</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/blog">Blog</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>English</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="zh-CN">简体中文</a></li></ul></div></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/docs/intro"><span title="OceanChat Intro" class="linkLabel_WmDU">OceanChat Intro</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/docs/category/devdocs"><span title="devdocs" class="categoryLinkLabel_W154">devdocs</span></a><button aria-label="Collapse sidebar category &#x27;devdocs&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/API/ocean-chat-api"><span title="API" class="categoryLinkLabel_W154">API</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/Auth Service/auth-overview"><span title="Auth Service" class="categoryLinkLabel_W154">Auth Service</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/Bussiness Logic/message-sending-persistence-flow"><span title="Bussiness Logic" class="categoryLinkLabel_W154">Bussiness Logic</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/cache"><span title="Caching" class="linkLabel_WmDU">Caching</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/concurrency considerations"><span title="concurrency considerations" class="linkLabel_WmDU">concurrency considerations</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/distributed-id-generator"><span title="Distributed ID Strategy" class="linkLabel_WmDU">Distributed ID Strategy</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/distributed"><span title="Distributed System Related Issues" class="linkLabel_WmDU">Distributed System Related Issues</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/graphql vs http in oceanchat"><span title="graphql vs http in oceanchat" class="linkLabel_WmDU">graphql vs http in oceanchat</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/docs/devdocs/jetstream-strategy"><span title="JetStream Topology and Consumption Strategy" class="linkLabel_WmDU">JetStream Topology and Consumption Strategy</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/message queue"><span title="Message Queue" class="linkLabel_WmDU">Message Queue</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/microservice"><span title="Microservice Architecture" class="linkLabel_WmDU">Microservice Architecture</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/monkey-protocol-spec"><span title="Monkey Protocol Spec" class="linkLabel_WmDU">Monkey Protocol Spec</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/offline-message-reliability"><span title="How to Guarantee Offline Message Reliability" class="linkLabel_WmDU">How to Guarantee Offline Message Reliability</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/online-message-reliability"><span title="How to Guarantee Online Message Reliability" class="linkLabel_WmDU">How to Guarantee Online Message Reliability</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/docs/category/architecture-decision-records"><span title="Architecture Decision Records" class="categoryLinkLabel_W154">Architecture Decision Records</span></a><button aria-label="Expand sidebar category &#x27;Architecture Decision Records&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_xLCN"><div class="docItemContainer_jfFK"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/ocean.chat.docs/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/ocean.chat.docs/docs/category/devdocs"><span>devdocs</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">JetStream Topology and Consumption Strategy</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><div class="row"><div class="col col--12 markdown">
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/ocean.chat.docs/img/logo.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/ocean.chat.docs/"><div class="navbar__logo"><img src="/ocean.chat.docs/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/ocean.chat.docs/img/logo.svg" alt="oceanchat Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Ocean Chat</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/ocean.chat.docs/docs/intro">Tutorial</a><a class="navbar__item navbar__link" href="/ocean.chat.docs/blog">Blog</a><div class="navbar__item dropdown dropdown--hoverable"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="iconLanguage_nlXk"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"></path></svg>English</a><ul class="dropdown__menu"><li><a href="/ocean.chat.docs/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link dropdown__link--active" lang="en">English</a></li><li><a href="/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" target="_self" rel="noopener noreferrer" class="dropdown__link" lang="zh-CN">简体中文</a></li></ul></div></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/ocean.chat.docs/docs/intro"><span title="OceanChat Intro" class="linkLabel_WmDU">OceanChat Intro</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/ocean.chat.docs/docs/category/devdocs"><span title="devdocs" class="categoryLinkLabel_W154">devdocs</span></a><button aria-label="Collapse sidebar category &#x27;devdocs&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/API/ocean-chat-api"><span title="API" class="categoryLinkLabel_W154">API</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/Auth Service/auth-overview"><span title="Auth Service" class="categoryLinkLabel_W154">Auth Service</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/Bussiness Logic/message-sending-persistence-flow"><span title="Bussiness Logic" class="categoryLinkLabel_W154">Bussiness Logic</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-2 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" tabindex="0" href="/ocean.chat.docs/docs/devdocs/Monkey Protocol/monkey-protocol-spec"><span title="Monkey Protocol" class="categoryLinkLabel_W154">Monkey Protocol</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/cache"><span title="Caching" class="linkLabel_WmDU">Caching</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/concurrency considerations"><span title="concurrency considerations" class="linkLabel_WmDU">concurrency considerations</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/distributed-id-generator"><span title="Distributed ID Strategy" class="linkLabel_WmDU">Distributed ID Strategy</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/distributed"><span title="Distributed System Related Issues" class="linkLabel_WmDU">Distributed System Related Issues</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/graphql vs http in oceanchat"><span title="graphql vs http in oceanchat" class="linkLabel_WmDU">graphql vs http in oceanchat</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/ocean.chat.docs/docs/devdocs/jetstream-strategy"><span title="JetStream Topology and Consumption Strategy" class="linkLabel_WmDU">JetStream Topology and Consumption Strategy</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/message queue"><span title="Message Queue" class="linkLabel_WmDU">Message Queue</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/microservice"><span title="Microservice Architecture" class="linkLabel_WmDU">Microservice Architecture</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/offline-message-reliability"><span title="How to Guarantee Offline Message Reliability" class="linkLabel_WmDU">How to Guarantee Offline Message Reliability</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/ocean.chat.docs/docs/devdocs/online-message-reliability"><span title="How to Guarantee Online Message Reliability" class="linkLabel_WmDU">How to Guarantee Online Message Reliability</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/ocean.chat.docs/docs/category/architecture-decision-records"><span title="Architecture Decision Records" class="categoryLinkLabel_W154">Architecture Decision Records</span></a><button aria-label="Expand sidebar category &#x27;Architecture Decision Records&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_xLCN"><div class="docItemContainer_jfFK"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/ocean.chat.docs/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/ocean.chat.docs/docs/category/devdocs"><span>devdocs</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">JetStream Topology and Consumption Strategy</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><div class="row"><div class="col col--12 markdown">
 <header><h1>NATS JetStream Topology and Strategy</h1></header>
-<p>To support 100k+ concurrent connections, Ocean Chat uses <strong>NATS JetStream</strong> not just as message middleware, but as the central nervous system connecting all microservices. This topology strictly isolates high-throughput data streams from control flows and leverages wildcard routing for precise microservice consumption strategies.</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="architecture-overview-diagram">Architecture Overview Diagram<a href="#architecture-overview-diagram" class="hash-link" aria-label="Direct link to Architecture Overview Diagram" title="Direct link to Architecture Overview Diagram" translate="no">​</a></h2>
+<p>To support 100,000+ concurrent connections, Ocean Chat uses <strong>NATS JetStream</strong> not only as message middleware but as the central nervous system connecting all microservices. This topology strictly isolates high-throughput data flows from control flows and utilizes wildcard routing for precise microservice consumption strategies.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="architecture-overview">Architecture Overview<a href="#architecture-overview" class="hash-link" aria-label="Direct link to Architecture Overview" title="Direct link to Architecture Overview" translate="no">​</a></h2>
 <p>The following diagram illustrates the production and consumption flows between Ocean Chat microservices and NATS JetStream subjects.</p>
 <!-- -->
 <p>This document details the stream definitions, subject namespaces, and delivery semantics (push/pull, at-least-once, at-most-once) required for the Ocean Chat architecture.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-stream-definitions">1. Stream Definitions<a href="#1-stream-definitions" class="hash-link" aria-label="Direct link to 1. Stream Definitions" title="Direct link to 1. Stream Definitions" translate="no">​</a></h2>
-<p>Streams in Ocean Chat are partitioned by <strong>Business Domain</strong> and <strong>Data Retention Lifecycle</strong>, never by user or group ID (which would cause stream explosion).</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_core-gateway-uplink-access-stream"><strong>IM_CORE (Gateway Uplink Access Stream)</strong><a href="#im_core-gateway-uplink-access-stream" class="hash-link" aria-label="Direct link to im_core-gateway-uplink-access-stream" title="Direct link to im_core-gateway-uplink-access-stream" translate="no">​</a></h3>
+<p>Streams in Ocean Chat are partitioned by <strong>business domain</strong> and <strong>data retention lifecycle</strong>, never by user or group ID (which would cause stream explosion).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_core-gateway-uplink-ingestion-stream"><strong>IM_CORE (Gateway Uplink Ingestion Stream)</strong><a href="#im_core-gateway-uplink-ingestion-stream" class="hash-link" aria-label="Direct link to im_core-gateway-uplink-ingestion-stream" title="Direct link to im_core-gateway-uplink-ingestion-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
-<li class=""><strong>Core Responsibility</strong>: The traffic entry point (Ingestion) for the entire IM system, specifically designed to handle large volumes of raw client uplink packets received by the WebSocket gateway. This is the highest throughput stream in the system.</li>
+<li class=""><strong>Core Responsibility</strong>: Traffic entry point for the entire IM system (Ingestion), specifically handling large amounts of raw client uplink packets received by the WebSocket gateway. This is an extremely high-throughput stream.</li>
 <li class=""><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Short data retention period (e.g., 1-3 days is sufficient). This is merely a raw byte buffer stream for the gateway. Once the backend Router pulls, decodes, and hands off to the <code>IM_HANDOFF</code> stream, the mission of this raw data is complete. Short-term retention is used only for troubleshooting during extreme anomalies or system crashes.</li>
+<li class=""><strong>Reason</strong>: Data retention is short (e.g., 1-3 days). Since this is only a raw byte buffer stream for the gateway, its mission is complete once the downstream Router pulls, decodes, and hands off to the <code>IM_HANDOFF</code> stream. Short-term retention is used only for troubleshooting during extreme anomalies or system crashes.</li>
 </ul>
 </li>
-<li class=""><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk/SSD).<!-- -->
+<li class=""><strong>Storage Type</strong>: <code>StorageType.File</code> (SSD).<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Although the retention period is short, during traffic peaks (e.g., massive group interactions during major live events) at 100k+ or even millions of concurrent connections, if backend microservices slow down, uplink messages will instantly accumulate in NATS. SSD-based file storage safely buffers burst traffic on disk, preventing Out-Of-Memory (OOM) crashes.</li>
+<li class=""><strong>Reason</strong>: Although retention is short, under peaks of 100,000+ or even 1,000,000+ concurrent connections (e.g., group interactions during major live events), if downstream microservices slow down, uplink messages will accumulate instantly in NATS. Using SSD-based file storage safely buffers burst traffic to disk, completely avoiding Memory Overflow (OOM) crashes.</li>
 </ul>
 </li>
-<li class=""><strong>Key Configuration &amp; Design Details</strong>:<!-- -->
+<li class=""><strong>Key Configuration and Design Details</strong>:<!-- -->
 <ul>
-<li class=""><strong>Edge Stateless Fast Buffering</strong>: The gateway is completely agnostic of specific business logic at this stage, dropping data into this stream immediately after stripping the WebSocket protocol. High I/O efficiency significantly increases the maximum number of long connections a single gateway instance can carry.</li>
+<li class=""><strong>Stateless Edge Buffer</strong>: The gateway is completely unaware of specific business logic at this stage. After stripping the WebSocket protocol, data immediately enters this stream. High I/O efficiency significantly increases the maximum number of long connections a single gateway can handle.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-imup-eg-imupp2p-imupgroup">Subject 1: im.up.&gt; (e.g., im.up.p2p, im.up.group)<a href="#subject-1-imup-eg-imupp2p-imupgroup" class="hash-link" aria-label="Direct link to Subject 1: im.up.&gt; (e.g., im.up.p2p, im.up.group)" title="Direct link to Subject 1: im.up.&gt; (e.g., im.up.p2p, im.up.group)" translate="no">​</a></h4>
-<p><strong>Description</strong>: Raw access buffer pool. Carries undecoded Protobuf raw business payload packets.</p>
+<p><strong>Description</strong>: Raw ingestion buffer pool. Carries raw Protobuf business payload packets that haven&#x27;t been decoded yet.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-ws-gateway</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-ws-gateway</code>)</strong></p>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: Upon parsing a valid WebSocket/TCP frame, it appends necessary system-level metadata (e.g., <code>gatewayId</code> and <code>connectionId</code>) and publishes the core raw byte payload to this subject at high speed.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Publishing Logic</strong>: After parsing a valid WebSocket/TCP frame, it attaches only necessary system-level metadata (like <code>gatewayId</code> and <code>connectionId</code>) and publishes the core raw byte payload to this subject at high speed.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Pure Pipeline Transmission</strong>: This process involves no database queries or writes. Clients will <strong>not</strong> receive a <code>MSG_UP_ACK</code> at this stage; confirmation is only returned after the message flows through to the downstream write barrier.</li>
+<li class=""><strong>Pure Pipeline Transmission</strong>: This process involves no database queries or writes. Clients do <strong>not</strong> receive a <code>MSG_UP_ACK</code> at this stage; they only receive acknowledgment after the message has passed through the downstream write barrier.</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-router</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-router</code>)</strong></p>
 <ul>
 <li class=""><strong>Consumption Logic</strong>: Pull mode (Pull Queue Group).</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
 <li class=""><strong>Consumer Group Load Balancing</strong>: Multiple Router instances form a single consumer group, sharing the massive uplink traffic to ensure each message is parsed by only one Router.</li>
-<li class=""><strong>Batch Pulling &amp; Decoding</strong>: Routers pull messages in batches (e.g., hundreds at a time) rather than one by one, leveraging CPU power to efficiently decode Protobuf and perform basic validation.</li>
-<li class=""><strong>Deferred Handoff ACK Mechanism</strong>: After pulling a message from <code>im.up.&gt;</code>, the Router service sends an explicit ACK only after it successfully routes and delivers the decoded message to the downstream <code>im.route.*</code> (<code>IM_HANDOFF</code> stream). This perfectly ensures no data loss during the handoff from the &quot;Edge Access Layer&quot; to the &quot;Internal Business Layer&quot;.</li>
+<li class=""><strong>Batch Pulling and Decoding</strong>: Routers pull messages in batches (e.g., hundreds at once) via internal loops, using CPU power to efficiently decode Protobuf and perform basic validation.</li>
+<li class=""><strong>Delayed Handoff ACK Mechanism</strong>: After pulling a message from <code>im.up.&gt;</code>, the Router service only sends an explicit ACK after it successfully routes and delivers the decoded message to the downstream <code>im.route.*</code> (<code>IM_HANDOFF</code> stream). This ensures zero data loss during the transition from the &quot;edge ingestion layer&quot; to the &quot;internal business layer.&quot;</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_handoff-internal-routing--wal-core-stream"><strong>IM_HANDOFF (Internal Routing &amp; WAL Core Stream)</strong><a href="#im_handoff-internal-routing--wal-core-stream" class="hash-link" aria-label="Direct link to im_handoff-internal-routing--wal-core-stream" title="Direct link to im_handoff-internal-routing--wal-core-stream" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_handoff-internal-routing-and-wal-core-stream"><strong>IM_HANDOFF (Internal Routing and WAL Core Stream)</strong><a href="#im_handoff-internal-routing-and-wal-core-stream" class="hash-link" aria-label="Direct link to im_handoff-internal-routing-and-wal-core-stream" title="Direct link to im_handoff-internal-routing-and-wal-core-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: The most critical stream in the system, acting not only as a &quot;relay baton&quot; for business payloads between microservices but also as the system&#x27;s <strong>Write Barrier (Write Fence)</strong> and <strong>Write-Ahead Log (WAL)</strong>.</p>
+<p><strong>Core Responsibility</strong>: The most critical stream in the system. It serves not only as a &quot;relay baton&quot; for business payloads between microservices but also as the system&#x27;s <strong>Write Fence</strong> and <strong>Write-Ahead Log (WAL)</strong>.</p>
 <ul>
 <li class="">After <code>oceanchat-router</code> parses data from the gateway, it hands it off to this stream to trigger core business processing.</li>
-<li class="">Once business services complete processing, they write back to this stream, leveraging NATS&#x27; high reliability to ensure no message loss, before branching into <a class="" href="/ocean.chat.docs/docs/devdocs/Bussiness Logic/message-sending-persistence-flow">Message Sending and Database Storage</a> and &quot;Real-time Dispatch/Push&quot;.</li>
+<li class="">After business services complete processing, they write to this stream again, leveraging NATS&#x27; high reliability to ensure no message loss. The flow then splits into <a class="" href="/ocean.chat.docs/docs/devdocs/Bussiness Logic/message-sending-persistence-flow">Message Sending and Storage</a> and &quot;Real-time Dispatch/Push&quot; branches.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Data needs to be independently and fully consumed by multiple different microservice consumer groups (e.g., Push Orchestrator, Persistence Worker). The Limits strategy ensures that even if one consumer (e.g., MongoDB batch persistence) is delayed or down, messages remain safe in the queue until all subscribers successfully advance their consumption cursors.</li>
+<li class=""><strong>Reason</strong>: Data needs to be consumed independently and fully by multiple different microservice consumer groups (e.g., Push Orchestrator, Persistence Worker). The Limits strategy ensures that even if one consumer (like MongoDB batch persistence) is delayed or down, messages remain safely in the queue until all subscribers have successfully advanced their consumption cursors.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk/SSD).</p>
+<p><strong>Storage Type</strong>: <code>StorageType.File</code> (SSD).</p>
 <ul>
-<li class=""><strong>Reason</strong>: Extreme reliability requirements. This is where the Write Barrier (WAL) resides. Once the server receives a NATS ACK from this stream, it returns a successful send confirmation to the client. In case of data center power failure or NATS crash, messages not yet persisted in MongoDB must be recoverable from disk.</li>
+<li class=""><strong>Reason</strong>: Ultimate reliability requirement. This is where the Write Barrier (WAL) resides. Once the server receives a NATS ACK for this stream, it returns a success confirmation to the client. In the event of a data center power failure or NATS crash, messages not yet persisted in MongoDB must be recoverable from disk and absolutely cannot be lost.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong>Write-after-persistence Architecture</strong>: Decouples fast client responses (ACK returned upon crossing the write barrier) from slow database persistence (background asynchronous batch pull and insertion). This is the performance foundation for Ocean Chat to support 100k+ concurrent write operations.</li>
+<li class=""><strong>Write-after-persistence Architecture</strong>: Decouples fast client response (ACK returned after crossing the write barrier) from slow database persistence (async batch pull consumption and insertion in the background). This is the performance foundation for Ocean Chat to support 100,000+ concurrent write operations.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-imroute-eg-imroutep2p-imroutegroup">Subject 1: im.route.* (e.g., im.route.p2p, im.route.group)<a href="#subject-1-imroute-eg-imroutep2p-imroutegroup" class="hash-link" aria-label="Direct link to Subject 1: im.route.* (e.g., im.route.p2p, im.route.group)" title="Direct link to Subject 1: im.route.* (e.g., im.route.p2p, im.route.group)" translate="no">​</a></h4>
-<p><strong>Description</strong>: Internal business routing handoff. After <code>oceanchat-router</code> parses raw packets, it routes business payloads to specific business logic services.</p>
+<p><strong>Description</strong>: Internal business routing handoff. After <code>oceanchat-router</code> completes raw packet parsing, it routes business payloads to corresponding business logic services.</p>
 <ul>
-<li class=""><strong>Producer Configuration</strong> (Producer: <code>oceanchat-router</code>)<!-- -->
+<li class=""><strong>Producer Configuration (Producer: <code>oceanchat-router</code>)</strong>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: Published to targeted subjects based on business type after Protobuf frame parsing, preliminary business-level rate limiting, and basic validation.</li>
+<li class=""><strong>Publishing Logic</strong>: After decoding Protobuf frames and completing preliminary business-level rate limiting and basic validation, it publishes to specific business types.</li>
 </ul>
 </li>
-<li class=""><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-message</code> or <code>oceanchat-group</code>)<!-- -->
+<li class=""><strong>Consumer Configuration (Consumer: <code>oceanchat-message</code> or <code>oceanchat-group</code>)</strong>
 <ul>
 <li class=""><strong>Consumption Logic</strong>: Pull mode.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Queue Group</strong>: Multiple instances of the same business service form a pull queue group, sharing the consumption cursor to achieve horizontal scaling and load balancing. Each message is processed by only one instance.</li>
-<li class=""><strong>At-Least-Once Delivery</strong>: If a business service crashes during processing (e.g., during permission check) without sending an explicit ACK, NATS re-delivers the message to other healthy instances after a timeout, ensuring core business logic is not interrupted and messages are never lost.</li>
+<li class=""><strong>Queue Group</strong>: Multiple instances of the same business service form a pull queue group, sharing the consumption cursor to achieve horizontal scaling and load balancing. Each message is processed by only one business instance.</li>
+<li class=""><strong>At-Least-Once Delivery</strong>: If a business service crashes during processing (e.g., during permission validation) and fails to return an explicit ACK, NATS will redeliver the message to other healthy instances after a timeout, ensuring core business logic is not interrupted and messages are never lost.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-2-imorchestratemsg">Subject 2: im.orchestrate.msg<a href="#subject-2-imorchestratemsg" class="hash-link" aria-label="Direct link to Subject 2: im.orchestrate.msg" title="Direct link to Subject 2: im.orchestrate.msg" translate="no">​</a></h4>
-<p><strong>Description</strong>: <strong>Location of the critical Write Barrier!</strong> Valid processed messages are delivered here as final proof of &quot;safe receipt&quot;. It simultaneously provides data sources for downstream asynchronous persistence and message dispatch/push.</p>
+<p><strong>Description</strong>: <strong>Where the critical Write Barrier resides!</strong> Successfully processed legitimate messages are delivered here as the final proof of &quot;safe receipt.&quot; It serves as the data source for both downstream asynchronous persistence and message dispatch/push.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-message</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-message</code>)</strong></p>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: Publishes the final business message body to this subject after friend/group authentication, content compliance audit, and assignment of a globally monotonically increasing <code>SyncSeqId</code>.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Publishing Logic</strong>: After completing friend/group authorization, content compliance review, and assigning a globally monotonic <code>SyncSeqId</code>, the final business message body is published to this subject.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Synchronous Wait for ACK</strong>: When publishing, the message service must wait for a successful persistence ACK from NATS JetStream. Only after crossing this write barrier boundary will the service notify the gateway to deliver <code>[0x06] MSG_UP_ACK</code> to the client.</li>
+<li class=""><strong>Synchronous Wait for ACK</strong>: When the message service publishes, it must wait for a persistence success ACK from NATS JetStream. Only after crossing this write barrier boundary will the service notify the gateway to send <code>[0x06] MSG_UP_ACK</code> to the client.</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Has two independent Consumer Groups)</p>
+<p><strong>Consumer Configuration (Two independent Consumer Groups)</strong></p>
 <ul>
-<li class=""><strong>Consumer A</strong>: <code>oceanchat-orchestrator</code> (Push Orchestrator)<!-- -->
+<li class=""><strong>Consumer A: <code>oceanchat-orchestrator</code> (Push Orchestration Service)</strong>
 <ul>
 <li class=""><strong>Consumption Logic</strong>: Real-time Pull.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>: After pulling a message, the orchestrator queries the Redis presence map to evaluate the recipient&#x27;s network status. It then decides whether to convert the message into a lightweight <code>MSG_NOTIFY</code> for the downlink stream or an offline wake-up task for the <code>OFFLINE_PUSH</code> stream.</li>
+<li class=""><strong>Details and Reason</strong>: After pulling a message, the Orchestrator queries the Redis online status map to evaluate the receiver&#x27;s network status. It then decides whether to convert the message into a lightweight <code>MSG_NOTIFY</code> sent to the downbound stream or an offline wake-up task moved to the <code>OFFLINE_PUSH</code> stream for vendor push.</li>
 </ul>
 </li>
-<li class=""><strong>Consumer B</strong>: <code>MessagePersistence Worker</code> (Message Persistence Pipeline)<!-- -->
+<li class=""><strong>Consumer B: <code>MessagePersistence Worker</code> (Message Persistence Pipeline)</strong>
 <ul>
-<li class=""><strong>Consumption Logic</strong>: Background asynchronous Batch Pull.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>: This worker completely decouples slow disk I/O from the main link. By pulling hundreds of messages in a single batch and using MongoDB&#x27;s Bulk Insert interface, it significantly reduces database IOPS pressure. The worker sends an explicit ACK to NATS only after successful persistence, advancing the group&#x27;s progress and ensuring eventual consistency under massive concurrency.</li>
+<li class=""><strong>Consumption Logic</strong>: Async Batch Pull.</li>
+<li class=""><strong>Details and Reason</strong>: This worker completely decouples slow disk I/O from the main path. By pulling hundreds of messages in a single batch and using MongoDB&#x27;s Bulk Insert interface, it significantly reduces database IOPS bottleneck pressure. Only after successful persistence does the worker send an explicit ACK to NATS, advancing the current consumer group&#x27;s progress and guaranteeing eventual consistency under massive concurrency.</li>
 </ul>
 </li>
 </ul>
@@ -154,116 +154,144 @@
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: High-speed broadcast of global critical security status changes between microservices.</p>
+<p><strong>Core Responsibility</strong>: Used for high-speed broadcasting of critical global security state changes between microservices.</p>
 <ul>
-<li class="">Currently dedicated to JWT token blacklist revocation sync (<code>auth.jwt.revoke</code>).</li>
-<li class="">When a user logs out, a Refresh Token replay attack is detected, or normal token rotation requires an old Access Token to be invalidated immediately, the Auth service publishes a revocation command to this stream.</li>
-<li class="">API Gateway is the primary consumer. Using a &quot;Zero-I/O Authentication&quot; architecture, it no longer queries Redis for every request but maintains a local in-memory blacklist (<code>TokenBlacklistService</code>) by subscribing to this stream.</li>
+<li class="">Currently dedicated to JWT token blacklist revocation synchronization (<code>auth.jwt.revoke</code>).</li>
+<li class="">When a user logs out, the system detects a Refresh Token Replay Attack, or normal token rotation requires an old Access Token to be invalidated immediately, the Auth service publishes a revocation command to this stream.</li>
+<li class=""><code>oceanchat-api-gateway</code> is the primary consumer. The gateway adopts a &quot;Zero-I/O Authentication&quot; architecture; instead of querying Redis for every request, it maintains a local blacklist in memory (<code>TokenBlacklistService</code>) by subscribing to this stream.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: A typical broadcast (Fan-out) pattern. If multiple API Gateway instances are running or restarting, each must be able to retrieve revocation records from this period. A Workqueue mode would cause events to disappear after one gateway reads them, preventing others from receiving them.</li>
+<li class=""><strong>Reason</strong>: This is a typical broadcast (Fan-out) mode. If there are multiple API Gateway instances, or if a gateway is restarting, each instance must be able to retrieve revocation records from that period. If Workqueue mode were used, an event would disappear after one gateway read it, making it unavailable to others.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Storage Type</strong>: <code>StorageType.Memory</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Blacklist status is highly time-sensitive and requires maximum read/write speed; memory storage provides extreme latency performance.</li>
-<li class=""><em>(Note: For security, if NATS Server crashes, memory data is lost. While gateways validate at the JWT level, changing to File storage for these small but critical security events could further enhance disaster recovery.)</em></li>
+<li class=""><strong>Reason</strong>: Blacklist status is extremely time-sensitive, requiring the highest read/write speeds. Keeping it in memory enables ultimate latency performance.</li>
+<li class=""><em>(Note: For security reasons, if NATS Server crashes and restarts, memory data will be lost. Although the gateway validates at the JWT level, changing to File storage if conditions allow could further improve disaster recovery for these small but critical security events.)</em></li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong>max_age: 30m</strong>: A clever sliding window design. Gateways only need to intercept tokens that are still within their valid lifespan but revoked early. The Access Token lifespan is configured as 30 minutes; revocation events older than 30 minutes have no retention value as the tokens themselves would have expired. (This value must be ≥ <code>jwt.accessExpiresIn</code>).</li>
-<li class=""><strong>Consumer Type (<code>Ephemeral + DeliverPolicy.All</code>)</strong>: API Gateway is an ephemeral consumer without a <code>durableName</code>. Each time it starts or reconnects, it uses <code>DeliverPolicy.All</code> to pull all surviving data (past 30 minutes) from the stream. This ensures gateways quickly rebuild a complete blacklist cache upon cold start, preventing security vacuums.</li>
-<li class=""><strong>Publish Priority (<code>isCritical: true</code>)</strong>: In the underlying <code>BoundedPublisherService</code>, revocation commands enjoy a reserved &quot;security channel&quot; queue quota. Even if the system is overwhelmed by normal events, revocation commands are prioritized to ensure system security.</li>
+<li class=""><strong>max_age: 30 minutes</strong>: A clever sliding window design. The gateway only needs to intercept tokens that are still within their valid lifecycle but have been revoked early. The Access Token&#x27;s natural lifespan in the configuration is 30 minutes; revocation events older than 30 minutes have no retention value as the token itself would have expired. (Note: This value must be greater than or equal to the <code>jwt.accessExpiresIn</code> time.)</li>
+<li class=""><strong>Consumer Type (<code>Ephemeral + DeliverPolicy.All</code>)</strong>: The API Gateway does not configure a <code>durableName</code>, making it an ephemeral consumer. Every time it starts or reconnects, it uses the <code>DeliverPolicy.All</code> strategy to pull all surviving data in the current stream (i.e., within the last 30 minutes). This ensures the gateway can quickly rebuild its full blacklist cache upon cold start, preventing a security vacuum.</li>
+<li class=""><strong>Publish Priority (<code>isCritical: true</code>)</strong>: In the underlying <code>BoundedPublisherService</code>, revocation commands enjoy a reserved &quot;security channel&quot; queue quota. Even if the system is overwhelmed by normal events, revocation commands are prioritized, ensuring system security.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-authjwtrevoke">Subject 1: auth.jwt.revoke<a href="#subject-1-authjwtrevoke" class="hash-link" aria-label="Direct link to Subject 1: auth.jwt.revoke" title="Direct link to Subject 1: auth.jwt.revoke" translate="no">​</a></h4>
-<p><strong>Description</strong>: Broadcasts security commands for early JWT token invalidation (e.g., logout, kick-out, replay attack detection).</p>
+<p><strong>Description</strong>: Broadcasts security commands for early JWT Token invalidation (e.g., logout, kick-out, replay attack detection).</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-auth</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-auth</code>)</strong></p>
 <ul>
 <li class=""><strong>Publishing Logic</strong>: <code>BoundedPublisherService.publishSafe(&#x27;auth.jwt.revoke&#x27;, payload, &#x27;...&#x27;, { isCritical: true })</code></li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>isCritical: true</strong>: This subject carries core security commands. <code>BoundedPublisherService</code> maintains two in-memory queues: Normal (<code>maxNormalQueueSize=5000</code>) and Critical (<code>maxCriticalQueueSize=10000</code>). Under extreme traffic pressure leading to backpressure, normal events are discarded, but messages with <code>isCritical: true</code> use a larger safety threshold to ensure revocation commands are still sent.</li>
-<li class=""><strong>Asynchronous Fire-and-Forget</strong>: Revocation publishing should not block the current HTTP response time (RT); asynchronous emission maximizes interface throughput.</li>
+<li class=""><strong>isCritical: true (Critical Priority)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: This subject transmits core security commands. <code>BoundedPublisherService</code> maintains two limited queues in memory: a normal queue (<code>maxNormalQueueSize=5000</code>) and a critical queue (<code>maxCriticalQueueSize=10000</code>). When the system faces massive traffic resulting in backpressure, normal events are discarded, but messages with <code>isCritical: true</code> use a larger safety threshold, ensuring revocation commands are still sent even under extreme high pressure.</li>
+</ul>
+</li>
+<li class=""><strong>Asynchronous Fire-and-Forget (No wait for result)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Publishing revocation commands should not block the RT (Response Time) of the current HTTP response. Using asynchronous dispatch significantly improves interface throughput.</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-api-gateway</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-api-gateway</code>)</strong></p>
 <ul>
 <li class=""><strong>Consumption Logic</strong>: <code>NatsEventsService extends BaseNatsSubscriber</code></li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Ephemeral (No <code>durableName</code>)</strong>: API Gateway requires a broadcast (Fan-out) mode. If <code>durableName</code> were set, multiple gateway instances would form a load-balanced group, with each instance receiving only a portion of the blacklist records. Without <code>durableName</code>, each gateway instance establishes an independent ephemeral subscription, receiving all revocation commands to maintain a complete local blacklist.</li>
-<li class=""><strong>DeliverPolicy.All</strong>: Ephemeral consumers lose messages during disconnection. To solve cold start/network flicker issues, the gateway requests NATS to re-send all existing messages (all revocations from the past 30 minutes) upon each connection, perfectly rebuilding the in-memory blacklist.</li>
-<li class=""><strong>Redis Distributed Lock (Idempotency)</strong>: <code>setnx(idempotencyKey, &#x27;1&#x27;, 120)</code>. Handles the rare case of NATS network re-delivery (At-Least-Once). Since the gateway uses <code>DeliverPolicy.All</code>, it pulls old processed messages upon restart; the Redis lock acts as a high-speed cache to quickly ignore tokens already in the blacklist.</li>
+<li class=""><strong>durableName: undefined (Ephemeral Consumer)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: The API Gateway requires a broadcast mode (Fan-out). If <code>durableName</code> were configured, multiple gateway instances would form a load-balanced group (competing for messages), resulting in each instance receiving only a subset of blacklist records. No <code>durableName</code> means each gateway instance establishes an independent ephemeral subscription, ensuring each receives all revocation commands to maintain a complete local blacklist.</li>
+</ul>
+</li>
+<li class=""><strong>deliver_policy: <code>DeliverPolicy.All</code> (Full history pull)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Ephemeral consumers lose messages if they disconnect. To solve cold start/network glitch issues, each time a gateway connects, it requests NATS to resend all existing messages in the stream (all revocation records from the last 30 minutes). This perfectly achieves rapid reconstruction of the gateway&#x27;s memory blacklist.</li>
+</ul>
+</li>
+<li class=""><strong>Redis Distributed Lock <code>setnx(idempotencyKey, &#x27;1&#x27;, 120)</code> (Idempotent processing)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Handles extremely rare cases of NATS network redelivery (At-Least-Once). Since the gateway sets DeliverPolicy to All, it pulls old messages it has already processed upon each restart. The Redis lock acts as a high-speed cache to quickly ignore tokens already in the blacklist, avoiding redundant storage logic.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_events-auth-events-stream"><strong>AUTH_EVENTS (Auth Events Stream)</strong><a href="#auth_events-auth-events-stream" class="hash-link" aria-label="Direct link to auth_events-auth-events-stream" title="Direct link to auth_events-auth-events-stream" translate="no">​</a></h3>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_events-authentication-event-stream"><strong>AUTH_EVENTS (Authentication Event Stream)</strong><a href="#auth_events-authentication-event-stream" class="hash-link" aria-label="Direct link to auth_events-authentication-event-stream" title="Direct link to auth_events-authentication-event-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: Records and distributes system business-level behaviors and events.</p>
+<p><strong>Core Responsibility</strong>: Used to record and distribute system business-level behaviors and events.</p>
 <ul>
-<li class="">Currently mainly used to broadcast user login success events (<code>auth.event.user.loggedIn</code>).</li>
-<li class="">A typical asynchronous decoupling design. Auth focuses on high-concurrency authentication; time-consuming but non-critical operations like &quot;recording last login time&quot; or &quot;updating login device history&quot; are thrown into this stream for background processing by <code>oceanchat-user</code>.</li>
+<li class="">Currently primarily used to broadcast user login success events (<code>auth.event.user.loggedIn</code>).</li>
+<li class="">A typical asynchronous decoupling design. The Auth module focuses on high-concurrency authentication and token issuance; time-consuming operations like &quot;recording user&#x27;s last login time&quot; or &quot;updating login device history&quot; are thrown as events into this stream for the <code>oceanchat-user</code> service to consume and process asynchronously in the background.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.</p>
+<p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code> (Production).</p>
 <ul>
-<li class=""><strong>Reason</strong>: An Event Sourcing / Pub-Sub pattern. A login event might be consumed by Security Audit or Analytics services in the future. The Limits strategy ensures one event can be independently consumed by any number of different business consumer groups.</li>
+<li class=""><strong>Reason</strong>: This is an Event Sourcing / Pub-Sub pattern. Besides the User service updating profiles, login events might be consumed by security auditing (Audit) or data analytics (Analytics) services in the future. The Limits strategy ensures an event can be consumed independently by any number of different business consumer groups.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Storage Type</strong>: <code>StorageType.File</code>.</p>
+<p><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk).</p>
 <ul>
-<li class=""><strong>Reason</strong>: Business events have data value and consistency requirements. If the downstream User service is down or NATS restarts, file storage ensures login records are not lost.</li>
+<li class=""><strong>Reason</strong>: Business events have data value and consistency requirements. If the downstream User service crashes or NATS restarts, file storage ensures all login records from that period are not lost.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong>max_age: 24h</strong>: Provides a sufficient recovery window for downstream consumers. If the User service crashes, DevOps has 24 hours to fix and restart it, after which it can resume processing accumulated events. Data older than 24 hours is cleared to free disk space.</li>
-<li class=""><strong>Durable Consumer</strong>: <code>oceanchat-user</code> is configured with <code>durableName: &#x27;oceanchat-user-auth-events&#x27;</code>. This lets NATS persist its consumption cursor (Offset). Even after a restart, it continues from where it left off. Multiple User service instances with the same Durable name automatically form a Queue Group for load balancing.</li>
-<li class=""><strong>Idempotency Guarantee</strong>: Since NATS JetStream guarantees At-Least-Once delivery, the consumer uses Redis to implement strict distributed deduplication locks to prevent redundant database updates under extreme network conditions.</li>
+<li class=""><strong>max_age: 24 hours</strong>: Provides a sufficient failure recovery window for downstream consumers. If the User service crashes due to a bug, operators have up to 24 hours to fix and restart it, after which it can continue processing accumulated login events. Data older than 24 hours is cleaned up to free disk space.</li>
+<li class=""><strong>Durable Consumer</strong>: <code>oceanchat-user</code> is configured with <code>durableName: &#x27;oceanchat-user-auth-events&#x27;</code>. This allows the NATS server to persistently remember its consumption progress (Cursor/Offset). Even after a restart, it continues from where it left off, avoiding missed messages. Also, multiple User service instances automatically form a Queue Group, enabling load balancing (each login event is processed only once by one instance).</li>
+<li class=""><strong>Idempotency Guarantee</strong>: Since NATS JetStream guarantees At-Least-Once delivery, consumers use Redis to implement strict distributed deduplication locks to prevent redundant database updates under extreme network conditions.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-autheventuserloggedin">Subject 1: auth.event.user.loggedIn<a href="#subject-1-autheventuserloggedin" class="hash-link" aria-label="Direct link to Subject 1: auth.event.user.loggedIn" title="Direct link to Subject 1: auth.event.user.loggedIn" translate="no">​</a></h4>
-<p><strong>Description</strong>: Records successful user login business behavior for updating last active time, audit logs, etc.</p>
+<p><strong>Description</strong>: Records business behavior of successful user login, used for updating device&#x27;s last active time, recording audit logs, etc.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-auth</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-auth</code>)</strong></p>
 <ul>
 <li class=""><strong>Publishing Logic</strong>: <code>BoundedPublisherService.publishSafe(&#x27;auth.event.user.loggedIn&#x27;, payload, &#x27;...&#x27;, { isCritical: false })</code></li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>isCritical: false</strong>: Recording login time is a non-critical event. If Auth service encounters a traffic peak leading to NATS congestion, discarding these log events is acceptable (graceful degradation) to prevent Auth service memory from being exhausted and paralyzing core login functionality.</li>
+<li class=""><strong>isCritical: false (Normal Priority)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Recording login time is a non-critical business event. If the Auth service hits a traffic peak and NATS becomes congested, discarding these log events is acceptable (graceful degradation). We cannot risk the Auth service&#x27;s memory overflowing and crashing core login functionality just to record a login time.</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-user</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-user</code>)</strong></p>
 <ul>
 <li class=""><strong>Consumption Logic</strong>: <code>NatsEventsService extends BaseNatsSubscriber</code></li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Durable (Durable Name: <code>oceanchat-user-auth-events</code>)</strong>: A work queue/unicast mode. Regardless of how many <code>oceanchat-user</code> instances are deployed, each login event is processed only once. The Durable name lets NATS load balance between instances and persist the cursor so no events are missed even after a one-hour downtime.</li>
+<li class=""><strong>durableName: <code>oceanchat-user-auth-events</code> (Durable Consumer)</strong>
+<ul>
+<li class=""><strong>Reason</strong>: This is a work queue/unicast mode. Regardless of how many <code>oceanchat-user</code> instances are deployed, a login event must only be processed once (to avoid concurrent DB writes). The same Durable Name allows NATS to automatically load balance among instances. Furthermore, it persistently stores the consumption cursor (Offset); if all user services are down for an hour, they will resume from where they left off upon restart, ensuring no tasks are missed.</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -273,61 +301,62 @@
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: The system&#x27;s error fallback repository (Dead Letter Queue). Centrally stores &quot;Poison Messages&quot; that cannot be processed normally after multiple retries due to various reasons (bugs, dirty data, downstream database crash).</p>
+<p><strong>Core Responsibility</strong>: The system&#x27;s error fallback repository (Dead Letter Queue). It centrally stores &quot;Poison Messages&quot; that cannot be processed normally after multiple retries due to various reasons (bugs, dirty data, downstream database crashes).</p>
 </li>
 <li class="">
 <p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Raw error data must not be accidentally consumed and should be retained within storage limits for manual or automated intervention.</li>
+<li class=""><strong>Reason</strong>: Original data from error scenes must be preserved permanently within storage limits, waiting for manual or automated intervention, and cannot be accidentally consumed by other consumers.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Storage Type</strong>: <code>StorageType.File</code>.</p>
+<p><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk).</p>
 <ul>
-<li class=""><strong>Reason</strong>: Dead letter data contains precious error contexts and raw payloads, which must be reliably persisted.</li>
+<li class=""><strong>Reason</strong>: Dead letter data contains precious error context and raw payloads, which must be persisted to disk absolutely reliably.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong>max_age: 7d</strong>: Provides a sufficient buffer for developers and Ops teams (covering weekends and holidays). Upon receiving a DLQ alert, engineers have 7 days to locate the problem. After fixing the bug, messages can be extracted from DLQ via an Ops interface and re-delivered (simply by removing the <code>dlq.</code> prefix).</li>
-<li class=""><strong>Unified Degradation Prefix (<code>dlq.&gt;</code>)</strong>: Standardized subject naming (e.g., <code>dlq.auth.event.&gt;</code>) allows the framework to centrally archive failure events from different business lines while remaining clear about their origin.</li>
-<li class=""><strong>Comprehensive Inflow Mechanism</strong>:<!-- -->
-<ul>
-<li class=""><strong>Consumer Fallback</strong>: In <code>BaseNatsSubscriber</code>, if a message NAKs at the consumer end and fails after maximum retries (<code>max_deliver: 3</code>), the framework intercepts it, forwards it to DLQ, and ACKs the original message (removing it from the original queue to prevent infinite blocking).</li>
-<li class=""><strong>Producer Fallback</strong>: In <code>BoundedPublisherService</code>, if a normal subject publication fails due to NATS anomaly or rate limit saturation, the framework attempts to dump data into DLQ as a fallback to preserve evidence.</li>
+<li class=""><strong>max_age: 7 days</strong>: Provides an ample buffer for developers and ops teams (covering weekends and long holidays). Once a DLQ alert is received, engineers have 7 days to locate the issue. After fixing the bug, original messages can be extracted from the DLQ via ops interfaces and redelivered (simply by removing the <code>dlq.</code> prefix).</li>
+<li class=""><strong>Unified Degradation Prefix (<code>dlq.&gt;</code>)</strong>: Through standard subject naming (currently <code>dlq.auth.event.&gt;</code>, etc.), the framework centrally archives failed events from different business lines, while the suffix clearly indicates which business produced the dead letter.</li>
 </ul>
 </li>
+<li class="">
+<p><strong>Comprehensive Inflow Mechanisms</strong>:</p>
+<ul>
+<li class=""><strong>Consumer-side Fallback</strong>: In <code>BaseNatsSubscriber</code>, if a message NAKs at the consumer end (e.g., User DB unreachable) and still fails after maximum retries (<code>max_deliver: 3</code>), the consumer framework intercepts it, forwards it to the DLQ, and ACKs the original message (removing it from the original queue to prevent infinite loops blocking the entire queue).</li>
+<li class=""><strong>Producer-side Fallback</strong>: In <code>BoundedPublisherService</code>, if publishing to a normal subject fails due to NATS anomalies or a full rate limiter, the publisher framework also attempts to drop the data into the DLQ stream as a fallback to preserve evidence.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-dlq-eg-dlqautheventuserloggedin">Subject 1: dlq.&gt; (e.g., dlq.auth.event.user.loggedIn)<a href="#subject-1-dlq-eg-dlqautheventuserloggedin" class="hash-link" aria-label="Direct link to Subject 1: dlq.&gt; (e.g., dlq.auth.event.user.loggedIn)" title="Direct link to Subject 1: dlq.&gt; (e.g., dlq.auth.event.user.loggedIn)" translate="no">​</a></h4>
-<p><strong>Description</strong>: Recycling bin for Poison Messages and crash scene contexts.</p>
+<p><strong>Description</strong>: Recycle bin for Poison Messages and crash scenes.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: Framework-level interception in microservices)</p>
+<p><strong>Producer Configuration (Producer: Framework-layer interception in various microservices)</strong> This is a special subject whose &quot;producer&quot; is not business code but the underlying framework&#x27;s exception capture mechanism.</p>
 <ul>
-<li class=""><strong>Scenario 1: Consumer Retry Exhaustion</strong>:<!-- -->
+<li class=""><strong>Production Scenario 1: Consumer Retry Exhaustion</strong>:<!-- -->
 <ul>
-<li class=""><strong>Logic</strong>: In <code>BaseNatsSubscriber.handleError</code>, when <code>deliveryCount &gt;= max_deliver</code> (default 3) and an exception is still thrown.</li>
-<li class=""><strong>Action</strong>: Sends the original message to <code>dlq.${m.subject}</code> and executes <code>m.ack()</code>.</li>
-<li class=""><strong>Reason</strong>: Prevents &quot;Poison Messages&quot; (e.g., dirty data or database down) from blocking the entire queue by continuously NAK-ing.</li>
+<li class=""><strong>Logic</strong>: In <code>BaseNatsSubscriber.handleError</code>, when an exception is still thrown after <code>deliveryCount &gt;= max_deliver</code> (default 3).</li>
+<li class=""><strong>Publishing Behavior</strong>: Sends original message to <code>dlq.${m.subject}</code> and sends <code>m.ack()</code> to the original message.</li>
+<li class=""><strong>Reason</strong>: If the database is down or dirty data is encountered, continuous <code>m.nak()</code> would keep the message at the front of the queue, blocking all subsequent normal messages (head-of-line blocking). Moving it to DLQ while ACKing the original queue &quot;unclogs the pipe&quot; and isolates the error.</li>
 </ul>
 </li>
-<li class=""><strong>Scenario 2: Publisher NATS Link Interruption</strong>:<!-- -->
+<li class=""><strong>Production Scenario 2: Producer NATS Link Interruption</strong>:<!-- -->
 <ul>
-<li class=""><strong>Logic</strong>: In <code>BoundedPublisherService</code>, if primary subject publishing fails.</li>
-<li class=""><strong>Action</strong>: Enters <code>.catch()</code> to attempt <code>js.publish(dlqSubject, payload)</code>.</li>
-<li class=""><strong>Reason</strong>: As a last line of defense, attempts to save data to the DLQ stream when the target stream is unavailable.</li>
+<li class=""><strong>Logic</strong>: In <code>BoundedPublisherService</code>, if the main subject publish fails.</li>
+<li class=""><strong>Publishing Behavior</strong>: Enters <code>.catch()</code> and attempts <code>js.publish(dlqSubject, payload)</code>.</li>
+<li class=""><strong>Reason</strong>: As a last line of defense, when the target stream is unavailable (e.g., misconfiguration), it attempts to write the data to the DLQ stream to preserve evidence.</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: None currently)</p>
+<p><strong>Consumer Configuration (Consumer: None currently)</strong></p>
 <ul>
-<li class=""><strong>Reason</strong>: Dead letter queues must never be automatically consumed. Messages in DLQ require manual intervention.</li>
-<li class=""><strong>Evolution</strong>: Typically, DLQ writes trigger alerts (e.g., Slack/Teams/DingTalk). Developers fix the bug and then use an Admin UI to &quot;Replay&quot; messages by stripping the <code>dlq.</code> prefix and re-sending them to their original streams.</li>
+<li class=""><strong>Reason</strong>: Dead letter queues must never be automatically consumed. Messages entering DLQ mean the system has repeatedly struggled but failed to process them. They must lie quietly on disk (<code>max_age: 7 days</code>).</li>
+<li class=""><strong>Future Evolution</strong>: Typically, writing to the DLQ triggers an alert to the company&#x27;s notification system (Lark, DingTalk bots). Developers see the alert, troubleshoot logs, fix bugs, and finally click &quot;Replay&quot; in an Admin dashboard. The system then removes the <code>dlq.</code> prefix and resends it back to the corresponding stream.</li>
 </ul>
 </li>
 </ul>
@@ -335,209 +364,301 @@
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: Acts as an <strong>asynchronous write-behind cache</strong> for high-frequency read/receipt cursors, protecting the underlying database (MongoDB) and cache layer (Redis) from IOPS overload caused by &quot;acknowledgment storms&quot;.</p>
+<p><strong>Core Responsibility</strong>: Serves as a <strong>Write-behind Cache</strong> for extremely high-frequency ACK/Read Cursors, protecting the underlying database (MongoDB) and cache layer (Redis) from IOPS overload caused by &quot;acknowledgment storms.&quot;</p>
 <ul>
-<li class="">In large groups or highly active private chats, clients frequently send <code>[0x0B] READ_RECEIPT</code> signals. Gateways/Routers deliver these status changes to this stream, achieving zero I/O blocking at the gateway layer.</li>
-<li class="">The persistence worker consumes in batch mode in the background, syncing final folded and deduplicated cursor statuses to Redis and MongoDB.</li>
+<li class="">In large group chats or extremely active private chats, clients send high-frequency <code>[0x0B] READ_RECEIPT</code> confirmation signals after pulling messages. The gateway/router only delivers these state changes to this stream, achieving zero I/O blocking at the gateway layer.</li>
+<li class="">The persistence worker consumes in batch mode in the background, syncing the final deduplicated and folded cursor states to Redis and persisting them to MongoDB.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Retention Strategy</strong>: <code>RetentionPolicy.Limits</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Cursor data is typical <strong>&quot;State data&quot;</strong> rather than <strong>&quot;Event data&quot;</strong>. We only care about the final state (the latest message seen) and not the intermediate steps. The Limits strategy, combined with <code>max_msgs_per_subject: 1</code>, achieves perfect peak shaving.</li>
+<li class=""><strong>Reason</strong>: Cursor data is typical <strong>&quot;State Data&quot;</strong> rather than <strong>&quot;Event Data&quot;</strong>. We only care about the user&#x27;s final state (the latest message seen) and completely ignore the process (intermediate SeqIds). The Limits strategy, combined with the <code>MaxMsgsPerSubject=1</code> trick, achieves perfect peak shaving for memory and disk.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Storage Type</strong>: <code>StorageType.Memory</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Due to extreme queue deduplication, it occupies almost no space even with memory storage. Even if system-wide downtime causes loss of a few seconds of cursor ACKs, the system simply resumes from the last Redis/MongoDB record. Clients have natural deduplication upon reconnection, so Memory storage is used for invincible throughput.</li>
+<li class=""><strong>Reason</strong>: Even with file storage, it occupies almost no space due to the extreme queue deduplication feature. Even in the rare case of a total system crash losing cursor ACK data within a second or two, the system can restart from the last Redis or MongoDB record. Since clients have natural deduplication when receiving/sending messages or reconnecting, there&#x27;s no need to worry about redundant message pulling, making Memory storage a safe bet for unbeatable throughput.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong><code>max_msgs_per_subject: 1</code> (Storm Folding Mechanism) 🌟</strong>:<!-- -->
+<li class=""><strong><code>max_msgs_per_subject: 1</code> (Expert Storm Folding Mechanism)</strong> 🌟:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: <strong>The core &quot;dark art&quot; for solving group chat ACK write storms.</strong> If a user triggers 50 cursor updates in 1 second while scrolling, all 50 events published to the same subject for that user will be automatically deduplicated by NATS. The queue for that user in that group <strong>always contains only the latest entry (e.g., SeqId 150)</strong>.</li>
+<li class=""><strong>Reason</strong>: <strong>This is the core &quot;magic&quot; for solving group chat ACK write storms.</strong> If a user scrolls frantically through a 10,000-person group chat in 1 second, triggering 50 cursor updates (e.g., SeqId from 101 to 150), NATS automatically discards old values when these 50 updates are published to the same subject precisely identifying that user. In the entire stream, for that group and user, the cursor queue <strong>always contains only the latest entry (SeqId 150)</strong>.</li>
 </ul>
 </li>
-<li class=""><strong>Asynchronous BulkWrite</strong>:<!-- -->
+<li class=""><strong>Asynchronous Large-Batch Persistence (BulkWrite)</strong>:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: The persistence worker doesn&#x27;t care about the 49 intermediate updates. It periodically (e.g., every second) pulls the folded status set from the stream. Pulling 1000 users&#x27; latest cursors allows for a single MongoDB <code>bulkWrite</code> and a Redis Pipeline update, reducing 50,000 random writes to minimal network I/O.</li>
+<li class=""><strong>Reason</strong>: The persistence worker doesn&#x27;t need to care about those 49 useless intermediate updates. it only periodically (e.g., once per second) Pulls the most compact set of states from the stream. After getting latest cursors for 1000 users, it calls MongoDB&#x27;s <code>bulkWrite</code> once and uses Redis Pipeline for batch cache updates, reducing 50,000 high-frequency random writes to a minimal number of network I/Os.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-cursorreadgroupiduserid">Subject 1: cursor.read.{groupId}.{userId}<a href="#subject-1-cursorreadgroupiduserid" class="hash-link" aria-label="Direct link to Subject 1: cursor.read.{groupId}.{userId}" title="Direct link to Subject 1: cursor.read.{groupId}.{userId}" translate="no">​</a></h4>
-<p><strong>Description</strong>: Receives and merges the latest cursor status for a specific user in a specific session.</p>
+<p><strong>Description</strong>: Receives and merges the latest cursor state for a specific user in a specific session (group/private chat).</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-router</code> or <code>oceanchat-api-gateway</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-router</code> or <code>oceanchat-api-gateway</code>)</strong></p>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: Upon receiving ACK/Read signals from the client, it <strong>performs no synchronous DB or Redis operations</strong> and asynchronously publishes the payload (e.g., <code>{&quot;seqId&quot;: 1005}</code>) to the precise wildcard subject.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Publishing Logic</strong>: Upon receiving an ACK/Read signal from the client, it <strong>performs no synchronous database or Redis operations</strong> and asynchronously publishes the payload (e.g., <code>{&quot;seqId&quot;: 1005}</code>) to the precise wildcard subject.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Highly Granular Subjects</strong>: Both <code>groupId</code> and <code>userId</code> must be part of the subject name (e.g., <code>cursor.read.G1.U1</code>). This is a prerequisite for <code>max_msgs_per_subject: 1</code> to precisely retain only the latest record for U1 in G1.</li>
+<li class=""><strong>Highly Granular Subjects</strong>: Both <code>groupId</code> and <code>userId</code> must be included in the subject name (e.g., <code>cursor.read.G1.U1</code>). This is the prerequisite for <code>max_msgs_per_subject: 1</code> to precisely &quot;keep only the latest record for U1 in G1.&quot;</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>MessagePersistence Worker</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>MessagePersistence Worker</code>)</strong></p>
 <ul>
-<li class=""><strong>Consumption Logic</strong>: Pull mode subscription to <code>cursor.&gt;</code>.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Consumption Logic</strong>: Pull mode subscribing to <code>cursor.&gt;</code>.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Batch Pull &amp; Dual Write</strong>: The worker pulls folded statuses in large batches (e.g., <code>batch: 1000</code>). It then uses Redis Pipeline and MongoDB BulkWrite to sync status.</li>
-<li class=""><strong>Explicit ACK</strong>: Worker sends batch ACKs to NATS only after successful Redis and MongoDB writes. Since clients are idempotent, partial failures leading to retries do not impact business consistency.</li>
-<li class=""><strong>Durable Queue Group</strong>: Multiple workers share the load, ensuring each folded status is persisted only once.</li>
+<li class=""><strong>Batch Pull &amp; Dual Write</strong>: The worker pulls in batches (e.g., <code>batch: 1000</code>) via long polling, grabbing the most compact folded cursor states. It then uses Redis Pipeline for batch updates and performs MongoDB BulkWrite for persistence.</li>
+<li class=""><strong>Explicit ACK</strong>: Worker ACKs NATS in batches only after both Redis and MongoDB batch writes succeed. Since the client is idempotent, any partial failures leading to retries won&#x27;t affect business consistency.</li>
+<li class=""><strong>Durable Queue Group</strong>: Multiple worker instances share the global cursor persistence load; each compacted cursor state is persisted only once.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sys_presence-presence--event-stream"><strong>SYS_PRESENCE (Presence &amp; Event Stream)</strong><a href="#sys_presence-presence--event-stream" class="hash-link" aria-label="Direct link to sys_presence-presence--event-stream" title="Direct link to sys_presence-presence--event-stream" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sys_presence-status-and-event-stream"><strong>SYS_PRESENCE (Status and Event Stream)</strong><a href="#sys_presence-status-and-event-stream" class="hash-link" aria-label="Direct link to sys_presence-status-and-event-stream" title="Direct link to sys_presence-status-and-event-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
 <li class=""><strong>Responsibility</strong>: Handles user online/offline events and connection heartbeats.</li>
-<li class=""><strong>Retention Strategy</strong>: Interest (retained only if there are active listeners) or short-term limits.</li>
+<li class=""><strong>Retention Strategy</strong>: Interest (retained only when services are listening) or short-term Limits.</li>
 <li class=""><strong>Storage</strong>: Memory (transient data).</li>
-<li class=""><strong>Producer</strong>: WebSocket gateway.</li>
-<li class=""><strong>Consumer</strong>: Presence service / Push service.</li>
-<li class=""><strong>Strategy</strong>: Pull consumer with queue group (at-least-once delivery).</li>
+<li class=""><strong>Producer</strong>: WebSocket Gateway.</li>
+<li class=""><strong>Consumer</strong>: Online Presence service / Push service.</li>
+<li class=""><strong>Strategy</strong>: Pull consumer with Queue Group (At-Least-Once delivery).</li>
 </ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="group_hybrid-ultra-large-group-degradation-stream"><strong>GROUP_HYBRID (Ultra-Large Group Degradation Stream)</strong><a href="#group_hybrid-ultra-large-group-degradation-stream" class="hash-link" aria-label="Direct link to group_hybrid-ultra-large-group-degradation-stream" title="Direct link to group_hybrid-ultra-large-group-degradation-stream" translate="no">​</a></h3>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="group_hybrid-large-group-degradation-stream"><strong>GROUP_HYBRID (Large Group Degradation Stream)</strong><a href="#group_hybrid-large-group-degradation-stream" class="hash-link" aria-label="Direct link to group_hybrid-large-group-degradation-stream" title="Direct link to group_hybrid-large-group-degradation-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
-<li class=""><strong>Responsibility</strong>: Dedicated to the <strong>Push-Pull Hybrid</strong> strategy for ultra-large groups (10k+ members) to prevent fan-out avalanches.</li>
+<li class=""><strong>Responsibility</strong>: Specifically designed for the <strong>Push-Pull Hybrid</strong> strategy in large groups (over 10,000 members) to prevent fan-out avalanches.</li>
 <li class=""><strong>Producer</strong>: Router service.</li>
-<li class=""><strong>Consumer</strong>: WebSocket gateway (and indirectly the client).</li>
-<li class=""><strong>Strategy</strong>: Signal push + Client pull (jittered HTTP/RPC).</li>
+<li class=""><strong>Consumer</strong>: WebSocket Gateway (and indirectly to the client).</li>
+<li class=""><strong>Strategy</strong>: Signaling push + client pull (jittered HTTP/RPC).</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="im_downbound-real-time-online-delivery-stream"><strong>IM_DOWNBOUND (Real-time Online Delivery Stream)</strong><a href="#im_downbound-real-time-online-delivery-stream" class="hash-link" aria-label="Direct link to im_downbound-real-time-online-delivery-stream" title="Direct link to im_downbound-real-time-online-delivery-stream" translate="no">​</a></h3>
+<!-- -->
+<ul>
+<li class=""><strong>Core Responsibility</strong>: In a distributed architecture, responsible for the <strong>Precise Delivery (Unicast)</strong> of downbound signaling (like <code>MSG_NOTIFY</code> wake-up and <code>MSG_UP_ACK</code> receipts) to the specific gateway instance holding the target user&#x27;s WebSocket connection.<!-- -->
+<ul>
+<li class="">This is the link between &quot;stateless gateways&quot; and &quot;centralized state services.&quot; The core Orchestrator service only needs to check the Redis online map for the device&#x27;s <code>gatewayId</code> to deliver data like a parcel to the correct Pod.</li>
+</ul>
+</li>
+<li class=""><strong>Retention Strategy</strong>: <code>RetentionPolicy.Interest</code> or very short <code>Limits</code>.<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Downbound signaling strictly depends on specific physical gateway processes. If <code>Pod A</code> crashes, its in-memory WebSocket connections are all severed. Accumulating messages in <code>im.down.node.podA_uuid</code> is meaningless and creates data black holes. The Interest strategy ensures unowned messages are discarded immediately once the gateway goes offline.</li>
+</ul>
+</li>
+<li class=""><strong>Storage Type</strong>: <code>StorageType.Memory</code>.<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Ultimate delivery latency requirement. Online push signaling is &quot;volatile data.&quot; According to the Push-Pull Hybrid mechanism, even if signaling is lost in memory during extreme cases, clients will pull historical entity data via an active HTTP Sync upon reconnection or session opening, so Memory is safely used for maximum IOPS.</li>
+</ul>
+</li>
+<li class=""><strong>Key Configuration and Design Details</strong>:<!-- -->
+<ul>
+<li class=""><strong>Zero-Payload Push</strong>: The <code>MSG_NOTIFY</code> transmitted here contains no business message entities, only <code>GroupId</code> and <code>SyncSeqId</code> (cursor). This completely eliminates network fan-out avalanches and head-of-line blocking under high-concurrency group chats.</li>
+</ul>
+</li>
+</ul>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-imdownnodegatewayid">Subject 1: im.down.node.{gatewayId}<a href="#subject-1-imdownnodegatewayid" class="hash-link" aria-label="Direct link to Subject 1: im.down.node.{gatewayId}" title="Direct link to Subject 1: im.down.node.{gatewayId}" translate="no">​</a></h4>
+<p><strong>Description</strong>: Precise &quot;delivery address&quot; for cross-node communication between microservices, used for sending real-time binary protocol frames to a single specific gateway node.</p>
+<ul>
+<li class="">
+<p><strong>Producer Configuration (Producer: <code>oceanchat-pusher-realtime</code> or <code>oceanchat-orchestrator</code>)</strong></p>
+<ul>
+<li class=""><strong>Publishing Logic</strong>: After finding the target user&#x27;s online node ID from Redis <code>oceanchat-presence</code>, publishes events to the dedicated subject corresponding to that UUID.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
+<ul>
+<li class=""><strong>Asynchronous Fire-and-Forget</strong>: The push service releases lightweight signals immediately without waiting for the gateway&#x27;s ACK, ensuring ultra-high throughput during high-frequency dispatch.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-ws-gateway</code>)</strong></p>
+<ul>
+<li class=""><strong>Consumption Logic</strong>: Each gateway instance extracts its own UUID upon startup and dynamically listens to its private <code>im.down.node.{this.gatewayId}</code> subject.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
+<ul>
+<li class=""><strong>Ephemeral Consumer</strong>: <strong>Never configures <code>durable_name</code></strong>.<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: The gateway is a stateless physical-layer proxy; process destruction means connection termination. No <code>durable_name</code> makes this an At-Most-Once ephemeral subscription. Once the gateway dies, its private mailbox is automatically destroyed, leaving no unreachable garbage queues on the server.</li>
+</ul>
+</li>
+<li class=""><strong>Pure Memory Reverse Routing</strong>: Upon receiving a NATS message, the gateway performs an O(1) lookup in its local memory tree (<code>userRoutingTree</code>: <code>Map&lt;UserId, Map&lt;DeviceId, ClientConnection&gt;&gt;</code>) to find the corresponding TCP socket without querying any database.</li>
+<li class=""><strong>Intelligent Micro-batching</strong>: To prevent push storms from high-burst group messages, the gateway writes signals into a per-connection folding pool and automatically collapses multiple <code>MSG_NOTIFY</code> signals for the same group into a single downbound packet carrying the largest <code>SyncSeqId</code> within a 200ms anti-shake window (<code>collapseTimer</code>).</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="offline_push-third-party-push-stream"><strong>OFFLINE_PUSH (Third-party Push Stream)</strong><a href="#offline_push-third-party-push-stream" class="hash-link" aria-label="Direct link to offline_push-third-party-push-stream" title="Direct link to offline_push-third-party-push-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
 <li class="">
-<p><strong>Core Responsibility</strong>: Handles offline wake-up notifications for Apple APNs, Google FCM, and domestic vendors.</p>
+<p><strong>Core Responsibility</strong>: Handles offline wake-up notifications to Apple APNs, Google FCM, and domestic vendor APIs.</p>
 <ul>
-<li class="">When <code>oceanchat-orchestrator</code> detects a target user is offline (no active TCP/WS connection), it publishes a lightweight wake-up task to this stream.</li>
-<li class="">Dedicated <code>oceanchat-pusher-offline</code> workers pull tasks and call third-party APIs. Physical isolation ensures slow or unstable third-party HTTP calls do not drag down the core <code>IM_CORE</code> real-time queue.</li>
+<li class="">When <code>oceanchat-orchestrator</code> detects a user is offline (no active TCP/WS connection), it publishes a lightweight wake-up task to this stream.</li>
+<li class="">Dedicated <code>oceanchat-pusher-offline</code> workers pull tasks from this stream and call third-party network interfaces. Physical isolation ensures slow or unstable third-party HTTP calls don&#x27;t drag down the core <code>IM_CORE</code> real-time message queue.</li>
 </ul>
 </li>
 <li class="">
 <p><strong>Retention Strategy</strong>: <code>RetentionPolicy.WorkQueue</code>.</p>
 <ul>
-<li class=""><strong>Reason</strong>: Typical task consumption scenario. Once a task is successfully sent and ACK-ed, it should be removed from NATS. WorkQueue ensures each task is assigned to only one idle instance, achieving natural load balancing.</li>
+<li class=""><strong>Reason</strong>: Offline push is a typical task consumption scenario. Once a push task is successfully sent to Apple/Google and an ACK is returned, the task is complete and should be removed from NATS immediately. With multiple push service instances, WorkQueue ensures a task is assigned to only one idle instance, providing natural load balancing.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Storage Type</strong>: <code>StorageType.File</code>.</p>
+<p><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk).</p>
 <ul>
-<li class=""><strong>Reason</strong>: Third-party APIs often encounter rate limits or downtime. Accumulating tasks in memory would cause NATS OOM. Disk storage handles massive backlogs and prevents task loss during NATS restarts.</li>
+<li class=""><strong>Reason</strong>: Third-party push interfaces often face rate limiting or downtime. If a large number of tasks accumulate, keeping them in memory could lead to NATS OOM. Disk storage handles massive backlogs and prevents losing pending notifications if NATS restarts.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Key Configuration &amp; Design Details</strong>:</p>
+<p><strong>Key Configuration and Design Details</strong>:</p>
 <ul>
-<li class=""><strong><code>max_msgs_per_subject: 1</code> &amp; <code>discard: &quot;old&quot;</code> (Folding Strategy)</strong>:<!-- -->
+<li class=""><strong><code>max_msgs_per_subject: 1</code> with <code>discard: &quot;old&quot;</code> (Folding Deduplication Strategy)</strong>:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Optimized for &quot;fan-out avalanches&quot; caused by sudden message bursts in large groups. Offline notifications only need to &quot;wake up&quot; the client and refresh unread counts. <code>max_msgs_per_subject: 1</code> for a single user&#x27;s sub-subject (e.g., <code>push.offline.apns.user123</code>) ensures only the latest task is kept. New tasks replace old ones, achieving <strong>lock-free folding</strong> of push signals at the physical queue layer, reducing API costs and user disturbance.</li>
+<li class=""><strong>Reason</strong>: An expert-level optimization for the &quot;fan-out avalanche&quot; caused by high-burst group messages. Offline notifications only need to &quot;wake up&quot; the client and refresh the OS unread count. <code>max_msgs_per_subject: 1</code> for a single user&#x27;s sub-subject (e.g., <code>push.offline.apns.user123</code>) ensures only the latest task is kept. If a new message arrives before the old one is sent, the old one is discarded (<code>discard: &quot;old&quot;</code>) and replaced. This achieves lock-free folding of push signaling at the physical queue layer, significantly reducing third-party API costs and avoiding excessive vibrations/popups for users.</li>
 </ul>
 </li>
 <li class=""><strong><code>max_age: 24h</code></strong>:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Offline tasks accumulated for over a day usually lose their relevance and are automatically cleared.</li>
+<li class=""><strong>Reason</strong>: Offline push tasks pending for more than a day usually lose their relevance. Dead tasks older than 24 hours are automatically cleaned up.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-pushofflinevendoruser_id-eg-pushofflineapnsuid123">Subject 1: push.offline.{vendor}.{user_id} (e.g., push.offline.apns.uid123)<a href="#subject-1-pushofflinevendoruser_id-eg-pushofflineapnsuid123" class="hash-link" aria-label="Direct link to Subject 1: push.offline.{vendor}.{user_id} (e.g., push.offline.apns.uid123)" title="Direct link to Subject 1: push.offline.{vendor}.{user_id} (e.g., push.offline.apns.uid123)" translate="no">​</a></h4>
-<p><strong>Description</strong>: Subjects for precise dispatch of offline wake-up tasks to specific vendors and users.</p>
+<p><strong>Description</strong>: Precise offline wake-up task subjects for specific vendors and users.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-orchestrator</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-orchestrator</code>)</strong></p>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: After querying presence, if the target is completely offline, the orchestrator identifies the device platform and publishes a lightweight wake-up command.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Publishing Logic</strong>: After querying Redis online status and finding the user is completely offline, the Orchestrator identifies the device platform and publishes a lightweight wake-up command.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Per-user Subject Paths</strong>: Subject must be granular to the user level so <code>max_msgs_per_subject: 1</code> can correctly deduplicate per user.</li>
+<li class=""><strong>User-specific Subject Paths</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Subjects must be granular down to the user level for the stream-level <code>max_msgs_per_subject: 1</code> strategy to know which user&#x27;s queue to deduplicate. Broad subjects would leave only one task for all users.</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-pusher-offline</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-pusher-offline</code>)</strong></p>
 <ul>
-<li class=""><strong>Consumption Logic</strong>: Pull mode wildcard subscription to <code>push.offline.&gt;</code>.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Consumption Logic</strong>: Pull mode using wildcard subscription to <code>push.offline.&gt;</code>.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Pull Consumer</strong>: Allows workers to pull tasks based on their capacity and vendor limits, achieving peak shaving and preventing OOM under massive load.</li>
-<li class=""><strong><code>ack_policy: &quot;explicit&quot;</code> &amp; <code>ack_wait: &quot;10s&quot;</code></strong>: Workers ACK only after receiving HTTP 200 OK from APNs/FCM. Timeout without ACK leads to NATS automatically re-queuing the task.</li>
-<li class=""><strong><code>max_deliver: 3</code></strong>: Prevents infinite loops for &quot;poison tokens&quot; (e.g., App uninstalled). After 5 failed attempts (configurable), the task is moved to DLQ.</li>
-<li class=""><strong><code>durable_name: &quot;offline-pusher-group&quot;</code></strong>: Ensures all instances are treated as a single consumer group for load balancing and sharing a single cursor.</li>
-<li class=""><strong><code>deliver_policy: &quot;all&quot;</code></strong>: Ensures that upon first group creation (or restart with durable), the group resumes from the oldest message in the stream.</li>
+<li class=""><strong>Pull Consumer</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: The service calls external HTTP APIs (Apple/Google) with uncontrollable latency and strict rate limits. Pull mode allows consumers to fetch tasks based on their processing capacity and vendor limits, smoothing out peaks and avoiding being overwhelmed by massive offline tasks (solving OOM risks).</li>
+</ul>
+</li>
+<li class=""><strong><code>ack_policy: &quot;explicit&quot;</code> and <code>ack_wait: &quot;10s&quot;</code></strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: The worker ACKs NATS only after receiving an HTTP 200 OK from APNs or FCM. If the external interface hangs, times out, or returns a 5xx error, no ACK is sent, and NATS automatically returns the task to the queue after 10 seconds for other healthy workers to retry.</li>
+</ul>
+</li>
+<li class=""><strong><code>max_deliver: 3</code> (Maximum Delivery Attempts)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Prevents infinite loops. If a user&#x27;s DeviceToken is completely invalid (e.g., App uninstalled) and Apple returns 400 BadDeviceToken consistently, after 3 retries, the NATS consumer framework moves the task to the DLQ as a poison message to avoid wasting system resources.</li>
+</ul>
+</li>
+<li class=""><strong><code>durable_name: &quot;offline-pusher-group&quot;</code> (Durable Consumer Group)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: A fixed Durable Name is required so NATS treats all <code>oceanchat-pusher-offline</code> instances as one &quot;Consumer Group.&quot; They share a single consumption cursor for natural <strong>load balancing</strong>. Each push notification is pulled by only one instance, preventing duplicate pushes.</li>
+</ul>
+</li>
+<li class=""><strong><code>deliver_policy: &quot;all&quot;</code></strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Only takes effect when the consumer group is first created. It instructs NATS to point the initial shared cursor to the oldest message in the stream. Combined with the Durable mechanism, this ensures that even if all push instances are down for maintenance, they will resume from the oldest pending tasks upon restart, without missing or duplicating messages.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="background_tasks-media--audit-stream"><strong>BACKGROUND_TASKS (Media &amp; Audit Stream)</strong><a href="#background_tasks-media--audit-stream" class="hash-link" aria-label="Direct link to background_tasks-media--audit-stream" title="Direct link to background_tasks-media--audit-stream" translate="no">​</a></h3>
+</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="background_tasks-multimedia-and-audit-stream"><strong>BACKGROUND_TASKS (Multimedia and Audit Stream)</strong><a href="#background_tasks-multimedia-and-audit-stream" class="hash-link" aria-label="Direct link to background_tasks-multimedia-and-audit-stream" title="Direct link to background_tasks-multimedia-and-audit-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
-<li class=""><strong>Core Responsibility</strong>: Handles CPU-intensive computing (transcoding, thumbnail generation) and time-consuming external I/O (NSFW AI auditing).<!-- -->
+<li class=""><strong>Core Responsibility</strong>: Handles CPU-intensive computing (audio/video transcoding, thumbnail generation) and time-consuming external I/O calls (third-party AI for NSFW/violence detection).<!-- -->
 <ul>
-<li class="">Isolating these heavy tasks ensures the core <code>IM_CORE</code> real-time chat link is free from &quot;avalanches&quot; and Head-of-Line (HoL) blocking.</li>
+<li class="">By throwing these heavy multimedia and compliance tasks into a dedicated background stream, the core <code>IM_CORE</code> real-time chat path is protected from &quot;avalanche&quot; slowdowns and head-of-line blocking, achieving perfect physical isolation.</li>
 </ul>
 </li>
 <li class=""><strong>Retention Strategy</strong>: <code>RetentionPolicy.WorkQueue</code>.<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Typical task distribution scenario. Completed tasks are removed. Supports competitive consumption among multiple worker instances.</li>
+<li class=""><strong>Reason</strong>: A pure task distribution scenario. Once a transcoding or audit task is successfully executed and ACKed by a worker, it should be removed from the stream immediately. WorkQueue mode naturally supports competitive consumption; with 10 transcoding workers, tasks are automatically load-balanced.</li>
 </ul>
 </li>
-<li class=""><strong>Storage Type</strong>: <code>StorageType.File</code>.<!-- -->
+<li class=""><strong>Storage Type</strong>: <code>StorageType.File</code> (Disk).<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Media processing tasks can take seconds to minutes. Disk storage safely handles bursts without NATS OOM.</li>
+<li class=""><strong>Reason</strong>: Tasks like multimedia transcoding take time (often tens of seconds to minutes). If massive videos are uploaded concurrently, accumulating tasks in memory would likely cause NATS OOM. Disk storage safely handles bursty upload peaks.</li>
 </ul>
 </li>
-<li class=""><strong>Key Configuration &amp; Design Details</strong>:<!-- -->
+<li class=""><strong>Key Configuration and Design Details</strong>:<!-- -->
 <ul>
 <li class=""><strong>Explicit NAK Fallback</strong>:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Transcoding (ffmpeg) or AI APIs often fail or timeout. Workers send a Negative Acknowledgment (NAK) upon error, causing NATS to immediately (or after a backoff) re-queue the task for other healthy nodes, speeding up recovery.</li>
+<li class=""><strong>Reason</strong>: Tools like ffmpeg can easily crash due to abnormal file formats, and external audit APIs can be volatile or timeout. When workers capture these exceptions, they immediately send a Negative Acknowledgment (NAK) to NATS. NATS then puts the task back at the front of the queue immediately (or after a backoff) for another healthy node to retry, rather than waiting for an Ack Wait timeout, greatly speeding up fault recovery.</li>
 </ul>
 </li>
 <li class=""><strong>max_deliver: 3</strong>:<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Prevents &quot;poison files&quot; (e.g., corrupt videos) from paralyzing the cluster. Failed tasks move to DLQ after 3 retries.</li>
+<li class=""><strong>Reason</strong>: Prevents &quot;poison files&quot; (e.g., completely corrupted video files) from infinitely looping and paralyzing the transcoding cluster. Tasks failing after 3 retries trigger the framework&#x27;s fallback mechanism and are forwarded to the DLQ for isolation and manual intervention.</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-task-eg-taskmediatranscode-taskauditnsfw">Subject 1: task.* (e.g., task.media.transcode, task.audit.nsfw)<a href="#subject-1-task-eg-taskmediatranscode-taskauditnsfw" class="hash-link" aria-label="Direct link to Subject 1: task.* (e.g., task.media.transcode, task.audit.nsfw)" title="Direct link to Subject 1: task.* (e.g., task.media.transcode, task.audit.nsfw)" translate="no">​</a></h4>
-<p><strong>Description</strong>: Task queues for triggering specific background asynchronous computing workers.</p>
+<p><strong>Description</strong>: Task queues for triggering specific background asynchronous computing units.</p>
 <ul>
-<li class=""><strong>Producer Configuration</strong> (Producer: <code>oceanchat-api-gateway</code> or <code>oceanchat-message</code>)<!-- -->
+<li class=""><strong>Producer Configuration (Producer: <code>oceanchat-api-gateway</code> or <code>oceanchat-message</code>)</strong>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: After large files are uploaded to OSS via HTTP, the gateway publishes the OSS URL and metadata to this subject.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Publishing Logic</strong>: After a client successfully uploads a large file to OSS via HTTP, the gateway assembles the file&#x27;s OSS URL and metadata into a task and throws it into this subject.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Async Fire-and-Forget</strong>: Business microservices return immediately without waiting for transcoding or auditing, maximizing frontend throughput and supporting &quot;send-first-audit-later&quot; models.</li>
+<li class=""><strong>Asynchronous Fire-and-Forget</strong>: Business microservices proceed immediately after throwing tasks without waiting for background transcoding or AI audits. This significantly boosts front-end request throughput and perfectly supports the &quot;send first, audit later&quot; business model.</li>
 </ul>
 </li>
 </ul>
 </li>
-<li class=""><strong>Consumer Configuration</strong> (Consumer: Media Service / Audit Service)<!-- -->
+<li class=""><strong>Consumer Configuration (Consumer: Media Service / Audit Service workers)</strong>
 <ul>
-<li class=""><strong>Consumption Logic</strong>: Pull mode targeted subscription (e.g., <code>task.media.&gt;</code> or <code>task.audit.&gt;</code>).<!-- -->
+<li class=""><strong>Consumption Logic</strong>: Pull mode precisely subscribing to required task types (e.g., <code>task.media.&gt;</code> or <code>task.audit.&gt;</code>).<!-- -->
 <ul>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>Pull Mode &amp; Peak Shaving</strong>: Allows workers to pull tasks strictly based on hardware capacity (e.g., <code>batch: 1</code>), preventing overload.</li>
-<li class=""><strong>Durable Name</strong>: Independent Durable Names (e.g., <code>media-worker-group</code>) prevent redundant processing.</li>
-<li class=""><strong>Extended <code>ack_wait</code></strong>: Since transcoding can take minutes, <code>ack_wait</code> must be sufficiently large (e.g., <code>5m</code> or <code>10m</code>) to prevent premature re-delivery.</li>
+<li class=""><strong>Pull Mode and Peak Shaving</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Media processing is extremely CPU and memory intensive. Pull mode allows workers to fetch tasks based strictly on their hardware load and concurrent capacity (e.g., <code>batch: 1</code>). Thus, no matter how high the front-end concurrency is, back-end workers won&#x27;t be overwhelmed.</li>
+</ul>
+</li>
+<li class=""><strong>durable_name (Durable Consumer Group)</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Media and Audit services must respectively configure unique Durable Names (e.g., <code>media-worker-group</code> and <code>audit-worker-group</code>) to ensure identical tasks aren&#x27;t processed repeatedly under multi-instance deployments.</li>
+</ul>
+</li>
+<li class=""><strong>Extended ack_wait time</strong>:<!-- -->
+<ul>
+<li class=""><strong>Reason</strong>: Compared to normal chat signals, transcoding tasks take much longer. The consumer&#x27;s <code>ack_wait</code> must be set large enough (e.g., <code>5m</code> or <code>10m</code>) to prevent NATS from mistaking a normally running node for a crashed one and triggering redelivery.</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -548,39 +669,39 @@
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="device_sync-device-sync-stream"><strong>DEVICE_SYNC (Device Sync Stream)</strong><a href="#device_sync-device-sync-stream" class="hash-link" aria-label="Direct link to device_sync-device-sync-stream" title="Direct link to device_sync-device-sync-stream" translate="no">​</a></h3>
 <!-- -->
 <ul>
-<li class=""><strong>Core Responsibility</strong>: Synchronizes read cursors across devices and clears notification badges. When a user reads messages on one device (e.g., mobile), it triggers a sync to other active devices (e.g., PC, tablet) to silently clear corresponding unread indicators.</li>
+<li class=""><strong>Core Responsibility</strong>: Syncs read cursors and clears notification badges across multiple devices. When a user reads a message on one device (e.g., mobile), it triggers multi-terminal status sync, instantly and silently clearing the corresponding unread red dots on other active devices (e.g., PC, tablet).</li>
 <li class=""><strong>Retention Strategy</strong>: <code>RetentionPolicy.Interest</code>.<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Roaming events are only valuable if the target user is indeed online elsewhere (gateway has active subscription). Without subscribers, messages are discarded to save space.</li>
+<li class=""><strong>Reason</strong>: Roaming events are only valuable when the target user is actually online on other devices (i.e., a gateway subscription exists for that <code>userId</code>). Without subscribers, messages can be discarded to save queue storage.</li>
 </ul>
 </li>
 <li class=""><strong>Storage Type</strong>: <code>StorageType.Memory</code>.<!-- -->
 <ul>
-<li class=""><strong>Reason</strong>: Transient &quot;online notifications&quot; for UX. Loss during NATS failure is acceptable as clients fetch full sync cursors via HTTP upon reconnection.</li>
+<li class=""><strong>Reason</strong>: This is merely a &quot;transient online notification&quot; for experience enhancement. Even if NATS failure causes event loss before delivery, clients will automatically pull the latest sync cursor from the backend upon reconnection or opening a session (via HTTP Sync). Thus, this data is loss-tolerant and safely kept in memory for maximum IOPS.</li>
 </ul>
 </li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="subject-1-synccursorreaduserid">Subject 1: sync.cursor.read.{userId}<a href="#subject-1-synccursorreaduserid" class="hash-link" aria-label="Direct link to Subject 1: sync.cursor.read.{userId}" title="Direct link to Subject 1: sync.cursor.read.{userId}" translate="no">​</a></h4>
-<p><strong>Description</strong>: Broadcasts cross-device cursor sync events for a specific user.</p>
+<p><strong>Description</strong>: Broadcasts cross-device cursor synchronization events for a specific user.</p>
 <ul>
 <li class="">
-<p><strong>Producer Configuration</strong> (Producer: <code>oceanchat-router</code>)</p>
+<p><strong>Producer Configuration (Producer: <code>oceanchat-router</code>)</strong></p>
 <ul>
-<li class=""><strong>Publishing Logic</strong>: While handling <code>[0x0B] READ_RECEIPT</code> packets, the Router asynchronously places the cursor in <code>CURSOR_STATE</code> for persistence and broadcasts a sync event to this subject.</li>
+<li class=""><strong>Publishing Logic</strong>: While processing a <code>[0x0B] READ_RECEIPT</code> protocol packet passed from the gateway, the Router not only asynchronously places the cursor in <code>CURSOR_STATE</code> for persistent folding but also broadcasts a cross-terminal sync event to the <code>sync.cursor.read.{userId}</code> subject in this stream.</li>
 </ul>
 </li>
 <li class="">
-<p><strong>Consumer Configuration</strong> (Consumer: <code>oceanchat-ws-gateway</code>)</p>
+<p><strong>Consumer Configuration (Consumer: <code>oceanchat-ws-gateway</code>)</strong></p>
 <ul>
-<li class=""><strong>Consumption Logic</strong>: Ephemeral, At-Most-Once subscription.</li>
-<li class=""><strong>Details &amp; Reasoning</strong>:<!-- -->
+<li class=""><strong>Consumption Logic</strong>: Temporary, At-Most-Once subscription monitoring mode.</li>
+<li class=""><strong>Details and Reason</strong>:<!-- -->
 <ul>
-<li class=""><strong>No <code>durableName</code> (Ephemeral)</strong>: Since a user might be online on multiple gateway instances simultaneously, each gateway must receive the broadcast (Fan-out). Independent ephemeral subscriptions ensure this.</li>
-<li class=""><strong>Silent Delivery &amp; Badge Clearing</strong>: Gateways deliver clear commands to long-lived connections. Devices silently update local <code>MaxLocalSyncSeqId</code> and clear UI indicators without user intervention.</li>
+<li class=""><strong>No durableName (Ephemeral Subscription)</strong>: The user might be online on multiple different gateway instances (e.g., PC on Gateway A, iPad on Gateway B). Each gateway instance needs to receive this broadcast (Fan-out), so a Queue Group cannot be formed; independent ephemeral subscriptions must be used.</li>
+<li class=""><strong>Silent Delivery and Badge Clearance</strong>: Upon receiving an event for this subject, the gateway immediately assembles a cross-terminal clear command and delivers it to the corresponding long connection. The receiver (e.g., PC) silently updates its local <code>MaxLocalSyncSeqId</code> cursor for that group and instantly clears the unread red dot on the UI without human intervention.</li>
 </ul>
 </li>
 </ul>
 </li>
-</ul></div></div></div><div class="row"><div class="col col--12"></div></div></article><div class="row"><div class="col col--12"><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/docs/devdocs/graphql vs http in oceanchat"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">graphql vs http in oceanchat</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/docs/devdocs/message queue"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Message Queue</div></a></nav></div></div></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#architecture-overview-diagram" class="table-of-contents__link toc-highlight">Architecture Overview Diagram</a></li><li><a href="#1-stream-definitions" class="table-of-contents__link toc-highlight">1. Stream Definitions</a><ul><li><a href="#im_core-gateway-uplink-access-stream" class="table-of-contents__link toc-highlight"><strong>IM_CORE (Gateway Uplink Access Stream)</strong></a></li><li><a href="#im_handoff-internal-routing--wal-core-stream" class="table-of-contents__link toc-highlight"><strong>IM_HANDOFF (Internal Routing &amp; WAL Core Stream)</strong></a></li><li><a href="#auth_state-global-security-stream" class="table-of-contents__link toc-highlight"><strong>AUTH_STATE (Global Security Stream)</strong></a></li><li><a href="#auth_events-auth-events-stream" class="table-of-contents__link toc-highlight"><strong>AUTH_EVENTS (Auth Events Stream)</strong></a></li><li><a href="#dlq-dead-letter-queue-stream" class="table-of-contents__link toc-highlight"><strong>DLQ (Dead Letter Queue Stream)</strong></a></li><li><a href="#cursor_state-cursor-state-persistence-stream" class="table-of-contents__link toc-highlight"><strong>CURSOR_STATE (Cursor State Persistence Stream)</strong></a></li><li><a href="#sys_presence-presence--event-stream" class="table-of-contents__link toc-highlight"><strong>SYS_PRESENCE (Presence &amp; Event Stream)</strong></a></li><li><a href="#group_hybrid-ultra-large-group-degradation-stream" class="table-of-contents__link toc-highlight"><strong>GROUP_HYBRID (Ultra-Large Group Degradation Stream)</strong></a></li><li><a href="#offline_push-third-party-push-stream" class="table-of-contents__link toc-highlight"><strong>OFFLINE_PUSH (Third-party Push Stream)</strong></a></li><li><a href="#background_tasks-media--audit-stream" class="table-of-contents__link toc-highlight"><strong>BACKGROUND_TASKS (Media &amp; Audit Stream)</strong></a></li><li><a href="#device_sync-device-sync-stream" class="table-of-contents__link toc-highlight"><strong>DEVICE_SYNC (Device Sync Stream)</strong></a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/docs/intro">Tutorial</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://x.com/OceanChat" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/blog">Blog</a></li><li class="footer__item"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Ocean Chat, Inc. Built with Docusaurus.</div></div></div></footer></div>
+</ul></div></div></div><div class="row"><div class="col col--12"></div></div></article><div class="row"><div class="col col--12"><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/ocean.chat.docs/docs/devdocs/graphql vs http in oceanchat"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">graphql vs http in oceanchat</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/ocean.chat.docs/docs/devdocs/message queue"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Message Queue</div></a></nav></div></div></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#architecture-overview" class="table-of-contents__link toc-highlight">Architecture Overview</a></li><li><a href="#1-stream-definitions" class="table-of-contents__link toc-highlight">1. Stream Definitions</a><ul><li><a href="#im_core-gateway-uplink-ingestion-stream" class="table-of-contents__link toc-highlight"><strong>IM_CORE (Gateway Uplink Ingestion Stream)</strong></a></li><li><a href="#im_handoff-internal-routing-and-wal-core-stream" class="table-of-contents__link toc-highlight"><strong>IM_HANDOFF (Internal Routing and WAL Core Stream)</strong></a></li><li><a href="#auth_state-global-security-stream" class="table-of-contents__link toc-highlight"><strong>AUTH_STATE (Global Security Stream)</strong></a></li><li><a href="#auth_events-authentication-event-stream" class="table-of-contents__link toc-highlight"><strong>AUTH_EVENTS (Authentication Event Stream)</strong></a></li><li><a href="#dlq-dead-letter-queue-stream" class="table-of-contents__link toc-highlight"><strong>DLQ (Dead Letter Queue Stream)</strong></a></li><li><a href="#cursor_state-cursor-state-persistence-stream" class="table-of-contents__link toc-highlight"><strong>CURSOR_STATE (Cursor State Persistence Stream)</strong></a></li><li><a href="#sys_presence-status-and-event-stream" class="table-of-contents__link toc-highlight"><strong>SYS_PRESENCE (Status and Event Stream)</strong></a></li><li><a href="#group_hybrid-large-group-degradation-stream" class="table-of-contents__link toc-highlight"><strong>GROUP_HYBRID (Large Group Degradation Stream)</strong></a></li><li><a href="#im_downbound-real-time-online-delivery-stream" class="table-of-contents__link toc-highlight"><strong>IM_DOWNBOUND (Real-time Online Delivery Stream)</strong></a></li><li><a href="#offline_push-third-party-push-stream" class="table-of-contents__link toc-highlight"><strong>OFFLINE_PUSH (Third-party Push Stream)</strong></a></li><li><a href="#background_tasks-multimedia-and-audit-stream" class="table-of-contents__link toc-highlight"><strong>BACKGROUND_TASKS (Multimedia and Audit Stream)</strong></a></li><li><a href="#device_sync-device-sync-stream" class="table-of-contents__link toc-highlight"><strong>DEVICE_SYNC (Device Sync Stream)</strong></a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/docs/intro">Tutorial</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://x.com/OceanChat" target="_blank" rel="noopener noreferrer" class="footer__link-item">X<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/ocean.chat.docs/blog">Blog</a></li><li class="footer__item"><a href="https://github.com/JamesWilson19970101" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Ocean Chat, Inc. Built with Docusaurus.</div></div></div></footer></div>
 </body>
 </html>

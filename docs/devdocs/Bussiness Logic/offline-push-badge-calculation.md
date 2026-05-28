@@ -36,21 +36,37 @@ To complete the accurate unread count calculation and offline delivery, the foll
 
 ---
 
-## 1. Message Trigger and Offline Determination
+## 1. Maintaining the Group Message Sliding Window (ZSET Write)
+
+To calculate unread counts, there must first be an efficient data structure recording all recently generated group messages. In Ocean Chat, this responsibility is handled by the `oceanchat-message` service (or a dedicated asynchronous persistence worker).
+
+When a new group message (e.g., in group `G1001`) is successfully assigned a globally monotonic `SyncSeqId` (e.g., `1065`) and crosses the NATS write barrier, the system immediately maintains a ZSET-based "message sliding window" in Redis:
+
+```redis title="Maintaining the Group Message ZSET Window"
+// 1. Add the new message's SeqId as the Score to the group's specific ZSET
+ZADD group:msg:G1001 1065 "1065"
+
+// 2. Truncate the sliding window, always keeping only the latest 500 messages
+ZREMRANGEBYRANK group:msg:G1001 0 -501
+```
+
+This step is the data foundation for unread count calculations. Through strict truncation, I ensure absolute safety for Redis memory (space complexity is `O(1)`), while preparing for subsequent lightning-fast statistics.
+
+## 2. Message Trigger and Offline Determination
 
 When a new message is generated in a group chat and successfully crosses the write barrier (written to the `im.orchestrate.msg` subject), `oceanchat-orchestrator` pulls that message.
 
 The orchestrator queries the target recipient's online status in Redis. If it finds that user `U8899` currently has no active WebSocket/TCP connections, the system determines the user to be "offline" and enters the offline push processing branch.
 
-## 2. Extracting the Global Read Cursor
+## 3. Extracting the Global Read Cursor
 
-To calculate the unread count, the system first needs to know where the user last left off.
+To calculate the unread count, the system also needs to know where the user last left off (i.e., the starting point for calculation).
 
 Thanks to the `CURSOR_STATE` asynchronous persistence stream designed in our _Cross-Device Read Receipt Sync_ strategy, the user's latest read cursor is safely recorded. The orchestrator rapidly extracts the latest read sequence number (`lastReadSeqId`) for that user in the target group (e.g., `G1001`) from MongoDB or the Redis cache.
 
-## 3. Core: Using ZCOUNT for Rapid Group Unread Calculation
+## 4. Core: Using ZCOUNT for Rapid Group Unread Calculation
 
-For a large group of 10,000 people, we **absolutely cannot** perform a full table scan in MongoDB like `SELECT COUNT(*) WHERE SeqId > lastReadSeqId`, as this would cause fatal database overload during traffic peaks.
+For a large group of 10,000 people, I **absolutely cannot** perform a full table scan in MongoDB like `SELECT COUNT(*) WHERE SeqId > lastReadSeqId`, as this would cause fatal database overload during traffic peaks.
 
 Instead, the orchestrator passes the extracted cursor to the `oceanchat-presence` service, which utilizes the sliding window of a Redis ZSET (Sorted Set) for lightning-fast dimensionality reduction calculation:
 
@@ -67,7 +83,7 @@ The underlying Skip List in Redis can return the number of new messages in this 
 As previously mentioned, this ZSET only retains the most recent 500 messages in the group (truncated via `ZREMRANGEBYRANK`). If the user's cursor is extremely old and falls outside the ZSET's retention window, `ZCOUNT` will return 500, which the system handles as a `500+` badge indicator, ensuring memory and calculation costs remain constant.
 :::
 
-## 4. Assembling the Push Payload and Folding for Storm Protection
+## 5. Assembling the Push Payload and Folding for Storm Protection
 
 After obtaining the accurate unread count, the orchestrator assembles this number into a push payload optimized for APNs/FCM formats.
 
@@ -88,7 +104,7 @@ After obtaining the accurate unread count, the orchestrator assembles this numbe
 
 Subsequently, the orchestrator publishes this task to the `OFFLINE_PUSH` stream subject `push.offline.apns.U8899`. Thanks to the `max_msgs_per_subject: 1` strategy, even if 100 messages trigger pushes in that group within one second, NATS will automatically discard old tasks and only keep the notification task with the latest unread count (e.g., `badge: 15`), significantly saving external API call costs.
 
-## 5. Vendor Delivery and Device-Side Presentation
+## 6. Vendor Delivery and Device-Side Presentation
 
 Finally, the background offline push worker `oceanchat-pusher-offline` pulls this folded final task and sends it to Apple or Google servers via HTTP/2.
 
@@ -109,12 +125,13 @@ sequenceDiagram
     participant Worker as Offline Pusher Worker
     participant Vendor as APNs / FCM Provider
 
+    note over N_IM, Redis: 1. Message Service: ZADD & truncate ZSET (Maintain sliding window)
     N_IM-->>Orch: Pull latest group message (SeqId: 1065)
     Orch->>Presence: Query status for U8899
     Presence-->>Orch: Status: Completely Offline
     Orch->>Redis: Extract historical read cursor (lastReadSeqId: 1050)
     Orch->>Presence: Request unread count calculation (Cursor: 1050)
-    Presence->>Redis: Execute ZCOUNT group:msg:G1001 (1050 +inf
+    Presence->>Redis: Execute ZCOUNT group:msg:G1001 (1050 +inf)
     Redis-->>Presence: Returns 15
     Presence-->>Orch: Returns accurate Badge count: 15
 

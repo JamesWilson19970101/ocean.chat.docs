@@ -86,16 +86,17 @@ sequenceDiagram
         note right of Message: Phase 3: Business Logic & Write Fence
         NATS-->>Message: Pull from im.route.*
         alt Is Group Chat Message (im.route.group)
-            Message->>GroupUser: RPC: Verify group membership and mute status
+            Message->>GroupUser: RPC: Verify permissions
         else Is P2P Chat Message (im.route.p2p)
-            Message->>GroupUser: RPC: Verify friend status and blocklist
+            Message->>GroupUser: RPC: Verify permissions
         end
         Message->>Message: Content Moderation & Assign SyncSeqId (Segment Mode)
         Message->>NATS: Publish to im.orchestrate.msg
         NATS-->>Message: Return Persistence ACK Receipt
 
         note over Message, Client: Write Fence passed! Safe to return ACK to the client.
-        Message-->>Gateway: Send Transaction Success Event
+        Message->>NATS: Publish message to im.down.node subject
+        NATS-->>Gateway: Route and deliver to corresponding gateway
         Gateway->>Client: [0x06] MSG_UP_ACK (Header: Sync ReqId)
     end
 

@@ -1,6 +1,6 @@
 ---
 id: adr-use-consume-for-jetstream
-title: ADR-005 - Standardize on consume() for NATS JetStream
+title: Standardize on consume() for NATS JetStream
 description: Architecture Decision Record detailing why Ocean Chat standardizes on Pull Consumers and the consume() API for all NATS JetStream message consumption.
 keywords:
   [

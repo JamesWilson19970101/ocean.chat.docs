@@ -36,21 +36,37 @@ import TabItem from '@theme/TabItem';
 
 ---
 
-## 1. 消息触发与离线判定
+## 1. 实时维护群消息滑动窗口 (ZSET 写入)
+
+要计算未读数，前提是必须有一个高效的数据结构记录近期产生的所有群消息。在 Ocean Chat 中，这个职责由 `oceanchat-message` 服务（或专门的异步持久化 Worker）承担。
+
+当一条新群消息（例如在群组 `G1001` 中）成功被分配了全局递增的 `SyncSeqId`（如 `1065`）并越过 NATS 写屏障后，系统会立即在 Redis 中维护一个基于 ZSET 的“消息滑动窗口”：
+
+```redis title="维护群消息 ZSET 窗口"
+// 1. 将新消息的 SeqId 作为 Score 加入群组专属 ZSET
+ZADD group:msg:G1001 1065 "1065"
+
+// 2. 截断滑动窗口，永远只保留最近的 500 条消息
+ZREMRANGEBYRANK group:msg:G1001 0 -501
+```
+
+这一步是未读数计算的数据基石。通过严格的截断，我确保了 Redis 内存的绝对安全（空间复杂度为 `O(1)`），同时为后续的极速统计做好了准备。
+
+## 2. 消息触发与离线判定
 
 当群聊中产生新消息并成功跨越写入屏障（写入 `im.orchestrate.msg` 主题）后，`oceanchat-orchestrator` 会拉取到该消息。
 
 编排服务会向 Redis 查询目标接收者的在线状态。如果发现用户 `U8899` 当前没有任何活跃的 WebSocket/TCP 连接，系统将判定该用户为“离线”状态，并进入离线推送处理分支。
 
-## 2. 提取全局已读游标
+## 3. 提取全局已读游标
 
-为了计算未读数，系统首先需要知道用户上次看到哪里了。
+为了计算未读数，系统还需要知道用户上次看到哪里了（即计算的起点）。
 
-得益于我们在《跨端已读回执同步》中设计的 `CURSOR_STATE` 异步持久化流，用户的最新已读游标已安全沉淀。编排服务会从 MongoDB / Redis 缓存中极速提取出该用户在目标群组（如 `G1001`）的最新已读序列号：`lastReadSeqId`。
+得益于我在《跨端已读回执同步》中设计的 `CURSOR_STATE` 异步持久化流，用户的最新已读游标已安全沉淀。编排服务会从 MongoDB / Redis 缓存中极速提取出该用户在目标群组（如 `G1001`）的最新已读序列号：`lastReadSeqId`。
 
-## 3. 核心：利用 ZCOUNT 极速计算群未读数
+## 4. 核心：利用 ZCOUNT 极速计算群未读数
 
-对于一个 10,000 人的大群，我们**绝对不能**去 MongoDB 执行诸如 `SELECT COUNT(*) WHERE SeqId > lastReadSeqId` 这样的全表扫描，这会在流量洪峰时引发致命的数据库穿透。
+对于一个 10,000 人的大群，我**绝对不能**去 MongoDB 执行诸如 `SELECT COUNT(*) WHERE SeqId > lastReadSeqId` 这样的全表扫描，这会在流量洪峰时引发致命的数据库穿透。
 
 取而代之的是，编排服务会将提取到的游标交由 `oceanchat-presence` 服务，利用 Redis ZSET（有序集合）的滑动窗口来进行极速降维计算：
 
@@ -67,7 +83,7 @@ Redis 底层的跳表（Skip List）能在微秒（`μs`）级别的 `O(log(N))`
 正如前文所述，该 ZSET 永远只保留群内最近的 500 条消息（通过 `ZREMRANGEBYRANK` 截断）。如果用户的游标实在太老，超出了 ZSET 的保存区间，`ZCOUNT` 会返回 500，系统会直接将其作为 `500+` 的红点标志处理，使得内存和计算成本永远恒定。
 :::
 
-## 4. 组装推送载荷与折叠防风暴
+## 5. 组装推送载荷与折叠防风暴
 
 得到精确的未读数后，编排服务会将这个数字组装进针对 APNs/FCM 格式优化的推送载荷中。
 
@@ -88,7 +104,7 @@ Redis 底层的跳表（Skip List）能在微秒（`μs`）级别的 `O(log(N))`
 
 随后，编排服务将该任务发布至 `OFFLINE_PUSH` 流的主题 `push.offline.apns.U8899`。得益于 `max_msgs_per_subject: 1` 策略，哪怕 1 秒内该群有 100 条消息触发了推送，NATS 也会自动丢弃旧任务，仅保留带有最新未读数（如 `badge: 15`）的那一条通知任务，极大节省了外部接口调用成本。
 
-## 5. 厂商投递与端侧呈现
+## 6. 厂商投递与端侧呈现
 
 最后，后台的离线推送工作单元 `oceanchat-pusher-offline` 拉取到这条被折叠的最终任务，并通过 HTTP/2 将其发送给苹果或谷歌服务器。
 
@@ -109,12 +125,13 @@ sequenceDiagram
     participant Worker as 离线推送 Worker
     participant Vendor as APNs / FCM 厂商
 
+    note over N_IM, Redis: 1. 消息服务: ZADD 并截断 ZSET (维护滑动窗口)
     N_IM-->>Orch: 拉取最新群消息 (SeqId: 1065)
     Orch->>Presence: 查询 U8899 状态
     Presence-->>Orch: 状态: 完全离线
     Orch->>Redis: 提取历史已读游标 (lastReadSeqId: 1050)
     Orch->>Presence: 请求计算未读数 (游标: 1050)
-    Presence->>Redis: 执行 ZCOUNT group:msg:G1001 (1050 +inf
+    Presence->>Redis: 执行 ZCOUNT group:msg:G1001 (1050 +inf)
     Redis-->>Presence: 返回 15
     Presence-->>Orch: 返回精准 Badge 数: 15
 

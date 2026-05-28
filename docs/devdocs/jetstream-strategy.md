@@ -2,6 +2,7 @@
 id: jetstream-strategy
 title: JetStream Topology and Consumption Strategy
 description: Detailed explanation of Ocean Chat NATS JetStream topology, subject namespaces, and distributed consumption strategies, supporting 100,000+ concurrent connections.
+sidebar_position: 1
 keywords:
   [
     ocean chat,
@@ -101,8 +102,9 @@ flowchart LR
 ```
 
 - **Core Responsibility**: Traffic entry point for the entire IM system (Ingestion), specifically handling large amounts of raw client uplink packets received by the WebSocket gateway. This is an extremely high-throughput stream.
-- **Retention Strategy**: `RetentionPolicy.Limits`.
-  - **Reason**: Data retention is short (e.g., 1-3 days). Since this is only a raw byte buffer stream for the gateway, its mission is complete once the downstream Router pulls, decodes, and hands off to the `IM_HANDOFF` stream. Short-term retention is used only for troubleshooting during extreme anomalies or system crashes.
+- **Retention Strategy**: `RetentionPolicy.WorkQueue` combined with a very short `max_age` (e.g., 1 hour).
+  - **Reason**: Under 100,000+ concurrency, the accumulation speed of uplink binary streams is extremely high. Once the downstream Router successfully pulls, decodes, and hands off to the `IM_HANDOFF` stream, the historical mission of this raw data is completely fulfilled. Using WorkQueue allows messages to be immediately deleted from disk after being ACKed, significantly saving storage costs.
+  - **Troubleshooting Mechanism**: Many developers worry that an extremely short retention period makes troubleshooting impossible. In reality, if a raw message has a formatting error or a business exception causing the Router to completely fail parsing, the underlying framework will transfer it exactly as is to the downstream **DLQ (Dead Letter Queue)**. The DLQ stream has a retention period of 7 days, giving engineers ample time to extract "poison messages" and restore the crash context, thereby freeing up the core, high-frequency `IM_CORE` buffer stream.
 - **Storage Type**: `StorageType.File` (SSD).
   - **Reason**: Although retention is short, under peaks of 100,000+ or even 1,000,000+ concurrent connections (e.g., group interactions during major live events), if downstream microservices slow down, uplink messages will accumulate instantly in NATS. Using SSD-based file storage safely buffers burst traffic to disk, completely avoiding Memory Overflow (OOM) crashes.
 - **Key Configuration and Design Details**:
@@ -121,6 +123,7 @@ flowchart LR
   - **Consumption Logic**: Pull mode (Pull Queue Group).
   - **Details and Reason**:
     - **Consumer Group Load Balancing**: Multiple Router instances form a single consumer group, sharing the massive uplink traffic to ensure each message is parsed by only one Router.
+    - **durableName (Durable Consumer Group)**: A fixed `durableName` (e.g., `router-ingress-group`) must be configured. This not only allows multiple Router instances to automatically form a load-balanced queue group to share massive traffic, but more importantly, NATS persistently records the group's consumption cursor on the server side. Even if the entire Router cluster crashes and restarts, no unprocessed uplink messages will ever be missed.
     - **Batch Pulling and Decoding**: Routers pull messages in batches (e.g., hundreds at once) via internal loops, using CPU power to efficiently decode Protobuf and perform basic validation.
     - **Delayed Handoff ACK Mechanism**: After pulling a message from `im.up.>`, the Router service only sends an explicit ACK after it successfully routes and delivers the decoded message to the downstream `im.route.*` (`IM_HANDOFF` stream). This ensures zero data loss during the transition from the "edge ingestion layer" to the "internal business layer."
 
@@ -287,7 +290,7 @@ flowchart LR
   - **Publishing Logic**: `BoundedPublisherService.publishSafe('auth.event.user.loggedIn', payload, '...', { isCritical: false })`
   - **Details and Reason**:
     - **isCritical: false (Normal Priority)**:
-      - **Reason**: Recording login time is a non-critical business event. If the Auth service hits a traffic peak and NATS becomes congested, discarding these log events is acceptable (graceful degradation). We cannot risk the Auth service's memory overflowing and crashing core login functionality just to record a login time.
+      - **Reason**: Recording login time is a non-critical business event. If the Auth service hits a traffic peak and NATS becomes congested, discarding these log events is acceptable (graceful degradation). I cannot risk the Auth service's memory overflowing and crashing core login functionality just to record a login time.
 
 - **Consumer Configuration (Consumer: `oceanchat-user`)**
   - **Consumption Logic**: `NatsEventsService extends BaseNatsSubscriber`
@@ -369,7 +372,7 @@ flowchart LR
   - The persistence worker consumes in batch mode in the background, syncing the final deduplicated and folded cursor states to Redis and persisting them to MongoDB.
 
 - **Retention Strategy**: `RetentionPolicy.Limits`.
-  - **Reason**: Cursor data is typical **"State Data"** rather than **"Event Data"**. We only care about the user's final state (the latest message seen) and completely ignore the process (intermediate SeqIds). The Limits strategy, combined with the `MaxMsgsPerSubject=1` trick, achieves perfect peak shaving for memory and disk.
+  - **Reason**: Cursor data is typical **"State Data"** rather than **"Event Data"**. I only care about the user's final state (the latest message seen) and completely ignore the process (intermediate SeqIds). The Limits strategy, combined with the `MaxMsgsPerSubject=1` trick, achieves perfect peak shaving for memory and disk.
 
 - **Storage Type**: `StorageType.Memory`.
   - **Reason**: Even with file storage, it occupies almost no space due to the extreme queue deduplication feature. Even in the rare case of a total system crash losing cursor ACK data within a second or two, the system can restart from the last Redis or MongoDB record. Since clients have natural deduplication when receiving/sending messages or reconnecting, there's no need to worry about redundant message pulling, making Memory storage a safe bet for unbeatable throughput.
@@ -416,11 +419,33 @@ flowchart LR
 ```
 
 - **Responsibility**: Handles user online/offline events and connection heartbeats.
-- **Retention Strategy**: Interest (retained only when services are listening) or short-term Limits.
-- **Storage**: Memory (transient data).
-- **Producer**: WebSocket Gateway.
-- **Consumer**: Online Presence service / Push service.
+- **Retention Strategy**: `Limits` (with a very short time limit, e.g., `max_age: 5m`).
+- **Storage**: `Memory` (transient data). The `SYS_PRESENCE` stream carries a massive volume of user online/offline events and heartbeat packets (e.g., once every 3 minutes). These data have extremely high throughput but very low persistence value. Writing them to disk (File storage) would generate meaningless disk I/O consumption. Even if a NATS node crashes, causing the loss of heartbeat data in memory, it will not affect the system's eventual consistency at all. Because the online status maintained in Redis has a 5-minute TTL, if a heartbeat is lost, the system can simply wait for the next heartbeat packet in 3 minutes to compensate; if the user actually goes offline, the Redis TTL will automatically clean it up.
 - **Strategy**: Pull consumer with Queue Group (At-Least-Once delivery).
+
+#### Subject 1: presence.conn.\* (includes online, offline, heartbeat)
+
+**Description**: Broadcasts the lifecycle status (online, offline) and heartbeat keep-alive events of client WebSocket connections. It is used to build and maintain the global user device routing graph (Routing Tree) in Redis in real-time, which is the foundational brain for cross-node communication, multi-device status synchronization, and offline push decisions.
+
+- **Producer Configuration (Producer: `oceanchat-ws-gateway`)**
+  - **Publishing Logic**: `BoundedPublisherService.publishSafe('presence.conn.xxx', payload, '...', { isCritical: false })`
+  - **Details and Reason**:
+    - **isCritical: false (Normal Priority)**:
+      - **Reason**: Online/offline status and heartbeats are extremely high-frequency "weak state" signals that tolerate occasional faults. The system design uses a 5-minute Redis TTL. Even if network jitter or NATS congestion causes individual events to be dropped by the rate limiter, the system can rely on subsequent heartbeat packets or the TTL auto-expiration mechanism to achieve eventual consistency. These high-frequency events must never be allowed to monopolize the critical queue resources meant for core chat messages (`MSG_UP`) or security commands (`auth.jwt.revoke`).
+    - **Asynchronous Fire-and-Forget (includes `.catch(() => {})` silent exception handling)**:
+      - **Reason**: Status synchronization is a side-effect logic. The gateway sending online/offline/heartbeat events absolutely does not need to wait for the execution result, nor should it block the normal connection disconnection and memory resource release process due to congestion in the presence service. This extreme "fire-and-forget" strategy maximizes the gateway's throughput capacity under massive connections.
+
+- **Consumer Configuration (Consumer: `oceanchat-presence`)**
+  - **Consumption Logic**: `NatsPresenceEventsSubscriber extends BaseNatsSubscriber`
+  - **Details and Reason**:
+    - **durableName: `presence-state-updater` (Durable Queue Group)**:
+      - **Reason**: All `oceanchat-presence` instances form a load-balanced consumption cluster. The same event only needs to be pulled and processed by one idle instance, avoiding multiple instances initiating duplicate read/write operations on the same user's Redis key, saving overall system CPU and network overhead.
+    - **Redis Concurrency-Safe Atomic Operations (Lua Script for Race Condition Prevention)**:
+      - **Reason**: In distributed systems, messages may arrive out of order (timing issues). When processing `presence.conn.offline`, the system **strictly forbids directly calling `HDEL`**. Instead, it calls the injected Lua script `hdelIfEqual`. This script strictly compares whether the `gatewayId` recorded in Redis is still the old gateway that emitted the offline event. This perfectly prevents the fatal race condition bug where "during a network glitch, a user reconnects to a new gateway instantly, but the delayed offline event from the old gateway mistakenly deletes the new session."
+    - **Redis Partial Renewal (`HEXPIRE` command)**:
+      - **Reason**: Upon receiving a `presence.conn.heartbeat`, the consumer does not completely overwrite the user's routing table. Instead, it precisely uses Redis 7.4's `HEXPIRE` command to perform an independent 300-second renewal on the specific `deviceId` field. This perfectly solves the difficulty of determining independent device disconnections in multi-device login scenarios.
+    - **deliver_policy: "all" (Initial Delivery Strategy)**:
+      - **Reason**: This does not conflict with `durableName`. `DeliverPolicy.All` **only takes effect when the consumer group is first created**. If during a system cold start, the gateways start first and emit a massive number of online events, while the presence service starts a few seconds later, using the default `New` strategy would result in the permanent loss of online events generated during those few seconds. Configuring `All` ensures that when the presence service is created for the first time, it can pull all accumulated heartbeats and online events (up to the last 5 minutes), perfectly reconstructing the Redis state. Subsequent service restarts will rely on the Durable cursor, and this strategy will automatically be ignored.
 
 ### **GROUP_HYBRID (Large Group Degradation Stream)**
 

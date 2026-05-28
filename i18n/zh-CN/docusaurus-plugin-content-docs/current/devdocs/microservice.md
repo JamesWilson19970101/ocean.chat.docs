@@ -1,3 +1,9 @@
+---
+id: microservice
+title: 微服务架构
+sidebar_position: 0
+---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -187,6 +193,7 @@ graph TD
 <TabItem value="resp" label="核心职责" default>
 
 - **生命周期管理**: 负责群组的创建/解散、成员管理、权限体系、群公告、群设置等。
+- **组织架构管理**: 负责 Teams（团队）和 Rooms（房间/频道）的层级架构维护，涵盖它们的增删改查 (CRUD) 等核心业务操作。
 - **权限认证决策**: 作为群组数据的唯一所有者，内部包含所有群组相关的权限认证逻辑（例如，判断用户是否群成员、是否被禁言等）。
 
 </TabItem>

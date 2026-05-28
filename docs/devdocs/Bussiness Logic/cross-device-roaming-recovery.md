@@ -65,7 +65,7 @@ The client must first acquire and initialize the cursor progress for all session
 
 Upon receiving the request, the `oceanchat-query` data query service directly queries the underlying MongoDB.
 
-At this point, the system heavily relies on the architectural achievements we designed in "Cross-Device Read Receipt Sync." Because the high-frequency `[0x0B] READ_RECEIPT` signals generated when the user scrolled the screen on their old phone have already been automatically folded and safely persisted to disk by the `CURSOR_STATE` queue stream, MongoDB perfectly preserves the exact progress of every session for that user.
+At this point, the system heavily relies on the architectural achievements I designed in "Cross-Device Read Receipt Sync." Because the high-frequency `[0x0B] READ_RECEIPT` signals generated when the user scrolled the screen on their old phone have already been automatically folded and safely persisted to disk by the `CURSOR_STATE` queue stream, MongoDB perfectly preserves the exact progress of every session for that user.
 
 The query service assembles this progress data and returns it to the new device:
 

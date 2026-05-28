@@ -27,7 +27,7 @@ To address this, Monkey Protocol introduces a **Smooth Version Negotiation** mec
 
 ## 2. Protocol Structure Extension
 
-To support version negotiation, we need to add version fields to the Protobuf payloads related to the handshake phase.
+To support version negotiation, I need to add version fields to the Protobuf payloads related to the handshake phase.
 
 ### 2.1 Client Uplink: `AUTH_REQ` Payload Extension
 
@@ -48,7 +48,7 @@ message AuthReq {
 
 ### 2.2 Server Downlink: `EXCEPTION_ACK` Payload Extension
 
-If the gateway rejects the preferred version, it sends an `[0x0C] EXCEPTION_ACK`. We define a dedicated error code `426` (Upgrade Required / Protocol Mismatch) for this and specify the server's supported versions in the Payload.
+If the gateway rejects the preferred version, it sends an `[0x0C] EXCEPTION_ACK`. I define a dedicated error code `426` (Upgrade Required / Protocol Mismatch) for this and specify the server's supported versions in the Payload.
 
 ```protobuf
 message ExceptionAck {

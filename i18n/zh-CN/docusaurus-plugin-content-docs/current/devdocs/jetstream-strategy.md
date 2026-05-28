@@ -1,6 +1,7 @@
 ---
 id: jetstream-strategy
-title: JetStream 拓扑与消费策略
+title: 消息队列拓扑与消费策略
+sidebar_position: 1
 description: Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。
 keywords:
   [ocean chat, nats, jetstream, 消息队列, 架构, 高并发, 发布订阅, 推拉结合]
@@ -92,8 +93,9 @@ flowchart LR
 ```
 
 - 核心职责: 整个 IM 系统的流量入口（接入 Ingestion），专门承接 WebSocket 网关接收到的大量原始客户端上行包。这是整个系统中吞吐量极高的流。
-- 保留策略 (Retention Strategy): `RetentionPolicy.Limits` (基于限制的保留)。
-  - 原因: 数据保留期较短（如 1-3 天即可）。因为这仅仅是网关的原始字节缓冲流，一旦后端的路由服务 (Router) 拉取、解码并交接给 `IM_HANDOFF` 流，这些原始数据的历史使命就完成了。保留短期的存量仅用于极端异常或系统崩溃时的故障排查。
+- 保留策略 (Retention Strategy): 使用 RetentionPolicy.WorkQueue (工作队列) 配合极短的 max_age (如 1 小时)。
+  - 原因: 在十万级并发下，上行二进制流的累积速度极其恐怖。一旦后端的路由服务 (Router) 成功拉取、解码并交接给 IM_HANDOFF 流，这条原始数据的历史使命就彻底完成了。使用 WorkQueue 可以让消息被 ACK 后立刻从磁盘中删除，极大节省存储成本。
+  - 故障排查机制: 很多开发者担心保留时间过短无法排查问题。实际上，如果一条原始消息存在格式错误或业务异常导致 Router 彻底解析失败，底层框架会将其原封不动地转移到下游的 **DLQ (死信队列)** 中。DLQ 流的保留期长达 7 天，专门为工程师提供充足的时间来提取“毒消息”并还原崩溃现场，从而解放了核心高频的 `IM_CORE` 缓冲流。
 - 存储介质 (Storage): `StorageType.File` (磁盘文件/SSD)。
   - 原因: 虽然保留期短，但在十万级甚至百万级并发洪峰（如重大赛事直播时的大群互动）下，如果后端的微服务解析变慢，上行消息会瞬间在 NATS 积压。使用基于 SSD 的文件存储可以安全地把突发流量缓冲在磁盘中，彻底避免内存溢出 (OOM) 崩溃。
 - 关键配置与设计细节:
@@ -112,6 +114,7 @@ flowchart LR
   - 消费逻辑: Pull 模式 (Pull Queue Group)。
   - 配置详情与原因:
     - 消费者组负载均衡: 多个 Router 实例组成一个相同的消费者组，共同瓜分这个海量上行流量，确保同一条消息只被一个 Router 解析。
+    - durableName (持久化消费者组): 必须配置固定的 durableName (例如 router-ingress-group)。这不仅能让多个 Router 实例自动组成一个负载均衡的队列组，共同瓜分海量流量；更关键的是，NATS 会在服务端持久化记录该组的消费游标，即使 Router 集群全量崩溃重启，也绝不会漏掉任何一条未处理的上行消息。
     - 批量拉取与解码: Router 不是一条条拉取，而是通过内部循环一次性批量 Pull 拉取（例如数百条），利用 CPU 算力高效解码 Protobuf，并执行基础校验。
     - 延迟交接 ACK 机制: Router 服务在从 `im.up.>` 拉取消息后，只有当它成功将解码后的消息路由分发并投递到下方的 `im.route.*` (`IM_HANDOFF` 流) 之后，才会对这条 `im.up.>` 消息发送显式的 ACK。这完美保证了数据在“边缘接入层”向“内部业务层”交接的途中绝对不丢。
 
@@ -360,7 +363,7 @@ flowchart LR
   - 持久化工作单元（Worker）在后台以批量模式消费，将最终去重折叠后的游标状态统一同步至 Redis 并落盘到 MongoDB。
 
 - **保留策略 (Retention Strategy)**: `RetentionPolicy.Limits` (基于限制的保留)。
-  - **原因**: 游标数据属于典型的**“状态数据 (State)”**而非**“事件数据 (Event)”**。我们只关心用户的最终状态（最新看到了哪条消息），而完全不在乎过程（中间经过了哪些 SeqId）。Limits 策略配合后续的 `MaxMsgsPerSubject=1` 黑科技，实现了完美的内存与磁盘削峰。
+  - **原因**: 游标数据属于典型的**“状态数据 (State)”**而非**“事件数据 (Event)”**。我只关心用户的最终状态（最新看到了哪条消息），而完全不在乎过程（中间经过了哪些 SeqId）。Limits 策略配合后续的 `MaxMsgsPerSubject=1` 黑科技，实现了完美的内存与磁盘削峰。
 
 - **存储介质 (Storage)**: `StorageType.Memory` (内存)。
   - **原因**: 即便使用文件存储，由于极致的队列去重特性，它也几乎不占用空间。哪怕极端情况下系统全量宕机丢失了一两秒内的游标 ACK 数据，系统大不了从上次 Redis 或 MongoDB 记录的位置重新开始，由于客户端在下次收发消息或断线重连时具备天然的去重机制，因此不必担心消息重复拉取的问题，完全可以激进地采用 Memory 存储来换取无敌的吞吐量。
@@ -407,11 +410,33 @@ flowchart LR
 ```
 
 - **职责**: 处理用户在线/下线事件和连接心跳。
-- **保留策略**: Interest（仅在有服务监听时保留）或短时间限制。
-- **存储**: 内存（瞬态数据）。
-- **生产者**: WebSocket 网关。
-- **消费者**: 在线状态服务 / 推送服务。
+- **保留策略**: Limits（极短的时间限制，例如 max_age: 5m）。
+- **存储**: 内存（瞬态数据）。SYS_PRESENCE 流承载的是海量的用户上下线事件和心跳包（如每 3 分钟一次）。这些数据具有极高的吞吐量，但持久化价值极低。如果将它们落盘（File 存储），会产生毫无意义的磁盘 I/O 消耗。即使 NATS 节点崩溃导致内存中的心跳数据丢失，也完全不会影响系统的最终一致性。因为 Redis 中维护的在线状态有 5 分钟的 TTL，心跳丢了，大不了等下一个 3 分钟的心跳包补上；如果用户真掉线了，Redis TTL 也会自动将其清理。
 - **策略**: 带队列组的 Pull 消费者 (至少一次交付)。
+
+#### 主题 1: presence.conn.\* (含 online, offline, heartbeat)
+
+职责描述: 广播客户端 WebSocket 连接的生命周期状态（上线、下线）及心跳保活事件。用于在 Redis 中实时构建和维护全局用户的设备路由图谱（Routing Tree），是跨节点通信、状态多端同步和离线推送判定的大脑基石。
+
+- 生产者配置 (Producer: `oceanchat-ws-gateway` 连接网关)
+  - 发布逻辑: `BoundedPublisherService.publishSafe('presence.conn.xxx', payload, '...', { isCritical: false })`
+  - 配置详情与原因:
+    - isCritical: false (普通优先级):
+      - 原因: 上下线和心跳属于极高频但允许偶尔容错的“弱状态”信令。系统设计中 Redis TTL 为 5 分钟，即便发生网络抖动或 NATS 拥堵导致个别事件被限流器抛弃，系统也能依靠后续的心跳包或 TTL 自动过期机制完成最终一致性修复。绝不能让这些高频事件挤占核心聊天消息 (`MSG_UP`) 或安全指令 (`auth.jwt.revoke`) 的关键队列资源。
+    - 异步 Fire-and-Forget (包含 `.catch(() => {})` 异常静默):
+      - 原因: 状态同步属于旁路逻辑（Side-effect）。网关发送在线/离线/心跳事件完全不需要等待执行结果，也不应该因为状态服务拥堵而阻塞正常的连接断开和内存资源释放过程。这种极致的“发后即忘”策略能最大程度保障网关在海量连接下的吞吐率。
+
+- 消费者配置 (Consumer: `oceanchat-presence` 状态服务)
+  - 消费逻辑: `NatsPresenceEventsSubscriber extends BaseNatsSubscriber`
+  - 配置详情与原因:
+    - durableName: `presence-state-updater` (持久化消费者组 / Durable Queue Group):
+      - 原因: 所有的 `oceanchat-presence` 实例会组成一个负载均衡的消费集群。同一条事件只需要被其中一个空闲的实例拉取处理即可，避免多个实例对同一个用户的 Redis 键发起重复的读写操作，节省系统整体的 CPU 与网络开销。
+    - Redis 并发安全原子操作 (Lua 脚本防竞态崩溃):
+      - 原因: 分布式系统中消息可能乱序到达（时序问题）。在处理 `presence.conn.offline` 时，系统**严禁直接调用 `HDEL`**，而是调用注入的 Lua 脚本 `hdelIfEqual`。它会严格比对 Redis 里记录的 `gatewayId` 是否仍是发出下线事件的那个老网关。这完美防止了“网络闪断时，用户秒连上新网关，但老网关延迟发出的离线事件将新会话误删”的竞态致命 Bug。
+    - Redis 局部续期 (`HEXPIRE` 指令):
+      - 原因: 收到 `presence.conn.heartbeat` 心跳后，消费者不会去全量覆盖用户的路由表，而是精准利用 Redis 7.4 的 `HEXPIRE` 指令针对特定 `deviceId` 字段进行 300 秒的独立续期，完美解决了多端登录场景下的独立设备掉线判定难题。
+        - deliver_policy: "all" (起始投递策略):
+          - 原因: 它与 `durableName` 并不冲突。`DeliverPolicy.All` **仅在消费者组首次被创建时生效**。如果系统冷启动，网关先启动并抛出了大量上线事件，而状态服务晚启动了几秒。如果用默认的 `New` 策略，这几秒内的上线事件就会永远丢失。配置 `All` 可以保证状态服务首次创建时，能把积压的（最高 5 分钟内的）心跳和上线事件全量拉取，完美重建 Redis 状态。此后服务重启将依赖 Durable 游标，该策略自动失效。
 
 ### **GROUP_HYBRID (超大群降级流)**
 
@@ -473,7 +498,7 @@ flowchart LR
 
 职责描述: 微服务间跨节点通信的精准快递地址，用于向单个特定的网关节点下发实时二进制协议帧。
 
-- 生产者配置 (Producer: `oceanchat-pusher-realtime` 或 `oceanchat-orchestrator`)
+- 生产者配置 (Producer: `oceanchat-pusher-realtime` 或 `oceanchat-message`)
   - **发布逻辑**: 从 Redis `oceanchat-presence` 查到目标用户的在线节点 ID 后，向该 UUID 对应的专属主题发布事件。
   - **配置详情与原因**:
     - **异步解耦 (Fire-and-Forget)**: 推送服务发布轻量级信令后立刻放行，无需等待网关的 ACK，充分保障在高频派发时的超高吞吐量。

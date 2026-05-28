@@ -1,6 +1,7 @@
 ---
 id: online-message-reliability
 title: How to Guarantee Online Message Reliability
+sidebar_position: 3
 description: How to implement application-layer ACKs, idempotent deduplication, and sequence number tracking in Ocean Chat to ensure zero message loss.
 keywords:
   [ocean chat, message reliability, ack, sequence number, idempotency, nats]
@@ -19,11 +20,11 @@ This guide assumes the reader is already familiar with the frame structure of th
 
 Network instability forces clients to retry sending messages. Without a deduplication mechanism, retries would result in duplicate records in the database.
 
-When sending an upbound message, the client **must** generate a globally unique identifier (`ClientMsgId`).
+When sending an upbound message, the client **must** generate a globally unique identifier (`ClientMsgId`, strictly using UUIDv7).
 
 ```json title="MSG_UP Payload Definition"
 {
-  "ClientMsgId": "123e4567-e89b-12d3-a456-426614174000",
+  "ClientMsgId": "018f8e91-6b9b-72d3-a456-426614174000",
   "Type": "TEXT",
   "Content": "Hello World"
 }

@@ -1,6 +1,7 @@
 ---
 id: offline-message-reliability
 title: How to Guarantee Offline Message Reliability
+sidebar_position: 4
 description: How to guarantee zero offline message loss in Ocean Chat using the NATS JetStream WAL, paginated HTTP Sync, and client-side deduplication.
 keywords:
   [
@@ -47,7 +48,7 @@ When an offline client is awakened (for example, the user taps an APNs notificat
 
 Instead, the client must execute an **Active Pull** strategy to repair message gaps:
 
-1. The client checks the `MaxLocalSyncSeqId` saved in local storage (e.g., SQLite).
+1. The client checks the `MaxLocalSyncSeqId` saved in local storage (e.g., IndexedDB for Web, SQLite for Mobile).
 2. The client sends a synchronization request containing this ID to the API Gateway via an **HTTP short connection** (e.g., `GET /api/v1/messages/sync?seqId={MaxLocalSyncSeqId}`).
 3. The `oceanchat-query` data query service receives the HTTP request and fetches all messages strictly greater than that `MaxLocalSyncSeqId` from the database (MongoDB).
 4. The server returns the array of missing messages to the client via the HTTP response.

@@ -3,6 +3,7 @@ id: distributed-id-generator
 title: Distributed ID Generation Strategy (SeqSvr)
 sidebar_label: Distributed ID Strategy
 description: Explains how Ocean Chat generates globally unique, strictly monotonically increasing sequence IDs (SyncSeqId) using a segment-based pre-allocation architecture inspired by WeChat.
+sidebar_position: 2
 keywords:
   [
     ocean chat,
@@ -25,7 +26,7 @@ import TabItem from '@theme/TabItem';
 
 In a massive-scale distributed IM system like Ocean Chat, the way message IDs are generated directly dictates the performance of the database and the reliability of message synchronization.
 
-This document explains why Ocean Chat decouples message uniqueness from message ordering, and how it implements a "Segment-based pre-allocation" (号段模式) architecture—heavily inspired by WeChat's `seqsvr`—to generate the crucial `SyncSeqId` capable of handling over 100k+ concurrent writes.
+This document explains why Ocean Chat decouples message uniqueness from message ordering, and how it implements a "Segment-based pre-allocation" architecture—heavily inspired by WeChat's `seqsvr`—to generate the crucial `SyncSeqId` capable of handling over 100k+ concurrent writes.
 
 ---
 
@@ -51,7 +52,7 @@ Because the `SyncSeqId` is strictly increasing (e.g., 100, 101, 102...), the cli
 
 To generate the `SyncSeqId`, making a synchronous `UPDATE seq = seq + 1` query to MongoDB or Redis for every single message sent by 10 million users would instantly crush the database.
 
-Ocean Chat adopts the **Segment-based pre-allocation (号段模式)** strategy.
+Ocean Chat adopts the **Segment-based pre-allocation** strategy.
 
 ### How It Works
 
@@ -59,7 +60,7 @@ Instead of requesting a new ID from the database for every message, the `oceanch
 
 1. **Memory Allocation:** The service holds two variables in local memory for a given session: `cur_seq` (current sequence) and `max_seq` (the upper limit of the pre-allocated segment).
 2. **Lightning Fast Generation:** When a new message arrives, the service simply does an in-memory `cur_seq++`. It then returns this value as the `SyncSeqId`. This takes nanoseconds and involves **zero network I/O**.
-3. **Database Interaction (The Slow Path):** Only when `cur_seq == max_seq` does the service make a network call to the database. It asks the database to increment the stored sequence by 10,000. The database returns the new upper bound, and the service updates its in-memory `max_seq` and continues.
+3. **Mongo Database Interaction (The Slow Path):** Only when `cur_seq == max_seq` does the service make a network call to the database. It asks the database to increment the stored sequence by 10,000. The database returns the new upper bound, and the service updates its `max_seq` in Redis and continues.
 
 ```mermaid
 sequenceDiagram
@@ -99,7 +100,7 @@ This section is retained solely to explore the ultimate optimization solutions a
 
 If a large-scale IM system has hundreds of millions of active groups and P2P sessions, storing a separate `max_seq` record for every single one of them in the database wastes massive amounts of disk and memory index space.
 
-To optimize this, Ocean Chat groups multiple sessions together into a **Section (号段块)**.
+To optimize this, groups multiple sessions together into a **Section**.
 
 For example, sessions with IDs from `0` to `99,999` all share the exact same `max_seq` record in the database.
 When the `oceanchat-message` service needs a new segment for _any_ session in that block, it increments the shared `max_seq` by 10,000.

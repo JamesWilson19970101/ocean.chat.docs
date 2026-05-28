@@ -42,7 +42,7 @@ summary="Strictly isolate Control Plane (revocations) from Data Plane (logins) t
 
 >
 
-In NATS JetStream, a Stream is a lightweight logical construct. The true cost lies in network bandwidth and CPU cycles during consumption. We enforce strict isolation for three reasons:
+In NATS JetStream, a Stream is a lightweight logical construct. The true cost lies in network bandwidth and CPU cycles during consumption. I enforce strict isolation for three reasons:
 
 1.  **Retention Lifecycles**: `AUTH_STATE` (revocations) is transient and lives in high-speed **Memory Storage** (~15-30 min window). `AUTH_EVENTS` (business logins) requires long-term auditing and persists in **File Storage** (SSD) for days.
 2.  **Noise Isolation**: Gateways consume `AUTH_STATE` via **Fan-out Broadcast**. Merging them would force every node to process and discard thousands of irrelevant business events per second, causing CPU spikes.
@@ -115,7 +115,7 @@ summary="Treat internal infrastructure as an untrusted source to prevent malform
 
 >
 
-We treat internal infrastructure as an untrusted source for data integrity.
+I treat internal infrastructure as an untrusted source for data integrity.
 
 1.  **Strict Typing**: Every message passes through `class-transformer` and `class-validator` to prevent malformed data (e.g., `Invalid Date`) from corrupting MongoDB.
 2.  **ACK/NAK Routing**: Validation failures are immediately `ack()`'d to prevent infinite redelivery loops, while business/DB failures are `nak()`'d to trigger retries.
@@ -132,13 +132,13 @@ summary="Adopt L1/L2 dual-tier caching with a 10s TTL to protect MongoDB/Redis f
 
 >
 
-Querying MongoDB or Redis for every permission check is impossible at our scale. We use a two-tier strategy in `RoleCacheService`:
+Querying MongoDB or Redis for every permission check is impossible at our scale. I use a two-tier strategy in `RoleCacheService`:
 
 1.  **L1 Memory Cache (Local)**: LRU cache in each Node.js instance (10,000 entries, 10s TTL).
 2.  **L2 Distributed Cache (Redis)**: Shared cache protected by jittered distributed locks.
 
 :::warning Security Implication: Eventual Consistency
-Permission changes (e.g., revoking a member) take up to **10 seconds** to propagate globally. We accept this trade-off to achieve sub-millisecond local resolution and zero network overhead for the vast majority of requests.
+Permission changes (e.g., revoking a member) take up to **10 seconds** to propagate globally. I accept this trade-off to achieve sub-millisecond local resolution and zero network overhead for the vast majority of requests.
 :::
 
 </DecisionCard>
@@ -162,7 +162,7 @@ The `MSG_UP` command allows sending text directly over the WebSocket/TCP channel
 
 ### Data Plane: Hybrid Connections
 
-For rich media (images, voice), we avoid saturating the WebSocket pipeline:
+For rich media (images, voice), I avoid saturating the WebSocket pipeline:
 
 1.  **Upstream (HTTP)**: Clients upload chunks to OSS via standard HTTP `POST`/`PUT`.
 2.  **Downstream (WebSocket)**: The client delivers an ultra-lightweight Protobuf notification (URL + metadata) via `MSG_UP` for the gateway to push.
@@ -178,6 +178,6 @@ summary="Architect for absolute horizontal scaling and full-chain idempotency to
 
 - **Stateless Gateway**: `oceanchat-ws-gateway` is a pure byte-stream packer. Business logic is isolated in the routing layer.
 - **Full-Chain Idempotency**: Every message has a unique `ClientMsgId`. Redis Sets enforce strict deduplication, even if network jitter causes client-side re-transmissions.
-- **Push-Pull Hybrid**: For massive groups, we send a lightweight `MSG_NOTIFY`. Clients pull content via `SYNC_REQ` to avoid saturating global outbound bandwidth.
+- **Push-Pull Hybrid**: For massive groups, I send a lightweight `MSG_NOTIFY`. Clients pull content via `SYNC_REQ` to avoid saturating global outbound bandwidth.
 
 </DecisionCard>

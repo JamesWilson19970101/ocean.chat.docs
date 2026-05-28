@@ -1,6 +1,6 @@
 ---
 id: push-pull-message-delivery-strategy
-title: Uniform Push-Pull Strategy for Message Delivery
+title: Uniform Push-Pull Strategy for Message Notify
 description: Architecture Decision Record explaining the rejection of payload-based dynamic routing in favor of a uniform Push-Pull strategy for message delivery.
 keywords:
   [

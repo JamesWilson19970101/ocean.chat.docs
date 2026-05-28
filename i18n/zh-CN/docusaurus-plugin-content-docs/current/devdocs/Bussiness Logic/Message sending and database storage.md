@@ -27,7 +27,7 @@ import TabItem from '@theme/TabItem';
     1. 连接网关 (oceanchat-ws-gateway)：无状态边缘节点。接收 WebSocket 的 MSG_UP 数据帧，剥离传输层，直接转发原始负载。
     2. 路由服务 (oceanchat-router)：流量调度器。拉取原始数据包，解码 Protobuf，并将其路由到正确的业务服务（单聊或群聊）。
     3. 消息逻辑服务 (oceanchat-message)：业务大脑。负责权限校验、内容过滤以及分配基于号段模式的会话级 SyncSeqId。它负责把控写屏障 (Write Fence)。
-    4. 群组/关系服务 (oceanchat-group / oceanchat-user)：决策者。由消息服务在校验权限时通过高速内部 RPC 调用，用于判断群成员身份、禁言状态或单聊好友关系。
+    4. 群组/关系服务 (oceanchat-group / oceanchat-user)：决策者。由消息服务在校验权限时通过高速内部 RPC 调用，用于判断发送者在该群内或该单聊中的权限。
     5. 消息持久化 Worker (MessagePersistence)：后台消费者。从 NATS 批量拉取消息并写入 MongoDB。
   </TabItem>
   <TabItem value="streams" label="必需的 JetStream">
@@ -75,16 +75,17 @@ rect rgb(220, 252, 231)
     note right of Message: 阶段 3: 业务逻辑 & 写屏障 (Write Fence)
     NATS-->>Message: 从 im.route.* 拉取
     alt 是群聊消息 (im.route.group)
-        Message->>GroupUser: RPC: 校验是否为群成员及禁言状态
+        Message->>GroupUser: RPC: 校验发送者在该群内的权限
     else 是单聊消息 (im.route.p2p)
-        Message->>GroupUser: RPC: 校验是否为好友及黑名单状态
+        Message->>GroupUser: RPC: 校验发送者在该单聊中的权限
     end
     Message->>Message: 内容审查 & 分配 SyncSeqId (号段模式)
     Message->>NATS: 发布至 im.orchestrate.msg
     NATS-->>Message: 返回持久化 ACK 回执
 
     note over Message, Client: 写屏障已通过！可以安全地向客户端返回 ACK。
-    Message-->>Gateway: 发送事务成功事件
+        Message->>NATS: 向 im.down.node 主题发送 message
+        NATS-->>Gateway: 路由投递给对应网关
     Gateway->>Client: [0x06] MSG_UP_ACK (Header: 同步 ReqId)
 end
 

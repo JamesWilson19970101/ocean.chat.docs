@@ -34,7 +34,7 @@ tags: ["ocean-chat", "specification", "architecture", "websocket"]
 
 ## 2. 协议结构扩展
 
-为了支持版本协商，我们需要在握手阶段相关的 Protobuf 载荷（Payload）中增加版本字段。
+为了支持版本协商，我需要在握手阶段相关的 Protobuf 载荷（Payload）中增加版本字段。
 
 ### 2.1 客户端上行：`AUTH_REQ` 载荷扩展
 
@@ -55,7 +55,7 @@ message AuthReq {
 
 ### 2.2 服务端下行：`EXCEPTION_ACK` 载荷扩展
 
-如果网关拒绝了首选版本，会下发 `[0x0C] EXCEPTION_ACK`。我们为其定义一个专属的错误码 `426`（Upgrade Required / Protocol Mismatch），并在 Payload 中明确服务端支持的版本。
+如果网关拒绝了首选版本，会下发 `[0x0C] EXCEPTION_ACK`。我为其定义一个专属的错误码 `426`（Upgrade Required / Protocol Mismatch），并在 Payload 中明确服务端支持的版本。
 
 ```protobuf
 message ExceptionAck {
@@ -112,7 +112,7 @@ message ExceptionAck {
 
 ## 4. 服务端网关实现规范 (`oceanchat-ws-gateway`)
 
-为了保证千万级并发下的性能，版本检查必须在**最高优先级（前置拦截器）**执行：
+为了保证十万级并发下的性能，版本检查必须在**最高优先级（前置拦截器）**执行：
 
 1. **零 I/O 拦截**：如果网关检测到 Header 上的 `Version` 字节不被支持，**不应该**再发起任何 RPC 去调用 `oceanchat-auth` 进行 JWT 鉴权。网关可以直接组装 426 的 `EXCEPTION_ACK` 踢回给客户端并断开连接。这能有效防御旧版客户端发起的“鉴权风暴”。
 2. **版本配置下发**：网关的 `server_supported_versions` 应当从环境变量或配置中心读取，方便运维在滚动升级期间进行灰度控制。

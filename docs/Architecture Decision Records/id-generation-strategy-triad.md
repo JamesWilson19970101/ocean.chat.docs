@@ -27,7 +27,7 @@ tags: ["ocean-chat", "adr", "decision-record"]
 
 ## Context
 
-Generating IDs in a massive-scale distributed IM system presents conflicting requirements. We need IDs for entities (users, groups) that are decentralized to prevent bottlenecks. We need IDs to prevent duplicate message sending from clients due to network retries. Crucially, we need IDs to physically store messages efficiently while simultaneously providing strict monotonic sequencing per session to allow clients to detect missing messages (gap detection).
+Generating IDs in a massive-scale distributed IM system presents conflicting requirements. I need IDs for entities (users, groups) that are decentralized to prevent bottlenecks. I need IDs to prevent duplicate message sending from clients due to network retries. Crucially, I need IDs to physically store messages efficiently while simultaneously providing strict monotonic sequencing per session to allow clients to detect missing messages (gap detection).
 
 Attempting to solve all these problems with a single unified ID type (like a standard UUID v4 or a single global Snowflake generator like Meituan Leaf) either leads to severe database index fragmentation or introduces unnecessary centralized network bottlenecks.
 
@@ -68,7 +68,7 @@ Ocean Chat will adopt a decoupled, three-tiered ID generation strategy tailored 
 ### Using Meituan Leaf for Sequence IDs
 
 - **Pros:** A highly mature, battle-tested global ID generator.
-- **Cons:** It is designed for global business tags (e.g., "order_id"). In an IM context, we need millions of dynamically created and destroyed tags (one for every P2P chat and group). Managing millions of dynamic tags in Leaf introduces massive operational complexity and an unnecessary extra network hop for every message.
+- **Cons:** It is designed for global business tags (e.g., "order_id"). In an IM context, I need millions of dynamically created and destroyed tags (one for every P2P chat and group). Managing millions of dynamic tags in Leaf introduces massive operational complexity and an unnecessary extra network hop for every message.
 - **Rejected:** A lightweight, custom Segment-based generator directly inside the message service utilizing Redis `INCRBY` is vastly more efficient for session-scoped sequential generation.
 
 ### Using UUID v4 for Everything

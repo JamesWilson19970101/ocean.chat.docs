@@ -199,7 +199,7 @@
     "description": "The label for the mobile language switcher dropdown"
   },
   "theme.NotFound.p1": {
-    "message": "我们找不到您要找的页面。",
+    "message": "我找不到您要找的页面。",
     "description": "The first paragraph of the 404 page"
   },
   "theme.NotFound.p2": {
@@ -339,5 +339,20 @@
   },
   "homepage.feature.extensible.description": {
     "message": "借助丰富的 API 和集成能力定制您的专属体验。轻松在您的私有服务器上部署、扩展和管理 OceanChat。"
+  },
+  "progress.ariaLabel": {
+    "message": "查看研发进度"
+  },
+  "progress.bubbleText": {
+    "message": "进度"
+  },
+  "progress.closeModal": {
+    "message": "关闭"
+  },
+  "progress.modalTitle": {
+    "message": "进度"
+  },
+  "progress.closeZoomedImage": {
+    "message": "关闭图片"
   }
 }

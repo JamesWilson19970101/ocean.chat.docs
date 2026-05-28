@@ -1,3 +1,9 @@
+---
+id: microservice
+title: Microservice Architecture
+sidebar_position: 0
+---
+
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -187,6 +193,7 @@ User and relationship data are foundational to IM; an independent service provid
 <TabItem value="resp" label="Core Responsibilities" default>
 
 - **Lifecycle Management**: Handles group creation/dissolution, member management, permissions, announcements, and settings.
+- **Organizational Structure Management**: Responsible for maintaining the hierarchical structure of Teams and Rooms, covering their core business operations such as CRUD (Create, Read, Update, Delete).
 - **Permission Decision-Making**: As the sole owner of group data, it contains all group-related permission logic (e.g., checking if a user is a member or muted).
 
 </TabItem>

@@ -38,5 +38,9 @@
   "sidebar.tutorialSidebar.category.Monkey Protocol": {
     "message": "侯子协议",
     "description": "The label for category Monkey Protocol in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Others": {
+    "message": "其他",
+    "description": "The label for category Others in sidebar tutorialSidebar"
   }
 }

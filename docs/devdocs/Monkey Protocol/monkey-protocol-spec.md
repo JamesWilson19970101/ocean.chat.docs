@@ -86,15 +86,15 @@ Every Monkey Protocol data packet consists of a strictly fixed-length **12-byte 
 
 ### 2.1 Header Layout
 
-| Offset | Field     | Size     | Type      | Description                                                                                                  |
-| :----- | :-------- | :------- | :-------- | :----------------------------------------------------------------------------------------------------------- |
-| 0      | `Magic`   | 2 Bytes  | `UInt16`  | Magic number `0x4D4B` ("MK"), used to identify the protocol.                                                 |
-| 2      | `Version` | 1 Byte   | `UInt8`   | Protocol version number for forward compatibility (Current: `0x01`).                                         |
-| 3      | `Cmd`     | 1 Byte   | `UInt8`   | Command type identifier (see Command Registry).                                                              |
-| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8-bit flags to control protocol features (e.g., compression, ACK).                                           |
-| 5      | `ReqId`   | 3 Bytes  | `UInt24`  | Request ID, used to match requests and responses within the current connection. Wraps around. Starts from 1. |
-| 8      | `Length`  | 4 Bytes  | `UInt32`  | Byte length of the variable Payload (hard limit: max 16KB).                                                  |
-| 12     | `Payload` | Variable | `Binary`  | **Protobuf** encoded business payload.                                                                       |
+| Offset | Field     | Size     | Type      | Description                                                                                                                                                                                                                                                                     |
+| :----- | :-------- | :------- | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0      | `Magic`   | 2 Bytes  | `UInt16`  | Magic number `0x4D4B` ("MK"), used to identify the protocol.                                                                                                                                                                                                                    |
+| 2      | `Version` | 1 Byte   | `UInt8`   | Protocol version number for forward compatibility (Current: `0x01`).                                                                                                                                                                                                            |
+| 3      | `Cmd`     | 1 Byte   | `UInt8`   | Command type identifier (see Command Registry).                                                                                                                                                                                                                                 |
+| 4      | `Flags`   | 1 Byte   | `Bitmask` | 8-bit flags to control protocol features (e.g., compression, ACK).                                                                                                                                                                                                              |
+| 5      | `ReqId`   | 3 Bytes  | `UInt24`  | Request ID, used to match requests and responses within the current connection. It is used cyclically after reaching its limit. It starts at 1, with 0 already occupied. For performance and network bandwidth considerations, `reqid` should be used instead of `clientMsgId`. |
+| 8      | `Length`  | 4 Bytes  | `UInt32`  | Byte length of the variable Payload (hard limit: max 16KB).                                                                                                                                                                                                                     |
+| 12     | `Payload` | Variable | `Binary`  | **Protobuf** encoded business payload.                                                                                                                                                                                                                                          |
 
 :::warning JSON is Strictly Prohibited in Production
 To support 100,000+ concurrency, JSON serialization in the Payload is strictly forbidden. **Protobuf** must be enforced. This saves over 40% bandwidth and significantly reduces CPU parsing overhead at the gateway.
@@ -162,10 +162,12 @@ sequenceDiagram
 
 ### 4.2 Intelligent Keep-alive (Any Message is Pong)
 
-Ocean Chat abandons rigid periodic heartbeat strategies.
+Ocean Chat abandons the traditional "bidirectional periodic PING/PONG" strategy and adopts an **Asymmetric Time Difference** and **Implicit Heartbeat** mechanism to significantly save bandwidth and address weak network probing:
 
-1. **Business Packets as Heartbeats:** Whenever the gateway receives **any** legitimate uplink packet from the client (e.g., `MSG_UP`), it immediately refreshes the `LastActiveTime` for that connection.
-2. **Dynamic Heartbeat Intervals:** The client **must** dynamically adjust the `PING` interval (e.g., from 30 seconds to 4 minutes) based on its NAT network environment and OS background state (Foreground/Background). If the client is actively sending messages, it should pause the background periodic `PING` to save bandwidth.
+1. **Business Packets as Heartbeats (Implicit Heartbeat):** Whether it's PING, PONG, or any business packet (e.g., `MSG_UP`), as long as the gateway receives legitimate data from the client, it immediately refreshes the active timestamp of that connection. The client works identically: receiving any data from the server resets its heartbeat countdown.
+2. **Asymmetric Interval:** The server's proactive PING interval is fixed at **30 seconds**, the client's fallback PING interval is fixed at **35 seconds**, and the absolute disconnect timeout for both ends is **60 seconds**. During normal idle periods, the server always triggers the PING first; the client replies with a PONG and resets its local 35-second timer, perfectly avoiding the bandwidth waste caused by bidirectional PING collisions.
+
+_See Monkey Protocol: Asymmetric Heartbeat and Keep-alive Design for details._
 
 ### 4.3 Traffic Shaping and Avalanche Prevention
 
@@ -252,7 +254,7 @@ sequenceDiagram
 
 ### 6.2 Idempotency and Optimistic UI Anchor
 
-The client must generate a unique UUID (`ClientMsgId`) for each `MSG_UP`. This ID serves two critical roles:
+The client must generate a unique UUIDv7 (`ClientMsgId`) for each `MSG_UP`. This ID serves two critical roles:
 
 1. Server Idempotent Deduplication: If the client retries due to a network disconnection before receiving `MSG_UP_ACK`, the backend elegantly implements deduplication using a SET structure (UserID + ClientMsgId) in Redis to prevent duplicate records in the database.
 2. Client Optimistic UI Loop: Serves as the unique anchor connecting the local temporary state (sending) with the server's real state. In extremely weak network conditions, if the ACK is lost, the client can perfectly "finalize" its message locally via subsequent HTTP incremental pulls using this ID.

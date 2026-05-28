@@ -46,4 +46,4 @@ Adopt a **Fail-Fast + Elastic Retry** strategy:
 
 - **Exposing P0 Level Severe Faults:** A comprehensive downtime of the Redis cluster (Sentinel or Cluster mode) is an absolute P0 level disaster. Infrastructure issues must be handled by the infrastructure layer itself (e.g., automatic primary-replica switching, scaling). If silent degradation is implemented in the code, it masks the fault, preventing operations and maintenance monitoring from immediately sounding the highest-level alarm.
 
-- **Protection of Persistent Storage:** By failing fast and returning a 503 error, we prevent an avalanche of requests from hitting MongoDB, which is not designed to handle the high throughput normally absorbed by Redis.
+- **Protection of Persistent Storage:** By failing fast and returning a 503 error, I prevent an avalanche of requests from hitting MongoDB, which is not designed to handle the high throughput normally absorbed by Redis.

@@ -62,15 +62,16 @@ sequenceDiagram
     rect rgb(220, 252, 231)
         note right of MsgService: 阶段 3: 业务逻辑 & 写屏障 (Write Fence)
         NATS-->>MsgService: 从 im.route.group 拉取 (Pull)
-        MsgService->>GroupService: RPC: 校验群成员身份及禁言状态
+        MsgService->>GroupService: RPC: 校验发送者在该群内的权限
         GroupService-->>MsgService: 返回校验通过
         MsgService->>MsgService: 分配会话级 SyncSeqId
         MsgService->>NATS: 发布至 WAL (im.orchestrate.msg)
         NATS-->>MsgService: ACK (安全越过写入屏障)
 
         note over MsgService, Sender: 写屏障已通过！可以安全地向客户端返回 ACK。
-        MsgService-->>WSG: 发送事务成功事件
-        WSG-->>Sender: 下发 [0x06] MSG_UP_ACK (SyncSeqId)
+        MsgService->>NATS: 向 im.down.node 主题发送 message
+        NATS-->>WSG: 路由投递给对应网关
+        WSG->>Sender: 下发 [0x06] MSG_UP_ACK (SyncSeqId)
     end
 
     rect rgb(254, 240, 138)

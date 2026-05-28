@@ -71,15 +71,16 @@ sequenceDiagram
     rect rgb(220, 252, 231)
         note right of MsgService: Phase 3: Business Logic & Write Fence
         NATS-->>MsgService: Pull from im.route.group
-        MsgService->>GroupService: RPC: Verify group membership and mute status
+        MsgService->>GroupService: RPC: Verify sender's permissions in the group
         GroupService-->>MsgService: Return Verification OK
         MsgService->>MsgService: Assign session-level SyncSeqId
         MsgService->>NATS: Publish to WAL (im.orchestrate.msg)
         NATS-->>MsgService: ACK (Write Fence Passed)
 
         note over MsgService, Sender: Write fence passed! Safe to return ACK to client.
-        MsgService-->>WSG: Send Transaction Success Event
-        WSG-->>Sender: Deliver [0x06] MSG_UP_ACK (SyncSeqId)
+        MsgService->>NATS: Publish message to im.down.node topic
+        NATS-->>WSG: Route and deliver to the specific gateway
+        WSG->>Sender: Deliver [0x06] MSG_UP_ACK (SyncSeqId)
     end
 
     rect rgb(254, 240, 138)

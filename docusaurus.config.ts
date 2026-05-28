@@ -98,7 +98,7 @@ const config: Config = {
         config: {
           petstore: {
             specPath:
-              "/home/seconp/ocean.chat.private-FIX-1-auth-improvements/swagger.json",
+              "/home/seconp/ocean.chat.private-FEAT-004-monkey-core-flows/swagger.json",
             outputDir: "docs/devdocs/API",
             sidebarOptions: {
               groupPathsBy: "tag",

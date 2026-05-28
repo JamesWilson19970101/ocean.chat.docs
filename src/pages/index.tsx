@@ -5,6 +5,7 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import HomepageFeatures from "@site/src/components/HomepageFeatures";
 import Heading from "@theme/Heading";
+import ProgressBubble from "@site/src/components/ProgressBubble";
 
 import Translate, { translate } from "@docusaurus/Translate";
 
@@ -50,6 +51,7 @@ export default function Home(): ReactNode {
       <main>
         <HomepageFeatures />
       </main>
+      <ProgressBubble />
     </Layout>
   );
 }

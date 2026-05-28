@@ -1,0 +1,321 @@
+/* src/components/ProgressBubble/styles.module.css */
+
+.bubbleContainer {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+  cursor: pointer;
+  animation: float 4s ease-in-out infinite;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bubbleContainer:hover {
+  transform: scale(1.05) translateY(-5px);
+  animation-play-state: paused;
+}
+
+.bubbleContainer:active {
+  transform: scale(0.95);
+}
+
+.bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--ifm-background-surface);
+  color: var(--ifm-font-color-base);
+  padding: 0.5rem 1.25rem 0.5rem 0.5rem;
+  border-radius: 50px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 0 0 1px var(--ifm-color-emphasis-200);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  animation: liquidWave 1s ease-in-out infinite;
+}
+
+@keyframes liquidWave {
+  0%,
+  100% {
+    border-radius: 45px 55px 40px 60px / 55px 45px 60px 40px;
+  }
+  20% {
+    border-radius: 55px 45px 60px 40px / 45px 55px 40px 60px;
+  }
+  40% {
+    border-radius: 40px 60px 45px 55px / 60px 40px 55px 45px;
+  }
+  60% {
+    border-radius: 60px 40px 55px 45px / 40px 60px 45px 55px;
+  }
+  80% {
+    border-radius: 45px 55px 60px 40px / 55px 40px 60px 45px;
+  }
+}
+
+/* Adapt shadow for dark mode */
+[data-theme="dark"] .bubble {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px var(--ifm-color-emphasis-300);
+}
+
+.bubbleContainer:hover .bubble {
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.15),
+    0 0 0 1px var(--ifm-color-primary);
+}
+
+[data-theme="dark"] .bubbleContainer:hover .bubble {
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.5),
+    0 0 0 1px var(--ifm-color-primary);
+}
+
+.progressRing {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressRing svg {
+  transform: rotate(-90deg);
+}
+
+.ringBg {
+  stroke: var(--ifm-color-emphasis-200);
+}
+
+.ringProgress {
+  stroke: var(--ifm-color-primary);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+.percentage {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+}
+
+.bubbleText {
+  font-weight: 600;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.4s ease,
+    visibility 0.4s ease;
+}
+
+.modalOverlayOpen {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modalContent {
+  background-color: var(--ifm-background-surface);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-global-radius);
+  padding: 2rem;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+  position: relative;
+
+  /* Initial state for silky animation */
+  transform: scale(0.9) translateY(20px);
+  opacity: 0;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease;
+}
+
+[data-theme="dark"] .modalContent {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+}
+
+.modalContentOpen {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.closeButton:hover {
+  color: var(--ifm-color-danger);
+  transform: scale(1.1);
+}
+
+.modalTitle {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--ifm-color-primary);
+}
+
+.imagesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .imagesGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.imageWrapper {
+  border-radius: var(--ifm-global-radius);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.imageWrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .imageWrapper {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .imageWrapper:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.imageWrapper img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Image Zoom Styles */
+.clickableImage {
+  cursor: pointer;
+}
+
+.imageViewerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.imageViewerClose {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  background: none;
+  border: none;
+  font-size: 3rem;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+  z-index: 2001;
+}
+
+.imageViewerClose:hover {
+  transform: scale(1.1);
+  color: var(--ifm-color-danger);
+}
+
+.zoomedImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

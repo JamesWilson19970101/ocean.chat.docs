@@ -1,7 +1,6 @@
 ---
 id: network-bandwidth-calculation
 title: Network Bandwidth & Hardware Sizing Guide
-sidebar_position: auto
 description: Learn how to calculate the network bandwidth required for 100,000 concurrent Ocean Chat users and select specific hardware models (NICs and Switches).
 keywords: [ocean chat, network bandwidth, 10GbE, hardware, NIC, switch, throughput, 100k connections]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]

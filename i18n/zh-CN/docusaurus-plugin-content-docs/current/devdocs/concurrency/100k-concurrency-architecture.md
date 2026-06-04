@@ -1,12 +1,13 @@
 ---
 id: 100k-concurrency-architecture
-title: 理解我的系统为何能支撑十万级并发
-description: 深度解析 Ocean Chat 的核心架构支柱——从零 I/O 认证到 NATS JetStream 预写日志 (WAL)——它们是如何让系统能够扩展至 100,000+ 并发连接的。
+title: 程序层面分析十万级并发
+description: 深度解析 Ocean Chat 的核心架构支柱 -- 通过IO复合使用，节省响应时间。
 keywords: [ocean chat, 十万并发, 扩展性, 架构, nats jetstream, 零 i/o, 号段模式, 防击穿]
 image: https://docs.oceanchat.com/img/social-card.png
-sidebar_position: auto
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
+
+// TODO: 逐渐将代码中其他的相关性能优化逻辑转移到这里，本文档待逐渐完善。
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -30,7 +31,7 @@ import TabItem from '@theme/TabItem';
 
 ---
 
-## 核心概念：支撑高并发的架构支柱
+## 业务逻辑层面
 
 我的系统依赖五个关键的架构支柱来彻底消除上述瓶颈。
 
@@ -84,7 +85,13 @@ sequenceDiagram
 
 此外，我使用了 **非对称心跳 (Asymmetric Heartbeats)** 协议。服务端设定 30 秒 Ping 一次，而客户端设定 35 秒作为兜底探测。结合“任何合法的业务数据包都能重置心跳计时器”的规则，我成功消除了 WebSocket 应用中常见的、高达 50% 的双向 Ping/Pong 冗余带宽损耗。
 
+### TODO: 后面慢慢整理
+
 ---
+
+## 架构设计层面
+
+// TODO: 描述分布式微服务架构设计。主要描述无状态微服务的设计对横向扩展的支撑。
 
 ## 替代方案与权衡 (Trade-offs)
 

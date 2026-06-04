@@ -4,7 +4,6 @@ title: Understanding How My System Supports 100k Concurrency
 description: An architectural explanation of the core pillars—from Zero-I/O authentication to NATS JetStream WAL—that allow Ocean Chat to scale to 100,000+ concurrent connections.
 keywords: [ocean chat, 100k concurrency, scale, architecture, nats jetstream, zero i/o, seqsvr, singleflight]
 image: https://docs.oceanchat.com/img/social-card.png
-sidebar_position: auto
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
 

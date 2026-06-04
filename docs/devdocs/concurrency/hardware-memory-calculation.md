@@ -1,7 +1,6 @@
 ---
 id: hardware-memory-calculation
 title: Hardware Memory & Cluster Sizing Guide
-sidebar_position: auto
 description: Learn how to calculate the hardware and memory resources required to support 100,000 concurrent WebSocket connections on standard 8-core/4GB machines.
 keywords: [ocean chat, hardware, memory, concurrency, cluster sizing, ddr4, ddr5, 100k connections]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]

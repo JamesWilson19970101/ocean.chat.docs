@@ -11,16 +11,17 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 > 参考文章
+>
 > - [3.1. Internet Header Format](https://ftp.nic.ad.jp/rfc/inline-errata/rfc791.html)
 > - [3.1. Header Format](https://pike.lysator.liu.se/docs/ietf/rfc/92/rfc9293.xml)
 > - [5.2. Base Framing Protocol](https://greenbytes.de/tech/webdav/rfc6455.pdf)
 > - [IEEE 802.3 Ethernet Frame (包含 MAC, FCS, 前导码及 IPG 规范)](https://en.wikipedia.org/wiki/Ethernet_frame)
 > - [IEEE 802.1Q (VLAN 标签规范)](https://en.wikipedia.org/wiki/IEEE_802.1Q)
-> - [2.1. Header Layout](./Monkey%20Protocol/monkey-protocol-spec.md)
+> - [2.1. Header Layout](../Monkey%20Protocol/monkey-protocol-spec.md)
 
 # 网络带宽与硬件测算指南
 
-本指南详细介绍了如何计算支撑 Ocean Chat **100,000 并发连接**所需的确切网络带宽。它将这些数学需求转化为具体的物理硬件建议，包括网络接口卡 (NIC) 和网络交换机。
+本指南详细介绍了如何计算支撑 Ocean Chat **100,000 并发连接**所需的确切网络带宽计算方法（微服务仅以 ws gateway 举例）。它将这些数学需求转化为具体的物理硬件建议，包括网络接口卡 (NIC) 和网络交换机。
 
 ## 固定消耗
 
@@ -48,32 +49,65 @@ Ocean Chat 带宽计算中最关键的因素是控制面与数据面的严格分
 ### 场景 A：空闲状态（心跳保活）
 
 Ocean Chat 采用非对称心跳。服务端每 30 秒发送一次 Ping。
-* **业务载荷:** 0 字节 (纯心跳包无附加数据，12 字节 Monkey Header 已计入下方)。
-* **协议栈开销:** 70 字节 (TCP 32 + IPv4 20 + WS 6 + Monkey 12)。
-* **数据链路层开销:** 22 字节 (14 字节 MAC 帧头 + 4 字节 802.1Q VLAN 标签 + 4 字节 FCS 校验)。
-* **物理层隐形开销:** 20 字节 (7 字节前导码 + 1 字节 SFD + 12 字节 IPG 帧间距)。
-* **单次心跳在网线上的真实物理占用:** 70 + 22 + 20 = 112 字节。
+
+- **业务载荷:** 0 字节 (纯心跳包无附加数据，12 字节 Monkey Header 已计入下方)。
+- **协议栈开销:** 70 字节 (TCP 32 + IPv4 20 + WS 6 + Monkey 12)。
+- **数据链路层开销:** 22 字节 (14 字节 MAC 帧头 + 4 字节 802.1Q VLAN 标签 + 4 字节 FCS 校验)。
+- **物理层隐形开销:** 20 字节 (7 字节前导码 + 1 字节 SFD + 12 字节 IPG 帧间距)。
+- **单次心跳在网线上的真实物理占用:** 70 + 22 + 20 = 112 字节。
 
 ```text title="空闲带宽计算"
-(100,000 连接 × 112 Bytes × 8 bits/Byte) / 30 秒 
+(100,000 连接 × 112 Bytes × 8 bits/Byte) / 30 秒
 = 2,986,666.67 bps ≈ 2.99 Mbps (兆比特每秒)
 ```
-*结论:* 空闲连接几乎不消耗任何带宽。区区 2.99 Mbps 在千兆网络中完全可以忽略不计。
+
+_结论:_ 空闲连接几乎不消耗任何带宽。区区 2.99 Mbps 在千兆网络中完全可以忽略不计。
 
 ### 场景 B：流量峰值（活跃聊天）
 
 假设全球峰值期间，各个大群每秒共发送 **10,000 条消息**。
-* **上行 (`MSG_UP`):** 10,000 msgs/sec × ~300 Bytes (Header + Protobuf(300-112有效数据载荷，约为188个英文字符，62个utf-8中文字符)) × 8 = **~24 Mbps**。
-* **下行推送 (`MSG_NOTIFY`):** 编排服务扇出通知。根据协议规范，`MSG_NOTIFY` 仅作唤醒不带实体，Payload 只包含 `GroupId`（字符串，约 20 字节）与 `SyncSeqId`（int64，约 8 字节），Protobuf 编码后约 30 字节。加上 112 字节底层物理网络开销，单包物理占用约 142 字节。假设 50,000 名在线用户同时收到通知：`50,000 × 142 Bytes × 8 = 56,800,000 bps ≈` **56.8 Mbps**。
-* **HTTP Sync (数据拉取):** 收到通知后，50,000 个客户端通过 HTTP 拉取消息实体。假设 JSON 响应为 1KB。50,000 × 1,024 Bytes × 8 = **~409.6 Mbps**。
+
+- **上行 (`MSG_UP`):** 10,000 msgs/sec × ~300 Bytes (Header + Protobuf(300-112有效数据载荷，约为188个英文字符，62个utf-8中文字符)) × 8 = **~24 Mbps**。
+- **下行推送 (`MSG_NOTIFY`):** 编排服务扇出通知。根据协议规范，`MSG_NOTIFY` 仅作唤醒不带实体，Payload 只包含 `GroupId`（字符串，约 20 字节）与 `SyncSeqId`（int64，约 8 字节），Protobuf 编码后约 30 字节。加上 112 字节底层物理网络开销，单包物理占用约 142 字节。假设 50,000 名在线用户同时收到通知：`50,000 × 142 Bytes × 8 = 56,800,000 bps ≈` **56.8 Mbps**。
+- **HTTP Sync (数据拉取):** 收到通知后，50,000 个客户端通过 HTTP 拉取消息实体。假设 JSON 响应为 1KB。50,000 × 1,024 Bytes × 8 = **~409.6 Mbps**。
 
 ### 集群总带宽需求
-* **边缘峰值总流量:** 24 + 56.8 + 409.6 = **~490.4 Mbps**。
-* **内部微服务流量 (NATS 复制 + Redis):** 将边缘流量翻倍以涵盖内部路由和 Raft 共识复制 = **~980.8 Mbps**。
+
+- **边缘峰值总流量:** 24 + 56.8 + 409.6 = **~490.4 Mbps**。
+- **内部微服务流量 (NATS 复制 + Redis):** 将边缘流量翻倍以涵盖内部路由和 Raft 共识复制 = **~980.8 Mbps**。
 
 **最终测算:** 一个十万并发的 Ocean Chat 集群在极端流量峰值期间，大约需要 **1.5 Gbps 的稳定内/外部带宽容量**。
 
-## 第二步：选择物理硬件
+## 第二步：在真实测试环境中验证带宽（实战抓包）
+
+理论计算虽然严密，但在真正的生产环境上线前，必须通过压测和抓包工具来验证理论值与实际消耗的偏差。可以使用 **tcpdump** 和 **Wireshark** 来进行精准测量。
+
+### 1. 使用 tcpdump 抓取网关流量
+
+在压测期间（例如使用压测脚本模拟 10,000 个客户端建立 WebSocket 连接并高频发送消息），登录到 `oceanchat-ws-gateway` 所在的服务器，使用 `tcpdump` 抓取真实的网络包：
+
+```bash
+# 抓取特定端口（如网关端口 8080）的网络包，并保存到 pcap 文件中
+sudo tcpdump -i any port 8080 -w gateway_traffic.pcap
+```
+
+抓包时间无需过长，在压测流量达到稳定峰值时，抓取 60 秒到 300 秒即可。\_
+
+### 2. 使用 Wireshark 分析吞吐量
+
+将生成的 `gateway_traffic.pcap` 文件下载到本地工作站，并使用 Wireshark 打开：
+
+- **查看整体带宽指标：** 点击菜单栏的 `统计 (Statistics)` -> `捕获文件属性 (Capture File Properties)`。在“测量”区域，可以直接看到 **平均比特率 (Average bits/s)** 和 **平均字节率 (Average bytes/s)**。将这个实测数值按比例放大，即可精确预估十万并发的真实网络带宽。
+- **绘制 I/O 吞吐图表：** 点击 `统计 (Statistics)` -> `I/O 图表 (I/O Graphs)`。将 Y 轴设为 `Bits/Tick`，X 轴设为 1 秒。可以直观地观测到流量峰值 (Spikes) 的波动情况，以及心跳包引发的周期性波峰。
+- **精确过滤协议：** 在顶部过滤栏输入 `websocket` 或 `tcp.len > 0` 来排除无关的系统背景流量（如纯 TCP ACK），获得最纯粹的业务带宽消耗。
+
+### 3. 理论与实测的对比校验
+
+在 Wireshark 中选中一个由客户端发出的 `MSG_UP` 数据包，查看底部的 `Frame` 层信息中的 `Capture Length`。将该数值与在第一步中计算的理论大小进行对比。
+
+请注意，如果生产环境开启了 **TLS/WSS (wss://)** 加密，TLS 握手以及 TLS Record 层会带来额外的封装开销。实测的网络带宽结果通常会比纯明文的理论值高出 10% - 20%，必须在硬件采购时将这部分加密开销的冗余考虑在内。
+
+## 第三步：选择物理硬件
 
 标准的 1 Gbps（千兆以太网）网卡会在 1.5 Gbps 的峰值流量下成为瓶颈。因此，**10GbE（万兆以太网）** 是物理硬件的绝对最低标准。
 
@@ -87,6 +121,7 @@ Ocean Chat 采用非对称心跳。服务端每 30 秒发送一次 Ping。
     * **高性能替代: Mellanox ConnectX-4 Lx (10/25GbE)**
       * *原因:* Mellanox (现 Nvidia) 网卡在处理海量小包 (高 PPS - 每秒数据包数) 时比 Intel 拥有更低的延迟。强烈推荐用于 NATS JetStream 和 Redis 节点。
       * *淘宝:* 约 ￥450。[淘宝链接](https://item.taobao.com/item.htm?id=834255588855)
+
   </TabItem>
 
   <TabItem value="switch" label="网络交换机 (Top-of-Rack)">
@@ -96,6 +131,7 @@ Ocean Chat 采用非对称心跳。服务端每 30 秒发送一次 Ping。
       * *原因:* 提供 48 个 10/25GbE 端口，具有超低延迟。完美适用于单机柜 IM 集群部署。
     * **预算选择: MikroTik CRS326-24S+2Q+RM**
       * *原因:* 提供 24 个 10Gbps SFP+ 端口。价格不到 600 美元，是初创公司构建物理集群的无敌性价比之选，轻松处理所需的 1.5 Gbps 背板路由。
+
   </TabItem>
 </Tabs>
 

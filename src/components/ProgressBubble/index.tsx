@@ -38,7 +38,7 @@ export default function ProgressBubble() {
         });
       }
     };
-    
+
     if (isOpen || zoomedImage) {
       window.addEventListener("keydown", handleKeyDown);
     }
@@ -59,7 +59,7 @@ export default function ProgressBubble() {
         aria-label={translate({
           id: "progress.ariaLabel",
           message: "View Development Progress",
-          description: "Aria label for the progress bubble"
+          description: "Aria label for the progress bubble",
         })}
       >
         <div className={styles.bubble}>
@@ -88,7 +88,10 @@ export default function ProgressBubble() {
             <span className={styles.percentage}>25%</span>
           </div>
           <span className={styles.bubbleText}>
-            <Translate id="progress.bubbleText" description="Text inside the progress bubble">
+            <Translate
+              id="progress.bubbleText"
+              description="Text inside the progress bubble"
+            >
               Progress
             </Translate>
           </span>
@@ -114,22 +117,29 @@ export default function ProgressBubble() {
               aria-label={translate({
                 id: "progress.closeModal",
                 message: "Close modal",
-                description: "Aria label to close modal"
+                description: "Aria label to close modal",
               })}
             >
               &times;
             </button>
             <h2 className={styles.modalTitle}>
-              Ocean.Chat <Translate id="progress.modalTitle" description="Title in the progress modal">Progress</Translate> : 25%
+              Ocean.Chat{" "}
+              <Translate
+                id="progress.modalTitle"
+                description="Title in the progress modal"
+              >
+                Progress
+              </Translate>{" "}
+              : 25%
             </h2>
             <div className={styles.imagesGrid}>
-              <div 
+              <div
                 className={clsx(styles.imageWrapper, styles.clickableImage)}
                 onClick={() => setZoomedImage("img/chat.png")}
               >
                 <img src="img/chat.png" alt="Chat UI" />
               </div>
-              <div 
+              <div
                 className={clsx(styles.imageWrapper, styles.clickableImage)}
                 onClick={() => setZoomedImage("img/login.png")}
               >
@@ -142,7 +152,7 @@ export default function ProgressBubble() {
 
       {/* Full-screen image viewer overlay */}
       {zoomedImage && (
-        <div 
+        <div
           className={styles.imageViewerOverlay}
           onClick={() => setZoomedImage(null)}
         >
@@ -152,14 +162,14 @@ export default function ProgressBubble() {
             aria-label={translate({
               id: "progress.closeZoomedImage",
               message: "Close zoomed image",
-              description: "Aria label to close zoomed image"
+              description: "Aria label to close zoomed image",
             })}
           >
             &times;
           </button>
-          <img 
-            src={zoomedImage} 
-            alt="Zoomed" 
+          <img
+            src={zoomedImage}
+            alt="Zoomed"
             className={styles.zoomedImage}
             onClick={(e) => e.stopPropagation()}
           />

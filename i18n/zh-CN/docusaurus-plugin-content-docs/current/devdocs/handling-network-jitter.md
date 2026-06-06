@@ -1,7 +1,7 @@
 ---
 id: handling-network-jitter
 title: 如何处理推拉结合模型中的网络抖动
-sidebar_position: auto
+sidebar_position: 1
 description: 学习在 Ocean Chat 中协调长连接 (WebSocket) 与短连接 (HTTP) 时，如何处理网络抖动并保证消息的绝对可靠性。
 keywords: [ocean chat, 网络抖动, 推拉结合, 可靠性, websocket, http 同步]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]

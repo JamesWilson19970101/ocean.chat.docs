@@ -1,9 +1,9 @@
 ---
 id: handling-network-jitter
 title: How to Handle Network Jitter in the Push-Pull Model
-sidebar_position: auto
 description: A guide on handling network jitter and ensuring message reliability when coordinating long (WebSocket) and short (HTTP) connections in Ocean Chat.
-keywords: [ocean chat, network jitter, push-pull, reliability, websocket, http sync]
+keywords:
+  [ocean chat, network jitter, push-pull, reliability, websocket, http sync]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 image: https://docs.oceanchat.com/img/social-card.png
 ---
@@ -59,7 +59,9 @@ In a weak network, a client might receive a delayed `MSG_NOTIFY`, or a user migh
 
 ```javascript title="Client Deduplication Logic"
 for (const msg of httpResponse.messages) {
-  const exists = await localDB.messages.findOne({ clientMsgId: msg.clientMsgId });
+  const exists = await localDB.messages.findOne({
+    clientMsgId: msg.clientMsgId,
+  });
   if (!exists) {
     await localDB.messages.insert(msg);
   }

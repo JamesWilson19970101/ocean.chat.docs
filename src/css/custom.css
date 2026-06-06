@@ -41,3 +41,7 @@
   display: block;
   margin: 0 auto;
 }
+
+/* Language specific visibility for announcement bar */
+html[lang="zh-CN"] .en-only { display: none !important; }
+html[lang="en"] .zh-only { display: none !important; }

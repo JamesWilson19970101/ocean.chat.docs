@@ -110,6 +110,14 @@ const config: Config = {
   ],
   themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
   themeConfig: {
+    announcementBar: {
+      id: "contact_author",
+      content:
+        '<span class="en-only">💡 I (the author) guarantee that this project will always be open source and free. 💡 Need help or discussion? 👉 <a class="contact-author-btn" href="javascript:void(0);" style="font-weight: bold; text-decoration: underline;">Contact Author</a></span><span class="zh-only">💡 我（作者）保证本项目永远开源免费。💡 欢迎阅读 Ocean Chat 文档！遇到问题或交流技术？ 👉 <a class="contact-author-btn" href="javascript:void(0);" style="font-weight: bold; text-decoration: underline;">点击联系作者</a></span>',
+      backgroundColor: "#10a37f",
+      textColor: "#ffffff",
+      isCloseable: false,
+    },
     // Replace with your project's social card
     image: "img/docusaurus-social-card.jpg",
     navbar: {

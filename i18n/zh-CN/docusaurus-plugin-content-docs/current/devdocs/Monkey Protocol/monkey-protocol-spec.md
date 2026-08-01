@@ -45,7 +45,7 @@ Ocean Chat 的架构严格将网络 I/O 与业务逻辑隔离。本协议依赖�
 - **`oceanchat-auth`**: 作为唯一持有 RS256 私钥的令牌签发者。它**不参与**握手校验链路：网关在收到 `AUTH_REQ` 时，直接使用其分发的 RS256 公钥在本地完成 JWT 验签（Zero-I/O），并通过订阅 NATS 撤销事件维护内存黑名单。
 - **`oceanchat-presence`**: 管理 Redis 中的全局在线状态 (`UserId -> DeviceType -> Gateway IP`)。
 - **`oceanchat-router`**: 核心路由编排器，负责与 NATS JetStream 交互。
-- **`oceanchat-message`**: 负责生成全局唯一的 Sequence ID，并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
+- **`oceanchat-message`**: 负责为每条消息分配会话级严格单调递增的 `SyncSeqId`（以单个单聊/群聊为递增维度），并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
 - **`oceanchat-query`**: 负责处理离线唤醒或新消息到达、消息空洞情况下的增量消息同步 (基于 HTTP 短连接)。
 - **`oceanchat-orchestrator`**: 推送决策大脑，负责查询在线状态，并将消息拆分为在线唤醒通知 (`MSG_NOTIFY`) 或离线推送任务。
 - **`oceanchat-pusher-realtime`**: 负责在线信令的具体投递，将 `MSG_NOTIFY` 派发至指定的网关节点。
@@ -210,7 +210,7 @@ sequenceDiagram
 
     note over Receiver: 若用户当前正注视 G1 的聊天界面:
     note over Receiver, APIGateway: 2. 客户端通过 HTTP 短连接拉取增量实体
-    Receiver->>APIGateway: GET /api/v1/messages/sync?seqId=1000
+    Receiver->>APIGateway: GET /api/v1/messages/sync?groupId=G1&seqId=1000
 
     APIGateway->>Query: 请求大于 1000 的消息
     Query-->>APIGateway: 图片元数据及URL
@@ -269,12 +269,12 @@ sequenceDiagram
 1. **`ReqId` (Header 中，24 位)：** 仅用于底层 TCP/WS 连接的 RPC 匹配（如映射 `MSG_UP` 与 `MSG_UP_ACK`）。达到上限后循环使用，不持久化。
 2. **`SyncSeqId` (Payload 中，64 位)：** 由 `oceanchat-message` 分配的、会话级别的单调递增版本号。由于内存号段预分配机制，**`SyncSeqId` 可能是不连续的**（例如服务器重启后可能从 100 直接跳跃到 1000）。
 
-客户端需在本地维护 `MaxLocalSyncSeqId`。如果下行收到的 `MSG_NOTIFY` 携带的 `SyncSeqId` 大于本地的 `MaxLocalSyncSeqId`，则说明有**新消息**到达或产生了**消息空洞**。
+由于 `SyncSeqId` 以会话为递增维度，客户端需在本地**为每个会话（单聊/群聊）各自维护**一份 `MaxLocalSyncSeqId` 游标。如果下行收到的 `MSG_NOTIFY` 携带的 `SyncSeqId` 大于其目标会话在本地的 `MaxLocalSyncSeqId`，则说明该会话有**新消息**到达或产生了**消息空洞**。
 
 - 由于 `SyncSeqId` 允许合法跳跃，客户端**无法猜测**中间缺失了哪些 ID。
 - 客户端**绝不能**直接在界面渲染伪造的消息空壳。
-- 它必须暂存该唤醒通知，并立刻通过 **HTTP 短连接** 发起包含当前 `MaxLocalSyncSeqId` 的增量同步请求。
-- `oceanchat-query` 服务将通过 HTTP 响应从数据库中查出所有严格大于该 ID 的增量消息并返回。随后客户端将本地 `MaxLocalSyncSeqId` 游标更新为最新收到的值，并渲染真实消息。
+- 它必须暂存该唤醒通知，并立刻通过 **HTTP 短连接** 发起包含目标会话 ID 及该会话当前 `MaxLocalSyncSeqId` 的增量同步请求（如 `GET /api/v1/messages/sync?groupId={会话ID}&seqId={MaxLocalSyncSeqId}`）。
+- `oceanchat-query` 服务将通过 HTTP 响应从数据库中查出该会话内所有严格大于该 ID 的增量消息并返回。随后客户端将该会话本地的 `MaxLocalSyncSeqId` 游标更新为最新收到的值，并渲染真实消息。
 
 ### 6.4 全局异常处理 (EXCEPTION_ACK)
 

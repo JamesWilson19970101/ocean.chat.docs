@@ -74,15 +74,15 @@ import TabItem from '@theme/TabItem';
 
 当移动操作系统接收到 APNs/FCM 有效载荷并唤醒应用时，执行以下拉取流程：
 
-1. 客户端从本地存储读取其 `MaxLocalSyncSeqId`。
+1. 客户端从本地存储读取目标会话（推送通知中携带的群/单聊 ID）的 `MaxLocalSyncSeqId` 游标（`SyncSeqId` 以会话为递增维度，游标按会话独立维护）。
 2. 客户端通过调用 API 网关发起 HTTP Sync 同步请求：
 
 ```http title="HTTP Sync Request"
-GET /api/v1/messages/sync?seqId={MaxLocalSyncSeqId}
+GET /api/v1/messages/sync?groupId={会话ID}&seqId={MaxLocalSyncSeqId}
 ```
 
-3. oceanchat-query 数据查询服务从 MongoDB 中获取所有严格大于所提供 ID 的增量消息并返回。
-4. 客户端处理该批次数据，使用 ClientMsgId 静默丢弃任何重复项，然后更新本地的 MaxLocalSyncSeqId。
+3. oceanchat-query 数据查询服务从 MongoDB 中获取该会话内所有严格大于所提供 ID 的增量消息并返回。
+4. 客户端处理该批次数据，使用 ClientMsgId 静默丢弃任何重复项，然后更新该会话本地的 MaxLocalSyncSeqId。
 
 :::warning 必须进行客户端去重
 务必在客户端使用 ClientMsgId 执行去重操作，以安全处理 NATS “至少投递一次”（At-Least-Once）语义导致同步批次数据重叠的边缘情况。
@@ -108,6 +108,6 @@ sequenceDiagram
     V-->>W: 200 OK
     W-->>N: 显式 ACK
     V->>C: 唤醒通知
-    C->>Q: GET /api/v1/messages/sync?seqId=1000
+    C->>Q: GET /api/v1/messages/sync?groupId=G1&seqId=1000
     Q-->>C: 返回增量消息
 ```

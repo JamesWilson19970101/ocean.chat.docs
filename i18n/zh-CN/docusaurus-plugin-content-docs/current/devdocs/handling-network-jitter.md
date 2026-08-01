@@ -31,7 +31,7 @@ import TabItem from '@theme/TabItem';
 
 1. **断线感知：** 客户端的非对称心跳机制（35秒兜底定时器）感知到死链，触发底层的断开与重连逻辑。
 2. **建连即同步：** 一旦 WebSocket 重新建立并成功完成 `AUTH_REQ` 鉴权，客户端**必须立即**发起一次 HTTP Sync 同步请求，无论此时是否收到了新的 `MSG_NOTIFY`。
-3. **拉取缺失数据：** 携带本地的 `MaxLocalSyncSeqId` 请求 `oceanchat-query` 服务：`GET /api/v1/messages/sync?seqId={MaxLocalSyncSeqId}`。
+3. **拉取缺失数据：** 由于 `SyncSeqId` 以会话为递增维度，客户端需携带**各个活跃会话**在本地的 `MaxLocalSyncSeqId` 游标进行兜底同步：可批量上报全部会话游标（服务端返回各会话的增量），或对单个会话发起 `GET /api/v1/messages/sync?groupId={会话ID}&seqId={MaxLocalSyncSeqId}`。
 4. **结果：** 在断网期间错过的任何唤醒信令所对应的消息实体，都会在这次兜底同步中被安全拉回。
 
 ## 场景二：HTTP Sync 拉取请求失败
@@ -42,7 +42,7 @@ import TabItem from '@theme/TabItem';
 
 如果 HTTP 拉取失败，客户端决不能直接丢弃该通知。
 
-1. **防抖与挂起：** 当 `MSG_NOTIFY` 到达时，提取 `SyncSeqId`。如果它大于 `MaxLocalSyncSeqId`，将其存入内存的“待同步 (Pending Sync)”变量中。
+1. **防抖与挂起：** 当 `MSG_NOTIFY` 到达时，提取其中的会话 ID 与 `SyncSeqId`。如果它大于该会话本地的 `MaxLocalSyncSeqId`，将其存入内存中**按会话维护**的“待同步 (Pending Sync)”变量中。
 2. **执行 HTTP 同步：** 尝试发起 HTTP 请求。
 3. **处理失败：** 如果 HTTP 请求报错，保留目标 `SyncSeqId`。使用**指数退避 (Exponential Backoff)** 算法（如 1s, 2s, 4s, 8s）触发重试。
 4. **信令合并：** 如果在等待重试的期间，又收到了新的 `MSG_NOTIFY`，只需将“待同步”变量更新为收到的最大 `SyncSeqId` 即可。下一次 HTTP 拉取将会把到最新进度为止的所有缺失消息一并拿回。

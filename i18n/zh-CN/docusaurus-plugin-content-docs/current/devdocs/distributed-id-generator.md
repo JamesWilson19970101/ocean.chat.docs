@@ -2,7 +2,7 @@
 id: distributed-id-generator
 title: 分布式 ID 生成策略 (SeqSvr)
 sidebar_position: 2
-description: 详细解释 Ocean Chat 如何借鉴微信 seqsvr 的“号段模式”架构，生成支撑推拉结合模型的全局唯一且严格单调递增的序列号 (SyncSeqId)。
+description: 详细解释 Ocean Chat 如何借鉴微信 seqsvr 的“号段模式”架构，生成支撑推拉结合模型的、在单一会话维度内严格单调递增的序列号 (SyncSeqId)。
 keywords:
   [ocean chat, 分布式 id, seqsvr, 序列号, syncseqid, 号段模式, 架构, 微信]
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]

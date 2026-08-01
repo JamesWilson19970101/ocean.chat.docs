@@ -74,12 +74,12 @@ Ocean Chat 在协议设计中故意去掉了单条消息的下行 ACK（`MSG_DOW
 
 接收端客户端**必须**实现空洞检测 (Hole Detection)：
 
-1. 在本地存储中维护一个 `MaxLocalSyncSeqId` 变量。
-2. 在收到下行载荷时，将传来的 `SyncSeqId` 与本地的 `MaxLocalSyncSeqId` 进行比较。
-3. 如果传来的 ID 更大，说明出现了缺口或跳跃。
-4. **切勿猜测缺失的序号。** 应立即暂存该唤醒通知，并通过 **HTTP 短连接** 发起同步请求（附带当前的 `MaxLocalSyncSeqId`）。
-5. `oceanchat-query` 服务将通过 HTTP 响应精确返回缺失消息的增量数据。
-6. 渲染同步后的消息流，并更新 `MaxLocalSyncSeqId`。
+1. 在本地存储中**为每个会话（单聊/群聊）各自维护**一个 `MaxLocalSyncSeqId` 变量（`SyncSeqId` 以会话为递增维度，不同会话之间不可比较）。
+2. 在收到下行载荷时，将传来的 `SyncSeqId` 与其目标会话在本地的 `MaxLocalSyncSeqId` 进行比较。
+3. 如果传来的 ID 更大，说明该会话出现了缺口或跳跃。
+4. **切勿猜测缺失的序号。** 应立即暂存该唤醒通知，并通过 **HTTP 短连接** 发起同步请求（附带会话 ID 及该会话当前的 `MaxLocalSyncSeqId`）。
+5. `oceanchat-query` 服务将通过 HTTP 响应精确返回该会话内缺失消息的增量数据。
+6. 渲染同步后的消息流，并更新该会话的 `MaxLocalSyncSeqId`。
 
 :::info 在线通知的展示形式
 目前计划，**所有的在线通知都走应用内本地通知（如 App 内的自定义横幅或提示音）的方式来实现**。关于在“在线”状态下如何利用系统提供的消息通知栏进行提示，将在稍后重新规划。

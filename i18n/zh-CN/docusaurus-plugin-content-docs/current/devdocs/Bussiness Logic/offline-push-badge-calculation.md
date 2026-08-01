@@ -40,7 +40,7 @@ import TabItem from '@theme/TabItem';
 
 要计算未读数，前提是必须有一个高效的数据结构记录近期产生的所有群消息。在 Ocean Chat 中，这个职责由 `oceanchat-message` 服务（或专门的异步持久化 Worker）承担。
 
-当一条新群消息（例如在群组 `G1001` 中）成功被分配了全局递增的 `SyncSeqId`（如 `1065`）并越过 NATS 写屏障后，系统会立即在 Redis 中维护一个基于 ZSET 的“消息滑动窗口”：
+当一条新群消息（例如在群组 `G1001` 中）成功被分配了该会话内严格递增的 `SyncSeqId`（如 `1065`）并越过 NATS 写屏障后，系统会立即在 Redis 中维护一个基于 ZSET 的“消息滑动窗口”：
 
 ```redis title="维护群消息 ZSET 窗口"
 // 1. 将新消息的 SeqId 作为 Score 加入群组专属 ZSET

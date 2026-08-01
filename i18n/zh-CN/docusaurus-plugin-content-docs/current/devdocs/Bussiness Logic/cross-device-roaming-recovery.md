@@ -115,6 +115,6 @@ sequenceDiagram
     C->>C: 恢复未读红点与会话列表
 
     note over C: 4. 用户点开某群聊
-    C->>GW: GET /api/v1/messages/sync?seqId=1050
+    C->>GW: GET /api/v1/messages/sync?groupId=G1001&seqId=1050
     GW-->>C: 返回历史增量消息实体 (无缝衔接)
 ```

@@ -16,7 +16,7 @@ Ocean Chat 依赖于 NATS JetStream 预写日志 (WAL)、用于第三方 APNs/FC
 
 ## 第一步：通过 JetStream WAL 持久化消息
 
-当 `oceanchat-message` 服务处理上行消息 (`MSG_UP`) 时，它会分配一个全局单调递增的 `SyncSeqId`，并将消息写入 NATS JetStream 的 `im.orchestrate.msg` 主题。
+当 `oceanchat-message` 服务处理上行消息 (`MSG_UP`) 时，它会分配一个在该会话（特定单聊或群聊）维度内严格单调递增的 `SyncSeqId`，并将消息写入 NATS JetStream 的 `im.orchestrate.msg` 主题。
 
 Ocean Chat 通过**写后持久化 (Write-after-persistence)** 机制来实现离线可靠性。只要 NATS JetStream 返回了发布确认 (ACK)，消息即被视为安全存储。后台的 `MessagePersistence Worker` 会异步拉取这些消息并批量写入 MongoDB。这种架构将快速的客户端响应与缓慢的数据库落盘彻底解耦。
 
@@ -38,9 +38,9 @@ Ocean Chat 通过**写后持久化 (Write-after-persistence)** 机制来实现�
 
 相反，客户端必须执行**主动拉取 (Pull)** 策略来修补消息空洞：
 
-1. 客户端检查本地存储（如 SQLite/IndexDB）中保存的 `MaxLocalSyncSeqId`。
-2. 客户端通过 **HTTP 短连接** 向 API 网关发送包含此 ID 的同步请求（例如 `GET /api/v1/messages/sync?seqId={MaxLocalSyncSeqId}`）。
-3. `oceanchat-query` 数据查询服务接收 HTTP 请求，并从数据库 (MongoDB) 中查出所有严格大于该 `MaxLocalSyncSeqId` 的消息。
+1. 客户端检查本地存储（如 SQLite/IndexDB）中**各个会话**保存的 `MaxLocalSyncSeqId` 游标（`SyncSeqId` 以会话为递增维度）。
+2. 客户端通过 **HTTP 短连接** 向 API 网关发送携带会话 ID 及对应游标的同步请求（例如 `GET /api/v1/messages/sync?groupId={会话ID}&seqId={MaxLocalSyncSeqId}`；被推送唤醒时优先同步通知所指向的会话，亦可批量上报全部会话游标一次性同步）。
+3. `oceanchat-query` 数据查询服务接收 HTTP 请求，并从数据库 (MongoDB) 中查出对应会话内所有严格大于该 `MaxLocalSyncSeqId` 的消息。
 4. 服务器通过 HTTP 响应将缺失的消息数组返回给客户端。
 
 :::warning 分页拉取
@@ -55,7 +55,7 @@ Ocean Chat 通过**写后持久化 (Write-after-persistence)** 机制来实现�
 
 1. 在解析 HTTP 响应载荷时，提取每条消息中的 `ClientMsgId`。
 2. 查询本地设备数据库。如果发现具有相同 `ClientMsgId` 的消息已经存在，则静默丢弃该重复项。
-3. 只有在整个批次的消息都成功持久化到本地之后，才更新本地的 `MaxLocalSyncSeqId` 游标。
+3. 只有在整个批次的消息都成功持久化到本地之后，才更新对应会话本地的 `MaxLocalSyncSeqId` 游标。
 
 ## 预期结果
 

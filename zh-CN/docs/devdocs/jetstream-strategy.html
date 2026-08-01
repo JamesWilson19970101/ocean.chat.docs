@@ -5,7 +5,7 @@
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">消息队列拓扑与消费策略 | Oceanchat</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:url" content="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><meta data-rh="true" property="og:locale" content="zh_CN"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="zh-CN"><meta data-rh="true" name="docsearch:language" content="zh-CN"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。"><meta data-rh="true" name="keywords" content="ocean chat,nats,jetstream,消息队列,架构,高并发,发布订阅,推拉结合"><meta data-rh="true" property="og:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:image" content="https://www.shutterstock.com/search/seo-cover"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:title" content="JetStream 拓扑与消费策略 | Ocean Chat"><meta data-rh="true" property="og:description" content="Ocean Chat NATS JetStream 拓扑、主题命名空间及分布式消费策略详解，支持十万级并发连接。"><link data-rh="true" rel="icon" href="/ocean.chat.docs/zh-CN/img/favicon.ico"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="en"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy" hreflang="zh-CN"><link data-rh="true" rel="alternate" href="https://JamesWilson19970101.github.io/ocean.chat.docs/docs/devdocs/jetstream-strategy" hreflang="x-default"><link data-rh="true" rel="canonical" href="https://jameswilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"开发者文档","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/category/devdocs"},{"@type":"ListItem","position":2,"name":"消息队列拓扑与消费策略","item":"https://JamesWilson19970101.github.io/ocean.chat.docs/zh-CN/docs/devdocs/jetstream-strategy"}]}</script><link rel="alternate" type="application/rss+xml" href="/ocean.chat.docs/zh-CN/blog/rss.xml" title="Oceanchat RSS Feed">
 <link rel="alternate" type="application/atom+xml" href="/ocean.chat.docs/zh-CN/blog/atom.xml" title="Oceanchat Atom Feed"><link rel="stylesheet" href="/ocean.chat.docs/zh-CN/assets/css/styles.acf41fcf.css">
-<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.5bdfd2ae.js" defer="defer"></script>
+<script src="/ocean.chat.docs/zh-CN/assets/js/runtime~main.cd7c72c1.js" defer="defer"></script>
 <script src="/ocean.chat.docs/zh-CN/assets/js/main.394c3b40.js" defer="defer"></script>
 </head>
 <body>
@@ -160,7 +160,12 @@
 <ul>
 <li class="">目前专用于 JWT 令牌的黑名单撤销同步 (<code>auth.jwt.revoke</code>)。</li>
 <li class="">当发生用户主动登出、后台检测到 Refresh Token 遭到重放攻击（Replay Attack），或者正常的刷新令牌轮换导致旧 Access Token 必须立即失效时，Auth 服务会向此流发布撤销指令。</li>
-<li class="">API Gateway 是其主要消费者。Gateway 采用“零 I/O (Zero-I/O) 认证”架构，它不再针对每个请求去查询 Redis，而是通过订阅此流在内存中构建和维护一个本地黑名单（<code>TokenBlacklistService</code>）。</li>
+<li class="">两类网关均为其消费者，各自采用“零 I/O (Zero-I/O) 认证”架构，不再针对每个请求去查询 Redis，而是通过订阅此流在内存中构建和维护一个本地黑名单（<code>TokenBlacklistService</code>）：<!-- -->
+<ul>
+<li class=""><code>oceanchat-api-gateway</code>：拦截携带被撤销 <code>jti</code> 的 HTTP 请求。</li>
+<li class=""><code>oceanchat-ws-gateway</code>：除了在 <code>AUTH_REQ</code> 握手时校验黑名单外，还会反查在线连接池中持有该 <code>jti</code> 的活跃长连接（<code>ClientConnection</code> 中缓存了 <code>jti</code> 与 <code>exp</code>），主动下发 <code>401 Unauthorized</code> 断连通知并踢人下线。</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="">
@@ -209,14 +214,14 @@
 </ul>
 </li>
 <li class="">
-<p>消费者配置 (Consumer: <code>oceanchat-api-gateway</code> 服务)</p>
+<p>消费者配置 (Consumer: <code>oceanchat-api-gateway</code> / <code>oceanchat-ws-gateway</code> 服务)</p>
 <ul>
 <li class="">消费逻辑: <code>NatsEventsService extends BaseNatsSubscriber</code></li>
 <li class="">配置详情与原因:<!-- -->
 <ul>
 <li class="">durableName: undefined (临时消费者 / Ephemeral):<!-- -->
 <ul>
-<li class="">原因: API 网关需要的是广播模式 (Fan-out)。如果配置了 <code>durableName</code>，多个网关实例会形成负载均衡（互相抢消息），导致每个实例只拿到了一部分黑名单记录。不设 <code>durableName</code>，意味着每个网关实例都会建立一个独立的临时订阅，每个实例都能收到所有的撤销指令，从而在各自内存中维护完整的黑名单。</li>
+<li class="">原因: 网关需要的是广播模式 (Fan-out)。如果配置了 <code>durableName</code>，多个网关实例会形成负载均衡（互相抢消息），导致每个实例只拿到了一部分黑名单记录。不设 <code>durableName</code>，意味着每个网关实例都会建立一个独立的临时订阅，每个实例都能收到所有的撤销指令，从而在各自内存中维护完整的黑名单。</li>
 </ul>
 </li>
 <li class="">deliver_policy: <code>DeliverPolicy.All</code> (拉取全量历史):<!-- -->
@@ -432,7 +437,7 @@
 <ul>
 <li class=""><strong>职责</strong>: 处理用户在线/下线事件和连接心跳。</li>
 <li class=""><strong>保留策略</strong>: Limits（极短的时间限制，例如 max_age: 5m）。</li>
-<li class=""><strong>存储</strong>: 内存（瞬态数据）。SYS_PRESENCE 流承载的是海量的用户上下线事件和心跳包（如每 3 分钟一次）。这些数据具有极高的吞吐量，但持久化价值极低。如果将它们落盘（File 存储），会产生毫无意义的磁盘 I/O 消耗。即使 NATS 节点崩溃导致内存中的心跳数据丢失，也完全不会影响系统的最终一致性。因为 Redis 中维护的在线状态有 5 分钟的 TTL，心跳丢了，大不了等下一个 3 分钟的心跳包补上；如果用户真掉线了，Redis TTL 也会自动将其清理。</li>
+<li class=""><strong>存储</strong>: 内存（瞬态数据）。SYS_PRESENCE 流承载的是海量的用户上下线事件和心跳包（如每 3 分钟一次）。这些数据具有极高的吞吐量，但持久化价值极低。如果将它们落盘（File 存储），会产生毫无意义的磁盘 I/O 消耗。即使 NATS 节点崩溃导致内存中的心跳数据丢失，也完全不会影响系统的最终一致性。因为 Redis 中维护的在线状态有 5 分钟的 TTL，心跳丢了，大不了等下一个 3 分钟的心跳包补上；如果用户真掉线了，网关的连接层保活机制会在空闲 60 秒时切断死链并发出 <code>presence.conn.offline</code> 事件即时清理路由，即便该事件也丢失了，Redis TTL 仍会作为最后防线自动将其清理。</li>
 <li class=""><strong>策略</strong>: 带队列组的 Pull 消费者 (至少一次交付)。</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="主题-1-presenceconn-含-online-offline-heartbeat">主题 1: presence.conn.* (含 online, offline, heartbeat)<a href="#主题-1-presenceconn-含-online-offline-heartbeat" class="hash-link" aria-label="主题 1: presence.conn.* (含 online, offline, heartbeat)的直接链接" title="主题 1: presence.conn.* (含 online, offline, heartbeat)的直接链接" translate="no">​</a></h4>

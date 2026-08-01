@@ -85,7 +85,7 @@ export default function ProgressBubble() {
                 strokeDashoffset="75.3975"
               />
             </svg>
-            <span className={styles.percentage}>25%</span>
+            <span className={styles.percentage}>30%</span>
           </div>
           <span className={styles.bubbleText}>
             <Translate
@@ -130,7 +130,7 @@ export default function ProgressBubble() {
               >
                 Progress
               </Translate>{" "}
-              : 25%
+              : 30%
             </h2>
             <div className={styles.imagesGrid}>
               <div
@@ -144,6 +144,12 @@ export default function ProgressBubble() {
                 onClick={() => setZoomedImage("img/login.png")}
               >
                 <img src="img/login.png" alt="Login UI" />
+              </div>
+              <div
+                className={clsx(styles.imageWrapper, styles.clickableImage)}
+                onClick={() => setZoomedImage("img/settings.png")}
+              >
+                <img src="img/settings.png" alt="Chat UI" />
               </div>
             </div>
           </div>

@@ -77,7 +77,7 @@ message ExceptionAck {
 1. 客户端 SDK 将 Header 中的 `Version` 置为自己最优的版本（如 `0x02`）。
 2. 客户端发送 `[0x01] AUTH_REQ`，Payload 中 `supported_versions = [1, 2]`。
 3. `oceanchat-ws-gateway` 检查 Header 的 `Version` 为 `0x02`，且自身支持该版本。
-4. 网关调用 `oceanchat-auth` 鉴权成功，下发 `[0x02] AUTH_ACK`。
+4. 网关使用本地持有的 RS256 公钥完成 JWT 验签（Zero-I/O 鉴权），成功后下发 `[0x02] AUTH_ACK`。
 5. **结果**：协商成功，后续所有通信采用 `v2`。
 
 ### 场景 B：服务端触发平滑降级 (Smooth Downgrade)
@@ -114,7 +114,7 @@ message ExceptionAck {
 
 为了保证十万级并发下的性能，版本检查必须在**最高优先级（前置拦截器）**执行：
 
-1. **零 I/O 拦截**：如果网关检测到 Header 上的 `Version` 字节不被支持，**不应该**再发起任何 RPC 去调用 `oceanchat-auth` 进行 JWT 鉴权。网关可以直接组装 426 的 `EXCEPTION_ACK` 踢回给客户端并断开连接。这能有效防御旧版客户端发起的“鉴权风暴”。
+1. **最前置拦截**：如果网关检测到 Header 上的 `Version` 字节不被支持，**不应该**再执行后续的 JWT 本地验签与业务处理（RS256 验签虽然是 Zero-I/O 的纯本地运算，但在海量旧版客户端反复重连时依然是可观的 CPU 开销）。网关可以直接组装 426 的 `EXCEPTION_ACK` 踢回给客户端并断开连接。这能有效防御旧版客户端发起的“验签风暴”。
 2. **版本配置下发**：网关的 `server_supported_versions` 应当从环境变量或配置中心读取，方便运维在滚动升级期间进行灰度控制。
 
 ```typescript

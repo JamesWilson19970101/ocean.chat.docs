@@ -191,20 +191,24 @@ flowchart LR
   classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
   P[oceanchat-auth]:::service
-  C[oceanchat-api-gateway]:::gateway
+  C1[oceanchat-api-gateway]:::gateway
+  C2[oceanchat-ws-gateway]:::gateway
 
   subgraph Stream: AUTH_STATE
     SUB(auth.jwt.revoke):::subject
   end
 
   P -- 发布令牌撤销指令 --> SUB
-  SUB -- 临时全量拉取广播 (Fan-out) --> C
+  SUB -- 临时全量拉取广播 (Fan-out) --> C1
+  SUB -- 临时全量拉取广播 (Fan-out) --> C2
 ```
 
 - 核心职责: 用于在微服务之间高速广播全局关键的安全状态变更。
   - 目前专用于 JWT 令牌的黑名单撤销同步 (`auth.jwt.revoke`)。
   - 当发生用户主动登出、后台检测到 Refresh Token 遭到重放攻击（Replay Attack），或者正常的刷新令牌轮换导致旧 Access Token 必须立即失效时，Auth 服务会向此流发布撤销指令。
-  - API Gateway 是其主要消费者。Gateway 采用“零 I/O (Zero-I/O) 认证”架构，它不再针对每个请求去查询 Redis，而是通过订阅此流在内存中构建和维护一个本地黑名单（`TokenBlacklistService`）。
+  - 两类网关均为其消费者，各自采用“零 I/O (Zero-I/O) 认证”架构，不再针对每个请求去查询 Redis，而是通过订阅此流在内存中构建和维护一个本地黑名单（`TokenBlacklistService`）：
+    - `oceanchat-api-gateway`：拦截携带被撤销 `jti` 的 HTTP 请求。
+    - `oceanchat-ws-gateway`：除了在 `AUTH_REQ` 握手时校验黑名单外，还会反查在线连接池中持有该 `jti` 的活跃长连接（`ClientConnection` 中缓存了 `jti` 与 `exp`），主动下发 `401 Unauthorized` 断连通知并踢人下线。
 
 - 保留策略 (Retention Strategy): `RetentionPolicy.Limits` (基于限制的保留)。
   - 原因: 这是一个典型的广播（Broadcast / Fan-out）模式。如果有多个 API Gateway 实例，或者网关正在重启，每个实例都必须能够获取到这段时间内的撤销记录。如果使用 Workqueue 模式，一个网关读取了事件后事件就会消失，其他网关就收不到了。
@@ -230,11 +234,11 @@ flowchart LR
     - 异步 Fire-and-Forget (不等待执行结果):
       - 原因: 撤销指令的发布不应该阻塞当前 HTTP 响应的 RT（响应时间），采用异步抛出可以极大提高接口吞吐量。
 
-- 消费者配置 (Consumer: `oceanchat-api-gateway` 服务)
+- 消费者配置 (Consumer: `oceanchat-api-gateway` / `oceanchat-ws-gateway` 服务)
   - 消费逻辑: `NatsEventsService extends BaseNatsSubscriber`
   - 配置详情与原因:
     - durableName: undefined (临时消费者 / Ephemeral):
-      - 原因: API 网关需要的是广播模式 (Fan-out)。如果配置了 `durableName`，多个网关实例会形成负载均衡（互相抢消息），导致每个实例只拿到了一部分黑名单记录。不设 `durableName`，意味着每个网关实例都会建立一个独立的临时订阅，每个实例都能收到所有的撤销指令，从而在各自内存中维护完整的黑名单。
+      - 原因: 网关需要的是广播模式 (Fan-out)。如果配置了 `durableName`，多个网关实例会形成负载均衡（互相抢消息），导致每个实例只拿到了一部分黑名单记录。不设 `durableName`，意味着每个网关实例都会建立一个独立的临时订阅，每个实例都能收到所有的撤销指令，从而在各自内存中维护完整的黑名单。
     - deliver_policy: `DeliverPolicy.All` (拉取全量历史):
       - 原因: 临时消费者一旦断开重连，中间的消息就会丢失。为了解决冷启动/网络闪断问题，网关每次连接都会要求 NATS 把流里现存的所有消息（过去30分钟内的所有撤销记录）全部重新发一遍。这就完美实现了网关内存黑名单的快速重建。
     - Redis 分布式锁 `setnx(idempotencyKey, '1', 120)` (幂等处理):
@@ -411,7 +415,7 @@ flowchart LR
 
 - **职责**: 处理用户在线/下线事件和连接心跳。
 - **保留策略**: Limits（极短的时间限制，例如 max_age: 5m）。
-- **存储**: 内存（瞬态数据）。SYS_PRESENCE 流承载的是海量的用户上下线事件和心跳包（如每 3 分钟一次）。这些数据具有极高的吞吐量，但持久化价值极低。如果将它们落盘（File 存储），会产生毫无意义的磁盘 I/O 消耗。即使 NATS 节点崩溃导致内存中的心跳数据丢失，也完全不会影响系统的最终一致性。因为 Redis 中维护的在线状态有 5 分钟的 TTL，心跳丢了，大不了等下一个 3 分钟的心跳包补上；如果用户真掉线了，Redis TTL 也会自动将其清理。
+- **存储**: 内存（瞬态数据）。SYS_PRESENCE 流承载的是海量的用户上下线事件和心跳包（如每 3 分钟一次）。这些数据具有极高的吞吐量，但持久化价值极低。如果将它们落盘（File 存储），会产生毫无意义的磁盘 I/O 消耗。即使 NATS 节点崩溃导致内存中的心跳数据丢失，也完全不会影响系统的最终一致性。因为 Redis 中维护的在线状态有 5 分钟的 TTL，心跳丢了，大不了等下一个 3 分钟的心跳包补上；如果用户真掉线了，网关的连接层保活机制会在空闲 60 秒时切断死链并发出 `presence.conn.offline` 事件即时清理路由，即便该事件也丢失了，Redis TTL 仍会作为最后防线自动将其清理。
 - **策略**: 带队列组的 Pull 消费者 (至少一次交付)。
 
 #### 主题 1: presence.conn.\* (含 online, offline, heartbeat)

@@ -2,7 +2,17 @@
 id: 100k-concurrency-architecture
 title: Understanding How My System Supports 100k Concurrency
 description: An architectural explanation of the core pillars—from Zero-I/O authentication to NATS JetStream WAL—that allow Ocean Chat to scale to 100,000+ concurrent connections.
-keywords: [ocean chat, 100k concurrency, scale, architecture, nats jetstream, zero i/o, seqsvr, singleflight]
+keywords:
+  [
+    ocean chat,
+    100k concurrency,
+    scale,
+    architecture,
+    nats jetstream,
+    zero i/o,
+    seqsvr,
+    singleflight,
+  ]
 image: https://docs.oceanchat.com/img/social-card.png
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
@@ -10,9 +20,9 @@ tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Understanding How My System Supports 100k Concurrency
+# Why Ocean Chat Supports 100k Concurrency
 
-When I designed Ocean Chat, my primary engineering goal was to build a system capable of handling 100,000+ concurrent WebSocket connections efficiently. Traditional instant messaging architectures often break down under extreme concurrency due to compounding I/O bottlenecks. 
+When I designed Ocean Chat, my primary engineering goal was to build a system capable of handling 100,000+ concurrent WebSocket connections efficiently. Traditional instant messaging architectures often break down under extreme concurrency due to compounding I/O bottlenecks.
 
 This document explains the conceptual background and the interconnected architectural decisions that form the backbone of Ocean Chat's scalability.
 
@@ -31,11 +41,11 @@ To solve these, I completely abandoned traditional synchronous CRUD logic. Inste
 
 ## Core Concept: The Pillars of Concurrency
 
-My system relies on five distinct architectural pillars to eliminate the bottlenecks mentioned above. 
+My system relies on five distinct architectural pillars to eliminate the bottlenecks mentioned above.
 
 ### 1. Zero-I/O Authentication
 
-I eliminated the Redis lookup bottleneck by moving authentication entirely to CPU-bound cryptographic operations. 
+I eliminated the Redis lookup bottleneck by moving authentication entirely to CPU-bound cryptographic operations.
 
 My `oceanchat-api-gateway` uses **Zero-I/O Authentication**. It validates RS256 cryptographically signed access tokens strictly in local memory. Revocations (like a user logging out or a token being banned) are broadcasted via NATS JetStream and cached in a local LRU blacklist. By performing an $O(1)$ memory lookup, I guarantee that the gateway can authenticate thousands of requests per second without a single outbound network call to a database.
 
@@ -43,7 +53,7 @@ My `oceanchat-api-gateway` uses **Zero-I/O Authentication**. It validates RS256 
 
 I decoupled the fast client interaction from the slow database insertion.
 
-When a client sends a message (`MSG_UP`), the `oceanchat-message` service performs its checks and writes the payload to a highly available **NATS JetStream** stream (`im.orchestrate.msg`). 
+When a client sends a message (`MSG_UP`), the `oceanchat-message` service performs its checks and writes the payload to a highly available **NATS JetStream** stream (`im.orchestrate.msg`).
 
 :::tip The Write Fence
 NATS JetStream acts as my **Write-Ahead Log (WAL)**. The moment NATS returns an ACK, the system has crossed the write fence. I immediately return a success ACK to the client. The actual insertion into MongoDB happens asynchronously in the background via the `MessagePersistence Worker` using `bulkWrite`.
@@ -51,13 +61,13 @@ NATS JetStream acts as my **Write-Ahead Log (WAL)**. The moment NATS returns an 
 
 ### 3. Segment-Based ID Generation (SeqSvr)
 
-If I queried MongoDB to generate an auto-incrementing ID for every single message, the IOPS limits would crush the database. 
+If I queried MongoDB to generate an auto-incrementing ID for every single message, the IOPS limits would crush the database.
 
 I implemented a segment-based pre-allocation strategy inspired by WeChat's `seqsvr`. The message service fetches a block of IDs (e.g., a step of 10,000) from the database in a single transaction. It then distributes these IDs (`SyncSeqId`) purely from memory. This strategy slices the database write load for ID generation by **99.99%**.
 
 ### 4. Push-Pull Hybrid & Singleflight Defense
 
-Broadcasting heavy message payloads to thousands of users simultaneously destroys bandwidth. 
+Broadcasting heavy message payloads to thousands of users simultaneously destroys bandwidth.
 
 I implemented a **Push-Pull Hybrid** model. The server pushes a tiny, zero-payload `MSG_NOTIFY` signal containing only the `GroupId` and the latest `SyncSeqId`. Clients then pull the actual message entities via a standard HTTP endpoint.
 
@@ -79,7 +89,7 @@ sequenceDiagram
 
 ### 5. Queue Collapse & Asymmetric Heartbeats
 
-I heavily utilize NATS JetStream's `max_msgs_per_subject: 1` constraint. When calculating unread badge counts or syncing read cursors (`CURSOR_STATE`), NATS automatically discards older messages. Even if a user generates 50 read receipts in a second by scrolling fast, the queue collapses them into a single record. 
+I heavily utilize NATS JetStream's `max_msgs_per_subject: 1` constraint. When calculating unread badge counts or syncing read cursors (`CURSOR_STATE`), NATS automatically discards older messages. Even if a user generates 50 read receipts in a second by scrolling fast, the queue collapses them into a single record.
 
 Furthermore, I use an **Asymmetric Heartbeat** protocol. The server pings every 30 seconds, and the client serves as a fallback at 35 seconds. Combined with the rule that "any valid business packet resets the heartbeat timer," I eliminated up to 50% of the redundant ping/pong bandwidth overhead typical in WebSocket applications.
 

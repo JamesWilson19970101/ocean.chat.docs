@@ -43,7 +43,7 @@ Ocean Chat 认证系统通过采用 **集中式颁发者、去中心化验证者
 
 该架构分布在三个主要的微服务中：
 
-1. **`oceanchat-api-gateway` (网关层 - Layer 1):** 作为去中心化的验证者。它使用非对称公钥 (RS256)，完全利用本地 CPU 算力对 Access Token 进行密码学验证 (**Zero-I/O**)，不产生任何网络调用。
+1. **网关层 (`oceanchat-api-gateway` / `oceanchat-ws-gateway` - Layer 1):** 作为去中心化的验证者。无论是 HTTP 请求（API 网关）还是 WebSocket 长连接握手 `AUTH_REQ`（连接网关），都使用非对称公钥 (RS256)，完全利用本地 CPU 算力对 Access Token 进行密码学验证 (**Zero-I/O**)，不产生任何网络调用。
 2. **`oceanchat-auth` (认证层 - Layer 2):** 作为集中式颁发者和会话管理器。负责处理生成令牌、管理 Refresh Token 状态等复杂业务逻辑。
 3. **`oceanchat-user` (用户层 - Layer 2):** 作为用户数据和密码 Hash 的安全真实数据源 (Source of Truth)。
 
@@ -135,4 +135,4 @@ sequenceDiagram
 
 ## 总结
 
-通过严格的职责分离——将高频、无状态的验证工作下放给 `oceanchat-api-gateway`，将低频、有状态的会话管理交由 `oceanchat-auth` 服务负责——Ocean Chat 实现了一条高度安全的认证流水线，能够在不引发数据库 I/O 风暴的前提下，实现支撑十万级并发连接的水平扩展。
+通过严格的职责分离——将高频、无状态的验证工作下放给边缘网关（`oceanchat-api-gateway` 与 `oceanchat-ws-gateway`），将低频、有状态的签发与会话管理交由 `oceanchat-auth` 服务负责——Ocean Chat 实现了一条高度安全的认证流水线，能够在不引发数据库 I/O 风暴的前提下，实现支撑十万级并发连接的水平扩展。

@@ -2,7 +2,8 @@
 id: 100k-concurrency-architecture
 title: 程序层面分析十万级并发
 description: 深度解析 Ocean Chat 的核心架构支柱 -- 通过IO复合使用，节省响应时间。
-keywords: [ocean chat, 十万并发, 扩展性, 架构, nats jetstream, 零 i/o, 号段模式, 防击穿]
+keywords:
+  [ocean chat, 十万并发, 扩展性, 架构, nats jetstream, 零 i/o, 号段模式, 防击穿]
 image: https://docs.oceanchat.com/img/social-card.png
 tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 ---
@@ -12,7 +13,7 @@ tags: ["ocean-chat", "guide", "tutorial", "developer-docs"]
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# 理解我的系统为何能支撑十万级并发
+# Ocean Chat为何能支撑十万级并发
 
 当我设计 Ocean Chat 时，我的首要工程目标就是构建一个能够高效处理 100,000+ 并发 WebSocket 连接的系统。传统的即时通讯（IM）架构在极高的并发压力下，可能会因为不断复合的 I/O 瓶颈而彻底崩溃。
 
@@ -39,7 +40,7 @@ import TabItem from '@theme/TabItem';
 
 我将认证过程完全转变为纯 CPU 绑定的密码学运算，从而彻底消除了 Redis 查询瓶颈。
 
-我的 `oceanchat-api-gateway` 采用了 **零 I/O 认证**。它完全在本地内存中校验经过 RS256 密码学签名的 Access Token。令牌的撤销（例如用户登出或被封禁）通过 NATS JetStream 广播，并缓存在本地的 LRU 黑名单中。通过执行 $O(1)$ 的内存查找，我保证了网关每秒能够鉴权数以千计的请求，而无需向数据库发起任何一次出站网络调用。
+我的 `oceanchat-api-gateway`（HTTP 请求）与 `oceanchat-ws-gateway`（WebSocket 握手 `AUTH_REQ`）均采用了 **零 I/O 认证**。网关完全在本地内存中校验经过 RS256 密码学签名的 Access Token。令牌的撤销（例如用户登出或被封禁）通过 NATS JetStream 广播，并缓存在本地的 LRU 黑名单中。通过执行 $O(1)$ 的内存查找，我保证了网关每秒能够鉴权数以千计的请求，而无需向数据库发起任何一次出站网络调用。
 
 ### 2. 写后持久化 (NATS JetStream WAL)
 

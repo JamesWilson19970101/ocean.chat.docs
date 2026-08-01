@@ -42,7 +42,7 @@ Ocean Chat 的架构严格将网络 I/O 与业务逻辑隔离。本协议依赖�
 
 - **`oceanchat-ws-gateway`**: 绝对无状态。仅负责长连接生命周期、极简协议编解码、下行信令微批处理（Micro-batching）以及令牌桶限流。
 - **`oceanchat-api-gateway`**: 无状态 HTTP 网关。负责承接客户端 HTTP 请求（如增量数据拉取），提供限流与初步鉴权。
-- **`oceanchat-auth`**: 在初次建立连接握手时，负责校验 JWT。
+- **`oceanchat-auth`**: 作为唯一持有 RS256 私钥的令牌签发者。它**不参与**握手校验链路：网关在收到 `AUTH_REQ` 时，直接使用其分发的 RS256 公钥在本地完成 JWT 验签（Zero-I/O），并通过订阅 NATS 撤销事件维护内存黑名单。
 - **`oceanchat-presence`**: 管理 Redis 中的全局在线状态 (`UserId -> DeviceType -> Gateway IP`)。
 - **`oceanchat-router`**: 核心路由编排器，负责与 NATS JetStream 交互。
 - **`oceanchat-message`**: 负责生成全局唯一的 Sequence ID，并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
@@ -59,7 +59,7 @@ graph TD
     Gateway -->|Monkey Protocol WS/TCP| Client
 
     subgraph 微服务集群
-        Gateway -->|认证请求| Auth[oceanchat-auth]
+        Auth[oceanchat-auth] -.->|分发 RS256 公钥 / 广播令牌撤销事件| Gateway
         Gateway -->|NATS JetStream 交互| Router[oceanchat-router]
         Router -->|NATS JetStream 交互| Gateway
 
@@ -174,7 +174,7 @@ Ocean Chat 摒弃了传统的“双向定时 PING/PONG”策略，采用**非对
 - **分层令牌桶限流：**
   - **连接层 (网关执行)：** 网关层基于单条物理连接限制总体请求速率上限（防恶意刷包，如 20次/秒）。违规数据包将被立即丢弃。
   - **业务层 (路由执行)：** 路由层在解码后，基于 `UserId` 执行更高维度的业务限流（如限制用户每秒 100 条业务消息），以防止分布式协同攻击，拦截时可返回业务错误码。
-- **指数退避重连：** 当网络异常断开时，客户端**严禁**立即疯狂重连。必须实施带随机抖动的指数退避（Exponential Backoff，如 1s, 2s, 4s, 8s），以防止产生瞬间压垮 `oceanchat-auth` 的认证风暴。
+- **指数退避重连：** 当网络异常断开时，客户端**严禁**立即疯狂重连。必须实施带随机抖动的指数退避（Exponential Backoff，如 1s, 2s, 4s, 8s）。虽然 JWT 验签是网关本地的纯 CPU 运算（Zero-I/O），但十万级客户端瞬间重连仍会带来海量的 TCP/TLS 握手与 RS256 验签算力开销，足以压垮网关集群。
 
 ### 4.4 平滑版本协商 (Smooth Version Negotiation)
 

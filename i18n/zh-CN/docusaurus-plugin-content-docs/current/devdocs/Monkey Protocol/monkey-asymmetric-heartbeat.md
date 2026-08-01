@@ -7,6 +7,11 @@ sidebar_position: 2
 tags: ["ocean-chat", "specification", "architecture", "websocket"]
 ---
 
+> 参考文章
+>
+> - [微信智能心跳方案](https://mp.weixin.qq.com/s/ghnmC8709DvnhieQhkLJpA)
+> - [ddp 源码](https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md)
+
 # 非对称时间差心跳与保活设计
 
 在构建支撑十万级并发连接的 IM 平台（Ocean Chat）时，如何高效、低成本地维持 `oceanchat-ws-gateway` 与海量客户端之间的长连接存活状态，是一个极其关键的底层挑战。
@@ -114,7 +119,7 @@ _说明：当收到任何消息刷新 `lastActiveTime` 时，同时将 `pingSent
 
 当客户端通过超时机制（超过 60 秒未收到服务端任何数据）检测到死链，或收到 `[0x0C] EXCEPTION_ACK` 异常断线后：
 
-- **禁止立刻重连**：必须带有随机抖动的指数退避逻辑（如 `Math.random() * (2^retryCount * 1000)`，最大上限 30 秒）。防止服务器发生网络闪断时，十万级客户端瞬间发起重连，形成“雷群效应”压垮 `oceanchat-auth`。
+- **禁止立刻重连**：必须带有随机抖动的指数退避逻辑（如 `Math.random() * (2^retryCount * 1000)`，最大上限 30 秒）。防止服务器发生网络闪断时，十万级客户端瞬间发起重连，形成“雷群效应”——海量并发的 TCP/TLS 握手与 `AUTH_REQ` 本地验签（RS256 为 CPU 密集型运算）会瞬间打满 `oceanchat-ws-gateway` 集群的算力。
 
 ### 5.2 飞行中队列 (In-Flight Queue) 自动重放
 

@@ -289,7 +289,7 @@ sequenceDiagram
 ## 7. 多端漫游同步
 
 - **未读数降维打击 (ZSET)：** Ocean Chat 规避了所有在 MongoDB 中执行的 `SELECT COUNT` 操作。`oceanchat-presence` 服务在 Redis 中为每个群维护一个存储了近期 500 条消息 ID 的有序集合 (ZSET)。通过将用户的 `LastReadSeqID` 传入 `ZCOUNT` 命令，系统可在 O(log(N)) 复杂度下极速算出精确的未读数。
-- **已读回执广播：** 当用户在 PC 端阅读消息并发出了 `[0x0B] READ_RECEIPT` 信令后，该信令将经由 NATS 总线，根据设备类型 (`DeviceType`) 路由并广播至该用户当前活跃的所有移动端网关连接，实现跨设备的未读红点瞬间消除。
+- **已读回执广播：** 当用户在任一端阅读消息并发出 `[0x0B] READ_RECEIPT` 后，`oceanchat-ws-gateway` 仅做透传；由 `oceanchat-router` 发布至 `CURSOR_STATE`（异步落盘）并并行广播到 `DEVICE_SYNC`，再由持有该用户连接的网关实例静默下发，实现跨设备未读红点瞬间消除。
 
 ## 8. 富媒体与文件传输架构 (长短链协同)
 

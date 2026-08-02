@@ -363,7 +363,7 @@ flowchart LR
 ```
 
 - **核心职责**: 作为极高频的已读/接收游标（ACK/Read Cursor）的**异步写缓冲 (Write-behind Cache)**，保护底层数据库（MongoDB）和缓存层（Redis）免受“确认风暴”导致的 IOPS 过载。
-  - 在大群聊或极度活跃的单聊中，客户端拉取消息后会高频发送 `[0x0B] READ_RECEIPT` 确认信令。网关/路由仅将这些状态变更投递到此流，彻底实现网关层的零 I/O 阻塞。
+  - 在大群聊或极度活跃的单聊中，客户端拉取消息后会高频发送 `[0x0B] READ_RECEIPT` 确认信令。`oceanchat-ws-gateway` **只做透传**，由 `oceanchat-router` 将这些状态变更投递到此流，彻底实现网关层的零 I/O 阻塞。
   - 持久化工作单元（Worker）在后台以批量模式消费，将最终去重折叠后的游标状态统一同步至 Redis 并落盘到 MongoDB。
 
 - **保留策略 (Retention Strategy)**: `RetentionPolicy.Limits` (基于限制的保留)。
@@ -382,8 +382,8 @@ flowchart LR
 
 职责描述: 接收与合并特定用户在特定会话（群组/单聊）的最新游标状态。
 
-- 生产者配置 (Producer: `oceanchat-router` 或 `oceanchat-api-gateway`)
-  - 发布逻辑: 接收到客户端的 ACK/Read 信令后，**不进行任何同步数据库或 Redis 操作**，直接将 Payload（如 `{"seqId": 1005}`）异步发布至精确的通配符主题。
+- 生产者配置 (Producer: `oceanchat-router`)
+  - 发布逻辑: 接收来自 `oceanchat-ws-gateway` 透传的 `[0x0B] READ_RECEIPT` 信令后，**不进行任何同步数据库或 Redis 操作**，直接将 Payload（如 `{"seqId": 1005}`）异步发布至精确的通配符主题。网关本身**绝不**直接向本流发消息。
   - 配置详情与原因:
     - **高度具粒度的主题**: 必须把 `groupId` 和 `userId` 都写进主题名称里（如 `cursor.read.G1.U1`）。这是 `max_msgs_per_subject: 1` 能够精确执行“只为 U1 保留在 G1 的最新一条记录”的大前提。
 

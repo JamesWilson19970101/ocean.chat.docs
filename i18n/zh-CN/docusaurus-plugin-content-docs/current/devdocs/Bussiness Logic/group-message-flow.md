@@ -177,13 +177,15 @@ sequenceDiagram
     autonumber
     participant Receiver as 客户端 B
     participant WSG as WS 网关
+    participant Router as oceanchat-router
     participant NATS as NATS (CURSOR_STATE)
     participant Worker as MessagePersistence Worker
     participant Redis as Redis缓存
     participant MongoDB as MongoDB
-    note over Receiver, WSG: 游标异步确认 (Zero-I/O)
+    note over Receiver, WSG: 游标异步确认 (网关零 I/O 透传)
     Receiver->>WSG: WebSocket 发送 [0x0B] READ_RECEIPT
-    WSG->>NATS: 异步发布至 cursor.read.G1.U1
+    WSG->>Router: 透传原始载荷 (不做任何查写)
+    Router->>NATS: 异步发布至 cursor.read.G1.U1
     note over NATS, Worker: 队列级折叠防写风暴 (MaxMsgsPerSubject=1)
     Worker->>NATS: 批量 Pull 拉取精简去重后的游标状态
     Worker->>Redis: Pipeline 批量更新 Redis 游标缓存
@@ -192,10 +194,11 @@ sequenceDiagram
 
 ### 关键机制：
 
-驱动“未读红点”与业务闭环 (业务价值)： 持久化 Worker 更新游标不仅为计算离线推送的角标（Badge）数提供精确依据，还会联动后端的 DEVICE_SYNC（设备同步流），实时通知该用户同时在线的 PC 端或 iPad 端瞬间清除对应的群未读红点。
+驱动“未读红点”与业务闭环 (业务价值)： 持久化 Worker 负责将折叠后的游标双写落盘，为离线推送角标（Badge）计算提供精确依据。与此同时，**`oceanchat-router` 在发布 `CURSOR_STATE` 时并行向 `DEVICE_SYNC` 广播跨端同步事件**，实时通知该用户同时在线的 PC 端或 iPad 端瞬间清除对应的群未读红点（详见《跨端已读回执同步》）。
 
-- **极致异步与网关零 I/O：** 网关收到 READ_RECEIPT 后，不直接进行任何查写操作，而是极速抛入 NATS CURSOR_STATE 流。
-- **底层队列自动折叠：** 该流利用 MaxMsgsPerSubject=1 机制。如果一个用户在群内不断滑动屏幕，产生大量回执，NATS 会自动剔除旧游标，仅保留其在当前群内的最新 lastReadSeqId，从源头消灭冗余数据。
+- **网关零 I/O 透传：** 网关收到 `READ_RECEIPT` 后，**仅解包透传**给 `oceanchat-router`，绝不直接查写 Redis / MongoDB，也不直接写入 `CURSOR_STATE`。
+- **Router 发布与双轨分流：** `oceanchat-router` 将游标事件发布到 `CURSOR_STATE`（`cursor.read.{groupId}.{userId}`）供 Worker 异步落盘，并同步向 `DEVICE_SYNC` 广播，触发多端红点消除。
+- **底层队列自动折叠：** `CURSOR_STATE` 流利用 `MaxMsgsPerSubject=1` 机制。如果一个用户在群内不断滑动屏幕，产生大量回执，NATS 会自动剔除旧游标，仅保留其在当前群内的最新 `lastReadSeqId`，从源头消灭冗余数据。
 - **批量双写落盘：** 后台 Worker 批量拉取这批折叠后的精简状态，利用 Redis Pipeline 和 MongoDB BulkWrite 完成游标更新，彻底保护了数据库 IOPS 性能。
 
 :::tip 核心总结

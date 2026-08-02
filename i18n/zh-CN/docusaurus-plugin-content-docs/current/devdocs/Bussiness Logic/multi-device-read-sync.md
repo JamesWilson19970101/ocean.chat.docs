@@ -31,8 +31,8 @@ import TabItem from '@theme/TabItem';
 
 <Tabs>
   <TabItem value="services" label="必需的微服务" default>
-    1. 连接网关 (oceanchat-ws-gateway)：负责处理 WebSocket 长连接，接收 `[0x0B] READ_RECEIPT` 指令并将其静默下发至电脑端。
-    2. 路由服务 (oceanchat-router)：接收网关透传的信令，将其路由发布至 `CURSOR_STATE` 流，并触发跨端 `DEVICE_SYNC` 同步。
+    1. 连接网关 (oceanchat-ws-gateway)：负责处理 WebSocket 长连接；上行侧仅接收 `[0x0B] READ_RECEIPT` 并**透传**给路由服务（零 I/O）；下行侧订阅 `DEVICE_SYNC`，将跨端清除指令静默推送给本机连接的客户端。
+    2. 路由服务 (oceanchat-router)：接收网关透传的信令，将其发布至 `CURSOR_STATE` 流，并并行触发跨端 `DEVICE_SYNC` 同步。
     3. 状态服务 (oceanchat-presence)：基于 Redis。在用户拉取未读数时，通过执行 ZSET 的 `ZCOUNT` 命令提供计算支持。
     4. 持久化管道 (MessagePersistence Worker)：后台工作单元。负责批量拉取被折叠的游标，利用 Redis Pipeline 和 MongoDB BulkWrite 完成游标双写。
   </TabItem>

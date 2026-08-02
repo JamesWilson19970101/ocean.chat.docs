@@ -66,8 +66,12 @@ import TabItem from '@theme/TabItem';
 如果发现在特定的 `gateway_node_uuid` 上有活跃会话，则触发实时通知路径：
 
 1.  **信令派发**：编排服务向 `im.down.node.{gateway_node_uuid}` 主题发布一个轻量级的 `MSG_NOTIFY` 信号。
-2.  **WebSocket 推送**：`oceanchat-pusher-realtime` 服务将信令路由到持有该连接的精准 `oceanchat-ws-gateway` 实例。网关向客户端推送仅包含 `SyncSeqId` 的二进制 `MSG_NOTIFY` 包。
-3.  **HTTP Sync (拉取)**：客户端收到通知后，**不应**立即拉取，而是需实现一个 **200ms 的智能防抖 (Debounce) 窗口**。如果在此期间连续收到多个通知，客户端仅需提取其中最大的 `SyncSeqId`，向 `oceanchat-query` 服务发起一次 **HTTP Sync** 请求，以批量增量拉取实际的消息负载。
+2.  **网关折叠后下发**：`oceanchat-pusher-realtime` 将信令路由到持有该连接的精准 `oceanchat-ws-gateway` 实例。网关**不会立刻逐条下发**：同一用户、同一会话在 **200ms** 窗口内到达的多条通知，会在连接级折叠池中合并，最终只向客户端推送携带**最大 `SyncSeqId`** 的那一个二进制 `MSG_NOTIFY`（详见协议规范「通知折叠与微批处理」）。
+3.  **HTTP Sync (拉取)**：客户端收到折叠后的 `MSG_NOTIFY` 后，携带目标会话 ID 与本地 `MaxLocalSyncSeqId`，向 `oceanchat-query` 发起一次 **HTTP Sync**，即可批量拉取该窗口内的全部增量消息实体。
+
+:::tip 折叠放在服务端
+`MSG_NOTIFY` 的 200ms 折叠职责由 `oceanchat-ws-gateway` 承担，客户端**无需**再为在线唤醒信令实现同窗口防抖。端侧只需在收到通知后发起（或按会话合并进行中的）HTTP Sync；弱网下 HTTP 失败时的重试合并见《如何处理推拉结合模型中的网络抖动》。
+:::
 
 :::tip 为什么使用推拉结合？
 通过只推送极小的唤醒信令并让客户端通过 HTTP 拉取重型负载，系统避免了 WebSocket 上的“队头阻塞 (Head-of-Line Blocking)”，并能充分利用标准的 HTTP 缓存与负载均衡机制。
@@ -107,7 +111,8 @@ sequenceDiagram
     alt 用户在线
         O->>R: 向节点主题发布 MSG_NOTIFY
         R->>G: 转发至特定网关实例
-        G->>C: 二进制推送 [0x08] MSG_NOTIFY
+        note right of G: 200ms 连接级折叠<br/>同会话仅下发最大 SyncSeqId
+        G->>C: 二进制推送 [0x08] MSG_NOTIFY（已折叠）
         C->>C: 触发 HTTP Sync 拉取
     else 用户离线
         O->>N: 向 push.offline.> 发布任务

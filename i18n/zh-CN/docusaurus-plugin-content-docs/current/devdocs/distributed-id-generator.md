@@ -34,7 +34,11 @@ Ocean Chat 通过将职责严格拆分给两种截然不同的 ID 来解决这�
 - **`ClientMsgId` (专职唯一性)：** 由**客户端**在用户点击“发送”按钮的瞬间生成的一个标准 UUID。它专属用于服务端和客户端在应对网络重试时的静默去重（幂等性）。
 - **`SyncSeqId` (专职时序与同步)：** 由**服务端**（`oceanchat-message` 服务）生成的一个 64 位整型数字。它**在单一会话（某个特定单聊或某个特定群聊）的维度内，是严格单调递增的**。
 
-正因为 `SyncSeqId` 是严格递增的（例如 100, 101, 102...），客户端才能够执行纯粹的数学空洞检测。如果客户端本地的最大 ID 是 100，而它收到了一个 ID 为 105 的唤醒信令，它就能在数学上绝对证明：101、102、103 和 104 这四条消息在网络传输中丢失了，必须发起 HTTP 请求将它们拉回来。
+正因为 `SyncSeqId` 在会话内是**严格单调递增**的，客户端才能做空洞检测：本地游标是 `100`，收到唤醒信令携带 `105`，就说明该会话可能有未同步的增量，必须发起 HTTP Sync 拉取所有严格大于 `100` 的消息。
+
+:::warning 只保证递增，不保证连续
+由于号段预分配在节点宕机时会故意浪费未用完的 ID，`SyncSeqId` **允许合法跳跃**（例如从 `1002` 直接到 `2001`）。客户端**严禁**假设 ID 连续（`+1`），也**无法猜测**中间“缺了”哪些序号——空洞检测只回答“是否需要同步”，真正缺了什么一律由 HTTP Sync 的查询结果决定。
+:::
 
 ---
 
@@ -48,9 +52,9 @@ Ocean Chat 采用了**号段模式 (Segment-based pre-allocation)** 策略。
 
 `oceanchat-message` 服务不再为每一条消息向数据库索要 ID，而是向数据库一次性申请一整个 **号段（Segment）** 的 ID（例如 `step = 10,000`）。
 
-1. **内存分配：** 微服务在本地内存中为该会话维护两个变量：`cur_seq` (当前已发放的序列号) 和 `max_seq` (预分配号段的上限上限)。
+1. **内存分配：** 微服务在**本地内存**中为该会话维护两个变量：`cur_seq`（当前已发放的序列号）和 `max_seq`（预分配号段的上限）。
 2. **极速发放：** 当收到一条新消息时，微服务仅仅在内存中执行 `cur_seq++`，然后将这个值作为 `SyncSeqId` 返回。这个操作耗时仅为纳秒级，且**没有任何网络 I/O 阻塞**。
-3. **mongodb 数据库交互 (慢路径)：** 只有当 Redis 中的 `cur_seq == max_seq`（号段耗尽）时，微服务才会发起一次网络请求，要求 mongodb 将持久化的游标向前推进 10,000。数据库返回新的上限后，微服务更新内存中的 `max_seq`，继续毫秒级发放。
+3. **MongoDB 交互（慢路径）：** 只有当内存中的 `cur_seq == max_seq`（号段耗尽）时，微服务才会发起一次网络请求，要求 MongoDB 将持久化的游标向前推进 `10,000`。数据库返回新的上限后，微服务更新内存中的 `max_seq`，继续纳秒级发放。
 
 ```mermaid
 sequenceDiagram
@@ -59,20 +63,20 @@ sequenceDiagram
 
     note over MsgService: 内存初始: cur_seq=0, max_seq=0
 
-    MsgService->>DB: 申请新号段 (step=1000)
-    DB-->>MsgService: 返回新上限 max_seq=1000
-    note over MsgService: 内存更新: cur_seq=0, max_seq=1000
+    MsgService->>DB: 申请新号段 (step=10000)
+    DB-->>MsgService: 返回新上限 max_seq=10000
+    note over MsgService: 内存更新: cur_seq=0, max_seq=10000
 
     MsgService->>MsgService: 收到消息 1 -> 内存分配 1
     MsgService->>MsgService: 收到消息 2 -> 内存分配 2
-    note right of MsgService: ...接下来的 997 条消息零网络 I/O...
-    MsgService->>MsgService: 收到消息 1000 -> 内存分配 1000
+    note right of MsgService: ...接下来的 9997 条消息零网络 I/O...
+    MsgService->>MsgService: 收到消息 10000 -> 内存分配 10000
 
     note over MsgService: 号段耗尽 (cur_seq == max_seq)
 
-    MsgService->>DB: 申请新号段 (step=1000)
-    DB-->>MsgService: 返回新上限 max_seq=2000
-    note over MsgService: 内存更新: cur_seq=1000, max_seq=2000
+    MsgService->>DB: 申请新号段 (step=10000)
+    DB-->>MsgService: 返回新上限 max_seq=20000
+    note over MsgService: 内存更新: cur_seq=10000, max_seq=20000
 ```
 
 :::tip 降维打击式的 I/O 优化

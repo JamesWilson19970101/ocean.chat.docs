@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 # 微服务架构
 
 :::info 架构概览
-整个平台采用分布式微服务架构，旨在支持十万级（10万+）并发。它分为五个逻辑层，包含11个核心微服务、2个独立后台工作单元和1条数据处理管道，确保职责清晰分离。
+整个平台采用分布式微服务架构，旨在支持十万级（10万+）并发。它分为五个逻辑层，包含核心微服务、离线推送 Worker、多媒体/审计 Worker 以及消息持久化管道；其中 `oceanchat-pusher-realtime` 仅为**预留骨架、当前未启用**，不计入运行所必需的服务。
 :::
 
 ## 技术栈
@@ -52,7 +52,7 @@ flowchart TB
 
         subgraph Layer3 ["第三层：消息推送管道 (专职异步、高可靠的消息下发)"]
             direction LR
-            Orch("推送编排服务\n(oceanchat-orchestrator)") ~~~ PushRT("实时推送 Worker\n(oceanchat-pusher-realtime)") ~~~ PushOff("离线推送 Worker\n(oceanchat-pusher-offline)")
+            Orch("推送编排服务\n(oceanchat-orchestrator)") ~~~ PushRT("实时推送 Worker（预留）\n(oceanchat-pusher-realtime)") ~~~ PushOff("离线推送 Worker\n(oceanchat-pusher-offline)")
         end
 
         subgraph Layer4 ["第四层：基础支撑服务 (提供高性能状态与数据支撑)"]
@@ -112,7 +112,7 @@ flowchart TB
 - **实时连接入口**: 作为所有外部 WebSocket/TCP 长连接的唯一入口。
 - **连接认证**: 在客户端建立长连接（`AUTH_REQ`）时，实现 **Zero-I/O Authentication**：使用 `oceanchat-auth` 分发的 RS256 公钥在本地完成 JWT 验签，并结合内存黑名单（通过 NATS 撤销事件同步）判定令牌有效性，全程不发起任何网络调用。
 - **数据透传**: 作为纯粹的连接通道，仅封装客户端原始数据包（如附加上 `connectionId`, `gatewayId`），然后快速投递给后端的 **消息路由服务**。
-- **客户端消息下发**: 接收来自 **实时推送工作单元** 的指令，将消息准确推送给连接在本实例上的客户端。
+- **客户端消息下发**: 当前直接订阅由 **推送编排服务** 发布的节点专属主题 `im.down.node.{gatewayId}`，并将消息准确推送给连接在本实例上的客户端。未来若启用 **实时推送工作单元**，则改为接收该工作单元派发的节点指令；最终的 WebSocket 写入始终由持有连接的网关完成。
 
 </TabItem>
 <TabItem value="reason" label="分离原因">
@@ -236,18 +236,37 @@ graph TD
 </TabItem>
 </Tabs>
 
-### 9. **实时推送工作单元（oceanchat-pusher-realtime）** (无状态)
+### 9. **实时推送工作单元（oceanchat-pusher-realtime）**（预留，当前未启用）
 
 <Tabs>
-<TabItem value="resp" label="核心职责" default>
+<TabItem value="current" label="当前状态" default>
 
-- **任务消费**: 监听“在线推送”队列，消费任务。
-- **指令下发**: 直接与目标用户所在的 **连接网关** 实例通信，指令其下发消息。
-- **技术栈**: NATS JetStream 订阅者, ioredis (用于网关间 Pub/Sub)。
+- `oceanchat-pusher-realtime` 当前仅为预留的应用骨架，尚未接入实时消息链路，也不是系统运行所必需的微服务。
+- 当前在线链路为：`oceanchat-orchestrator` 查询在线状态并获得 `gatewayId`，直接向 `im.down.node.{gatewayId}` 发布轻量级 `MSG_NOTIFY`；对应的 `oceanchat-ws-gateway` 订阅自己的节点主题，在本地定位连接并执行最终的 WebSocket 下发。
+- 在这套链路中再加入一个只负责转发的 Worker，会额外增加一次消息跳转、部署成本和故障点，却无法转移连接维护、网络带宽、慢客户端处理和 `socket.send()` 的压力，因此目前不启用该服务。
 
 </TabItem>
-<TabItem value="reason" label="分离原因">
-专职处理在线消息推送，可根据在线用户数和消息量独立扩缩容，确保实时性。
+<TabItem value="future" label="未来职责">
+
+若未来启用，该服务不应只是简单转发，而应作为可独立扩缩容的 **实时扇出与流量调度层**：
+
+- **任务消费与扇出**: 消费 orchestrator 发布的、按网关或分片聚合的实时投递任务，将大群消息展开为具体的设备投递指令。
+- **流量治理**: 实现网关维度的微批处理、并发限制、优先级调度、过载保护和可丢弃信令的降级策略。
+- **指令下发**: 将处理后的信令发布到 `im.down.node.{gatewayId}`；网关仍然负责本地连接查找、发送背压和最终 WebSocket 写入。
+- **协议扩展**: 当实时下行需要同时支持 WebSocket、SSE、MQTT 等多种通道时，集中处理通道选择与适配。
+
+</TabItem>
+<TabItem value="when" label="启用条件">
+
+仅当监控或压测证明存在以下需求时再引入：
+
+- 大群在线扇出和大量 NATS publish 已使 orchestrator 成为明确瓶颈。
+- 需要将实时任务的批处理、分片、限流或优先级策略从 orchestrator 中独立出来。
+- 实时推送策略需要独立发布、扩缩容和故障隔离。
+- 需要统一适配多种实时下行协议或跨地域网关选择。
+
+启用前必须先定义 orchestrator 与该 Worker 之间的任务契约，例如 `realtime.dispatch.{shard}` 对应的 DTO、Stream 保留和过期策略、分片键以及重复投递语义。不能直接把现有 `im.down.node.{gatewayId}` 当作中间任务队列，因为它已经是网关消费的最终节点地址。
+
 </TabItem>
 </Tabs>
 

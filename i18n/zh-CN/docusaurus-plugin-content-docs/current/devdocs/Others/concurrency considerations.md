@@ -13,7 +13,7 @@
 
   - Stateful: The `oceanchat-ws-gateway` (Connection Gateway) is the only stateful service in the system. Each instance must maintain the state of the WebSocket connections established with it. To support its scalability, I employ the following strategies:
     - **State Decoupling**: The gateway itself only maintains connection state (e.g., `connectionId`), while the user's business state (e.g., `userId`, presence status) is stored in Redis, making it accessible to all services.
-    - **Service Discovery**: A mapping between a `userId` and the `gatewayId` of the instance they are connected to is maintained in Redis. This allows other services (like `oceanchat-pusher-realtime`) to accurately locate the user's gateway instance for pushing messages.
+    - **Service Discovery**: A mapping between a `userId` and the `gatewayId` of the instance they are connected to is maintained in Redis. This allows `oceanchat-orchestrator` (and, in the future, a reserved `oceanchat-pusher-realtime` fan-out worker) to accurately locate the user's gateway instance for pushing messages.
 
   :::tip
   I've decided to use Redis as the global mechanism for state storage and sharing, effectively decoupling the stateful gateway from the stateless business services.

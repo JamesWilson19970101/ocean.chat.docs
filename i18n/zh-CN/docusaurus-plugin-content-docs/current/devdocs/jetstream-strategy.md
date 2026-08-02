@@ -177,7 +177,7 @@ flowchart LR
 - 消费者配置 (具备两个独立的持久化消费者组 / Consumer Groups)
   - 消费者 A: `oceanchat-orchestrator` (推送编排服务)
     - 消费逻辑: 实时 Pull 拉取。
-    - 配置详情与原因: 编排服务拉取消息后，会查询 Redis 在线状态图谱来评估接收方的网络状态。由此决定是将消息转化为轻量级的 `MSG_NOTIFY` 发往下行流，还是转化为离线唤醒任务转移到 `OFFLINE_PUSH` 流进行厂商推送。
+    - 配置详情与原因: 编排服务拉取消息后，会查询 Redis 在线状态图谱来评估接收方的网络状态。在线时**直接**向 `im.down.node.{gatewayId}` 发布轻量级 `MSG_NOTIFY`；离线时则转化为唤醒任务转移到 `OFFLINE_PUSH` 流。当前不经 `oceanchat-pusher-realtime`。
   - 消费者 B: `MessagePersistence Worker` (消息持久化管道)
     - 消费逻辑: 后台异步大批量 Pull 拉取 (Batch Pull)。
     - 配置详情与原因: 这个 Worker 彻底将慢速的磁盘 I/O 解耦出了主链路。通过一次性批量拉取数百条消息，利用 MongoDB 的 Bulk Insert 接口执行批量写入，极大地降低了数据库的 IOPS 瓶颈压力。只有落库成功后，Worker 才会向 NATS 发送显式 ACK，推进当前消费组的进度，保障了海量并发下的最终一致性。
@@ -474,7 +474,7 @@ flowchart LR
   classDef service fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#000;
   classDef subject fill:#fef08a,stroke:#ca8a04,stroke-width:1px,color:#000;
 
-  P[oceanchat-pusher-realtime]:::service
+  P[oceanchat-orchestrator]:::service
   C1[oceanchat-ws-gateway Pod A]:::gateway
   C2[oceanchat-ws-gateway Pod B]:::gateway
 
@@ -490,7 +490,7 @@ flowchart LR
 ```
 
 - **核心职责**: 在分布式架构中，负责将下行信令（如 `MSG_NOTIFY` 唤醒通知、`MSG_UP_ACK` 消息回执）**精准投递（Unicast）**到持有目标用户 WebSocket 长连接的特定网关实例上。
-  - 这是“无状态网关”与“中心化状态服务”协同工作的纽带。核心编排服务 (`orchestrator`) 只需查阅 Redis 在线图谱找到对应设备的 `gatewayId`，即可将数据像送快递一样精准发往对应的 Pod。
+  - 这是“无状态网关”与“中心化状态服务”协同工作的纽带。核心编排服务 (`oceanchat-orchestrator`) 查阅 Redis 在线图谱找到对应设备的 `gatewayId` 后，**当前直接**向该主题发布；持有连接的网关订阅本机主题并完成最终 WebSocket 写入。`oceanchat-pusher-realtime` 仅为预留骨架，未接入本流。
 - **保留策略 (Retention Strategy)**: `RetentionPolicy.Interest` (基于兴趣的保留) 或极短的 `Limits`。
   - **原因**: 下发信令强依赖特定的物理网关进程。如果 `Pod A` 崩溃，其内存中的 WebSocket 连接也会随之全部断开。此时再向 `im.down.node.podA_uuid` 堆积消息不仅毫无意义，还会造成数据黑洞。Interest 策略确保只要网关下线，流中的无主消息就会被立刻丢弃。
 - **存储介质 (Storage)**: `StorageType.Memory` (内存)。
@@ -502,10 +502,10 @@ flowchart LR
 
 职责描述: 微服务间跨节点通信的精准快递地址，用于向单个特定的网关节点下发实时二进制协议帧。
 
-- 生产者配置 (Producer: `oceanchat-pusher-realtime` 或 `oceanchat-message`)
-  - **发布逻辑**: 从 Redis `oceanchat-presence` 查到目标用户的在线节点 ID 后，向该 UUID 对应的专属主题发布事件。
+- 生产者配置 (Producer: **当前** `oceanchat-orchestrator`；另含 `oceanchat-message` 等用于 `MSG_UP_ACK` 等回执场景)
+  - **发布逻辑**: 从 Redis / `oceanchat-presence` 查到目标用户的在线节点 ID 后，向该 UUID 对应的专属主题发布事件。未来若启用 `oceanchat-pusher-realtime`，应通过独立的中间任务流（如 `realtime.dispatch.{shard}`）承接扇出，**不能**把本主题当成中间任务队列。
   - **配置详情与原因**:
-    - **异步解耦 (Fire-and-Forget)**: 推送服务发布轻量级信令后立刻放行，无需等待网关的 ACK，充分保障在高频派发时的超高吞吐量。
+    - **异步解耦 (Fire-and-Forget)**: 发布轻量级信令后立刻放行，无需等待网关的 ACK，充分保障在高频派发时的超高吞吐量。
 
 - 消费者配置 (Consumer: `oceanchat-ws-gateway` 连接网关)
   - **消费逻辑**: 每个网关实例在启动时，提取自身的 UUID，动态监听只属于自己的 `im.down.node.{this.gatewayId}` 主题。

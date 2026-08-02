@@ -34,9 +34,9 @@ import TabItem from '@theme/TabItem';
 
 <Tabs>
   <TabItem value="services" label="必需的微服务" default>
-    1. 编排服务 (oceanchat-orchestrator)：投递管道的“大脑”。它根据在线状态决定投递路径。
+    1. 编排服务 (oceanchat-orchestrator)：投递管道的“大脑”。查询在线状态后，**直接**向目标网关节点主题发布 `MSG_NOTIFY`，或向离线推送流发布任务。
     2. 状态服务 (oceanchat-presence)：基于 Redis。负责维护全局所有活跃会话及其对应的 `gateway_node_uuid`。
-    3. 实时推送 (oceanchat-pusher-realtime)：负责将轻量级的 `MSG_NOTIFY` 信令路由至特定的网关实例。
+    3. 连接网关 (oceanchat-ws-gateway)：订阅本机 `im.down.node.{gatewayId}`，执行 200ms 折叠后向客户端下发。
     4. 离线推送 Worker (oceanchat-pusher-offline)：隔离的后台消费者，负责处理缓慢的 APNs 或 FCM 外部 HTTP 调用。
   </TabItem>
   <TabItem value="streams" label="必需的 JetStream">
@@ -45,12 +45,16 @@ import TabItem from '@theme/TabItem';
         - 用途: 提供等待派发处理的消息源。
     2.  IM_DOWNBOUND Stream:
         - Subject: `im.down.node.{gateway_node_uuid}`
-        - 用途: 为在线用户将信令瞬态路由到特定的网关实例。
+        - 用途: 为在线用户将信令瞬态路由到特定的网关实例。当前由 **orchestrator** 直接发布。
     3.  OFFLINE_PUSH Stream:
         - Subject: `push.offline.{vendor}.{user_id}`
         - 用途: 用于第三方推送任务的工作队列 (WorkQueue)。它使用 `max_msgs_per_subject: 1` 策略，通过将多条未读消息折叠为一个任务来防止通知风暴。
   </TabItem>
 </Tabs>
+
+:::info 关于 oceanchat-pusher-realtime
+该服务当前为**预留骨架、未接入主链路**。在线投递不经过它；未来启用条件与职责见《微服务架构》中该服务的说明。
+:::
 
 ## 1. 查询接收者在线状态
 
@@ -65,8 +69,8 @@ import TabItem from '@theme/TabItem';
 
 如果发现在特定的 `gateway_node_uuid` 上有活跃会话，则触发实时通知路径：
 
-1.  **信令派发**：编排服务向 `im.down.node.{gateway_node_uuid}` 主题发布一个轻量级的 `MSG_NOTIFY` 信号。
-2.  **网关折叠后下发**：`oceanchat-pusher-realtime` 将信令路由到持有该连接的精准 `oceanchat-ws-gateway` 实例。网关**不会立刻逐条下发**：同一用户、同一会话在 **200ms** 窗口内到达的多条通知，会在连接级折叠池中合并，最终只向客户端推送携带**最大 `SyncSeqId`** 的那一个二进制 `MSG_NOTIFY`（详见协议规范「通知折叠与微批处理」）。
+1.  **信令派发**：编排服务查阅 Presence 得到 `gateway_node_uuid` 后，**直接**向 `im.down.node.{gateway_node_uuid}` 发布轻量级 `MSG_NOTIFY`（不经过 `oceanchat-pusher-realtime`）。
+2.  **网关折叠后下发**：持有该连接的 `oceanchat-ws-gateway` 订阅本机节点主题。网关**不会立刻逐条下发**：同一用户、同一会话在 **200ms** 窗口内到达的多条通知，会在连接级折叠池中合并，最终只向客户端推送携带**最大 `SyncSeqId`** 的那一个二进制 `MSG_NOTIFY`（详见协议规范「通知折叠与微批处理」）。
 3.  **HTTP Sync (拉取)**：客户端收到折叠后的 `MSG_NOTIFY` 后，携带目标会话 ID 与本地 `MaxLocalSyncSeqId`，向 `oceanchat-query` 发起一次 **HTTP Sync**，即可批量拉取该窗口内的全部增量消息实体。
 
 :::tip 折叠放在服务端
@@ -99,7 +103,6 @@ sequenceDiagram
     participant N as NATS (im.orchestrate.msg)
     participant O as 编排服务 (Orchestrator)
     participant P as 状态服务 (Redis)
-    participant R as 实时推送 (Pusher Realtime)
     participant OF as 离线推送 (Pusher Offline)
     participant G as WS 网关
     participant C as 客户端
@@ -109,8 +112,7 @@ sequenceDiagram
     P-->>O: 返回网关节点 ID 或 "离线"
 
     alt 用户在线
-        O->>R: 向节点主题发布 MSG_NOTIFY
-        R->>G: 转发至特定网关实例
+        O->>G: 发布至 im.down.node.{gatewayId}
         note right of G: 200ms 连接级折叠<br/>同会话仅下发最大 SyncSeqId
         G->>C: 二进制推送 [0x08] MSG_NOTIFY（已折叠）
         C->>C: 触发 HTTP Sync 拉取

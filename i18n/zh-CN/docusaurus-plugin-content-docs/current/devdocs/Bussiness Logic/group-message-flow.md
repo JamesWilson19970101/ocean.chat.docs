@@ -100,7 +100,6 @@ sequenceDiagram
     participant NATS as NATS JetStream
     participant Orch as oceanchat-orchestrator
     participant Presence as oceanchat-presence (Redis)
-    participant PushRT as oceanchat-pusher-realtime
     participant PushOff as oceanchat-pusher-offline
     participant APNs as Apple / Google API
 
@@ -109,15 +108,15 @@ sequenceDiagram
     Presence-->>Orch: 3. 返回 (2000 节点在线, 8000 完全离线)
 
     alt 在线用户 (2,000 人)
-        Orch->>PushRT: 4. 按目标网关节点对推送任务进行分组
-        PushRT->>NATS: 5. 发布 MSG_NOTIFY 信令至 im.down.node.{id}
+        Orch->>NATS: 4. 直接发布 MSG_NOTIFY 至 im.down.node.{gatewayId}
+        note right of Orch: 当前不经 oceanchat-pusher-realtime<br/>（该服务为预留、未启用）
     end
 
     alt 离线用户 (8,000 人)
-        Orch->>NATS: 6. 发布唤醒任务至 OFFLINE_PUSH 流
+        Orch->>NATS: 5. 发布唤醒任务至 OFFLINE_PUSH 流
         note right of NATS: 主题: push.offline.apns.{userId}<br/>MaxMsgsPerSubject=1 (队列自动折叠)
-        NATS-->>PushOff: 7. 工作单元 Pull 拉取去重后的任务
-        PushOff->>APNs: 8. HTTP POST (发送系统静默通知)
+        NATS-->>PushOff: 6. 工作单元 Pull 拉取去重后的任务
+        PushOff->>APNs: 7. HTTP POST (发送系统静默通知)
     end
 ```
 

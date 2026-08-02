@@ -47,8 +47,8 @@ Ocean Chat 的架构严格将网络 I/O 与业务逻辑隔离。本协议依赖�
 - **`oceanchat-router`**: 核心路由编排器，负责与 NATS JetStream 交互。
 - **`oceanchat-message`**: 负责为每条消息分配会话级严格单调递增的 `SyncSeqId`（以单个单聊/群聊为递增维度），并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
 - **`oceanchat-query`**: 负责处理离线唤醒或新消息到达、消息空洞情况下的增量消息同步 (基于 HTTP 短连接)。
-- **`oceanchat-orchestrator`**: 推送决策大脑，负责查询在线状态，并将消息拆分为在线唤醒通知 (`MSG_NOTIFY`) 或离线推送任务。
-- **`oceanchat-pusher-realtime`**: 负责在线信令的具体投递，将 `MSG_NOTIFY` 派发至指定的网关节点。
+- **`oceanchat-orchestrator`**: 推送决策大脑。查询在线状态后，当前实现会**直接**向 `im.down.node.{gatewayId}` 发布在线 `MSG_NOTIFY`，或向 `OFFLINE_PUSH` 发布离线唤醒任务。
+- **`oceanchat-pusher-realtime`**: **预留、当前未启用**。未来若引入，将作为可独立扩缩容的实时扇出与流量调度层；现阶段不把它画进在线主链路。
 
 ### 端到端数据流
 
@@ -68,16 +68,15 @@ graph TD
         NATS -.->|Pull 拉取| Worker[MessagePersistence Worker]
         Worker -.->|异步批量写入| MongoDB[(MongoDB)]
 
-        Router -->|广播事件| Pusher[oceanchat-pusher-realtime]
-        Pusher -->|查询路由| Presence[oceanchat-presence]
+        NATS -->|im.orchestrate.msg| Orch[oceanchat-orchestrator]
+        Orch -->|查询在线路由| Presence[oceanchat-presence]
         Presence -->|读写会话数据| Redis[(Redis)]
         Redis -->|返回会话数据| Presence
+        Orch -->|im.down.node.gatewayId| Gateway
 
         APIGateway -->|HTTP 同步请求| Query[oceanchat-query]
         Query -->|读取| MongoDB
     end
-
-    Pusher -->|NATS Subject 定向投递| Gateway
 ```
 
 ## 2. 帧结构 (Frame Structure)

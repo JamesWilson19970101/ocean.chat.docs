@@ -16,7 +16,7 @@ keywords:
 
 # 理解零 I/O (Zero-I/O) 认证
 
-认证是 Ocean Chat 关键的访问关卡。然而，当平台扩展到 **数十万并发连接** 时，传统的远程认证验证将成为灾难性的瓶颈。
+认证是 Ocean Chat 关键的访问关卡。然而，当平台扩展到 **十万级并发连接** 时，传统的远程认证验证将成为灾难性的瓶颈。
 
 本文档解释了 Ocean Chat 的 **零 I/O 认证架构 (Zero-I/O Authentication Architecture)** 的概念基础，详细说明了它如何从受网络限制的检查转变为受 CPU 限制的加密运算，以确保无限的水平扩展性。
 
@@ -27,7 +27,7 @@ keywords:
 虽然这保证了严格、同步的状态一致性，但在大规模下会引入严重的结构性缺陷：
 
 1. **远程 I/O 惩罚：** 每次 HTTP 请求或 WebSocket 握手都需要一次到 Redis 的网络往返。
-2. **读取风暴：** 在 1000 万并发用户时，常规流量每秒会产生数百万次查询。这种读取风暴会压垮最强大的 Redis 集群，导致延迟增加和级联超时。
+2. **读取风暴：** 在十万级并发用户时，常规流量每秒会产生海量查询。这种读取风暴会压垮最强大的 Redis 集群，导致延迟增加和级联超时。
 3. **对称密钥的脆弱性：** 在中央认证服务和边缘网关之间共享单一的对称密钥（如 HS256）意味着，一旦任何一个边缘节点被攻破，攻击者就可以伪造管理令牌。
 
 为了实现水平扩展，Ocean Chat 必须将远程网络 I/O 从令牌验证的关键路径中彻底消除。
@@ -55,7 +55,7 @@ Ocean Chat 从对称共享密钥转变为 **非对称加密**（公钥/私钥对
 
 加密验证仅能证明令牌是合法颁发的；它无法证明用户没有退出登录。网关不再查询远程数据库来检查有效状态，而是使用 **事件驱动的内存黑名单**。
 
-当用户退出登录时，认证服务会通过 NATS JetStream 异步发布一个 `auth.token.revoked` 事件。每个活动的网关都会接收此广播，并将该令牌的唯一 ID (`jti`) 插入到本地的内存 LRU 缓存（或布隆过滤器）中。
+当用户退出登录时，认证服务会通过 NATS JetStream 异步发布一个 `auth.jwt.revoke` 事件。每个活动的网关都会接收此广播，并将该令牌的唯一 ID (`jti`) 插入到本地的内存 LRU 缓存（或布隆过滤器）中。
 
 在请求验证期间，网关执行一次 `O(1)` 的本地内存查找。如果没有找到 `jti`，请求将立即继续处理，无需任何网络 I/O。一旦令牌达到其绝对过期时间 `exp`，`jti` 将自然地从内存中被驱逐。
 
@@ -74,7 +74,7 @@ sequenceDiagram
 
     Note over Client, NATS: Asynchronous Revocation Flow
     Client->>Auth_Service: Trigger Logout
-    Auth_Service->>NATS: Broadcast `auth.token.revoked`
+    Auth_Service->>NATS: Broadcast `auth.jwt.revoke`
     NATS-->>API_Gateway: Deliver Event
     API_Gateway->>API_Gateway: Insert JTI into Local Blacklist
 ```

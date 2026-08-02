@@ -10,7 +10,12 @@ import TabItem from '@theme/TabItem';
 # 微服务架构
 
 :::info 架构概览
-整个平台采用分布式微服务架构，旨在支持十万级（10万+）并发。它分为五个逻辑层，包含核心微服务、离线推送 Worker、多媒体/审计 Worker 以及消息持久化管道；其中 `oceanchat-pusher-realtime` 仅为**预留骨架、当前未启用**，不计入运行所必需的服务。
+整个平台采用分布式微服务架构，旨在支持十万级（10万+）并发。按职责划分为：
+
+- **10 个必需核心微服务**：`oceanchat-api-gateway`、`oceanchat-ws-gateway`、`oceanchat-router`、`oceanchat-auth`、`oceanchat-user`、`oceanchat-group`、`oceanchat-message`、`oceanchat-orchestrator`、`oceanchat-presence`、`oceanchat-query`
+- **3 个后台 Worker**：`oceanchat-pusher-offline`、Media Worker、Audit Worker
+- **1 条数据处理管道**：MessagePersistence
+- **预留未启用**：`oceanchat-pusher-realtime`（不计入运行所必需的服务）
 :::
 
 ## 技术栈
@@ -116,7 +121,7 @@ flowchart TB
 
 </TabItem>
 <TabItem value="reason" label="分离原因">
-将最消耗资源的 I/O 密集型任务（维护连接）与 CPU 密集型任务（业务逻辑）彻底分离。这使得连接网关可以被极致优化，并独立进行水平扩展，以支撑十万甚至亿级的并发连接。
+将最消耗资源的 I/O 密集型任务（维护连接）与 CPU 密集型任务（业务逻辑）彻底分离。这使得连接网关可以被极致优化，并独立进行水平扩展，以支撑十万级并发连接。
 </TabItem>
 </Tabs>
 
@@ -293,7 +298,7 @@ graph TD
 <Tabs>
 <TabItem value="resp" label="核心职责" default>
 
-- **状态维护**: 通过 `userId -> {gatewayId, status}` 的映射，实时维护全局用户的在线状态。
+- **状态维护**: 通过 `UserId → DeviceId → { deviceType, gatewayId, status, connectTime }` 的路由图谱，实时维护全局用户的多端在线状态（Redis Hash：`user:routing:{userId}`）。
 - **状态查询**: 为 **推送编排服务** 等提供毫秒级的在线状态查询接口。
 
 </TabItem>

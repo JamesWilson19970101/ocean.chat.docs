@@ -22,7 +22,7 @@ import TabItem from '@theme/TabItem';
 
 本指南将演示 Ocean Chat 如何在海量并发场景下，实时精准地感知用户的上线（建连）与下线（断网），并构建出支撑消息精确路由的“全局在线状态图谱”。
 
-通过阅读本指南，你将了解系统如何通过极轻量级的事件驱动模型，解耦有状态的网关与无状态的业务逻辑，从而在十万乃至百万级并发下，优雅处理用户的网络状态变更与多设备漫游。
+通过阅读本指南，你将了解系统如何通过极轻量级的事件驱动模型，解耦有状态的网关与无状态的业务逻辑，从而在十万级并发下，优雅处理用户的网络状态变更与多设备漫游。
 
 `oceanchat-presence` 是一个纯 NATS 微服务，专注于处理用户的在线状态更新、离线清理以及路由信息的维护。它通过监听 NATS JetStream 中的 `SYS_PRESENCE` 流（消费者为持久化的 `presence-state-updater`）来保证状态事件的不丢失。状态数据的唯一事实来源（Source of Truth）存储在 Redis 中，使用 Hash 结构维护用户多端设备的长连接节点（Gateway）路由映射。
 
@@ -56,10 +56,10 @@ import TabItem from '@theme/TabItem';
 2. **异步抛出事件**：网关**不会**去直接操作 Redis，而是组装一条极其轻量的上线事件载荷，异步发布到 NATS 的 `SYS_PRESENCE` 流中（主题为 `presence.conn.online`）。
 
 :::tip 极致解耦
-网关只负责抛出事件，随即立刻返回继续处理网络 I/O。这种“发后即忘 (Fire-and-Forget)”的设计确保了即使在遭遇百万用户同时重连的“惊群效应”时，网关也不会因为等待 Redis 写入而导致线程阻塞。
+网关只负责抛出事件，随即立刻返回继续处理网络 I/O。这种“发后即忘 (Fire-and-Forget)”的设计确保了即使在遭遇十万级用户同时重连的“惊群效应”时，网关也不会因为等待 Redis 写入而导致线程阻塞。
 :::
 
-**状态更新逻辑**：`oceanchat-presence` 接收到上线事件后，构建 Redis 路由键 `user:routing:{userId}`。将 `deviceId` 作为 Hash Field，写入序列化的 `DevicePresence` JSON 数据（包含 `deviceId`, `deviceType`, `gatewayId`, `status: 'online'`, `connectTime`）。
+**状态更新逻辑**：`oceanchat-presence` 接收到上线事件后，构建 Redis 路由键 `user:routing:{userId}`。将 `deviceId` 作为 Hash Field，写入序列化的设备在线信息 JSON：`{ deviceType, gatewayId, status: 'online', connectTime }`（逻辑结构为 `UserId → DeviceId → {...}`）。
 
 **TTL 策略**：利用 Redis 7.4+ 的新特性 `hsetWithFieldExpire`，为该单一设备的 Field 设置 `300` 秒（5 分钟）的过期时间，实现精准的单设备自动过期清理。
 
@@ -91,13 +91,14 @@ import TabItem from '@theme/TabItem';
 
 ## 4. Redis 存储结构
 
-| 属性             | 说明                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------- |
-| **Key**          | `user:routing:{userId}`                                                                         |
-| **Type**         | Hash                                                                                            |
-| **Field**        | `{deviceId}`                                                                                    |
-| **Value (JSON)** | `{"deviceId":"...","deviceType":"...","gatewayId":"...","status":"online","connectTime":"..."}` |
-| **Field TTL**    | `300s` (Redis 7.4+ 字段级过期)                                                                  |
+| 属性             | 说明                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| **逻辑结构**     | `UserId → DeviceId → { deviceType, gatewayId, status, connectTime }`                                  |
+| **Key**          | `user:routing:{userId}`                                                                               |
+| **Type**         | Hash                                                                                                  |
+| **Field**        | `{deviceId}`                                                                                          |
+| **Value (JSON)** | `{"deviceType":"...","gatewayId":"...","status":"online","connectTime":"..."}`                        |
+| **Field TTL**    | `300s` (Redis 7.4+ 字段级过期)                                                                        |
 
 ## 5. 微服务健康检查
 

@@ -44,7 +44,7 @@ JSON Web Token (JWT) 是一种作为 JSON 对象安全传输信息的流行标�
 
 Access Token 是日常 API 交互的“通行证”。
 
-- **生命周期：** 极短（5 到 15 分钟）。
+- **生命周期：** **15 分钟**（`jwt.accessExpiresIn`）。
 - **验证机制：** 完全无状态。由 API 网关使用 [零 I/O 密码学](./understanding-zero-io-authentication.md) 在本地进行验证。
 - **存储策略：** 专门存储在客户端的 **JavaScript 内存变量** 中。
 - **基本原理：** 存储在内存中可防止 CSRF 攻击（因为浏览器不会自动附加它），并消除 XSS 风险（无法从 `localStorage` 中读取它）。如果页面重新加载，内存即被清除，将攻击窗口最小化到仅仅几分钟。

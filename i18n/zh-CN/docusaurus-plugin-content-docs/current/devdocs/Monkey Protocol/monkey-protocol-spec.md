@@ -26,7 +26,7 @@ sidebar_position: 1
 
 # Monkey Protocol 协议规范
 
-**Monkey Protocol** 是 Ocean Chat 自研的高性能二进制应用层协议，运行于 WebSocket 或纯 TCP 之上。该协议专为支持 **1000万+ 并发连接**的分布式微服务架构而设计。
+**Monkey Protocol** 是 Ocean Chat 自研的高性能二进制应用层协议，运行于 WebSocket 或纯 TCP 之上。该协议专为支持 **十万级并发连接**的分布式微服务架构而设计。
 
 本参考文档详细规定了精确到位级别的帧结构、指令集以及网关和客户端实现中必须遵循的严格状态机操作。
 
@@ -43,7 +43,7 @@ Ocean Chat 的架构严格将网络 I/O 与业务逻辑隔离。本协议依赖�
 - **`oceanchat-ws-gateway`**: 绝对无状态。仅负责长连接生命周期、极简协议编解码、下行信令微批处理（Micro-batching）以及令牌桶限流。
 - **`oceanchat-api-gateway`**: 无状态 HTTP 网关。负责承接客户端 HTTP 请求（如增量数据拉取），提供限流与初步鉴权。
 - **`oceanchat-auth`**: 作为唯一持有 RS256 私钥的令牌签发者。它**不参与**握手校验链路：网关在收到 `AUTH_REQ` 时，直接使用其分发的 RS256 公钥在本地完成 JWT 验签（Zero-I/O），并通过订阅 NATS 撤销事件维护内存黑名单。
-- **`oceanchat-presence`**: 管理 Redis 中的全局在线状态 (`UserId -> DeviceType -> Gateway IP`)。
+- **`oceanchat-presence`**: 管理 Redis 中的全局在线状态路由图谱：`UserId → DeviceId → { deviceType, gatewayId, status, connectTime }`。
 - **`oceanchat-router`**: 核心路由编排器，负责与 NATS JetStream 交互。
 - **`oceanchat-message`**: 负责为每条消息分配会话级严格单调递增的 `SyncSeqId`（以单个单聊/群聊为递增维度），并将消息可靠地写入 NATS JetStream（预写日志），实现高吞吐异步落库。
 - **`oceanchat-query`**: 负责处理离线唤醒或新消息到达、消息空洞情况下的增量消息同步 (基于 HTTP 短连接)。
@@ -291,7 +291,7 @@ sequenceDiagram
 
 ## 7. 多端漫游同步
 
-- **未读数降维打击 (ZSET)：** Ocean Chat 规避了所有在 MongoDB 中执行的 `SELECT COUNT` 操作。`oceanchat-presence` 服务在 Redis 中为每个群维护一个存储了近期 500 条消息 ID 的有序集合 (ZSET)。通过将用户的 `LastReadSeqID` 传入 `ZCOUNT` 命令，系统可在 O(log(N)) 复杂度下极速算出精确的未读数。
+- **未读数降维打击 (ZSET)：** Ocean Chat 规避了所有在 MongoDB 中执行的 `SELECT COUNT` 操作。`oceanchat-presence` 服务在 Redis 中为每个群维护一个存储了近期 **100 条**消息 ID 的有序集合 (ZSET)。通过将用户的 `LastReadSeqID` 传入 `ZCOUNT` 命令，系统可在 O(log(N)) 复杂度下极速算出精确的未读数。
 - **已读回执广播：** 当用户在任一端阅读消息并发出 `[0x0B] READ_RECEIPT` 后，`oceanchat-ws-gateway` 仅做透传；由 `oceanchat-router` 发布至 `CURSOR_STATE`（异步落盘）并并行广播到 `DEVICE_SYNC`，再由持有该用户连接的网关实例静默下发，实现跨设备未读红点瞬间消除。
 
 ## 8. 富媒体与文件传输架构 (长短链协同)

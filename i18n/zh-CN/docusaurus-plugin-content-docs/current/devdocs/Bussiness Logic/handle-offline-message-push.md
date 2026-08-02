@@ -66,7 +66,7 @@ import TabItem from '@theme/TabItem';
 
 - **拉取模式消费 (Pull Mode)**：该服务使用 `consumer.sonsume()` 拉取任务，以适配 Apple/Google API 的限流速率，做到削峰填谷。
 - **调用厂商接口**：工作单元调用 APNs 或 FCM 接口。它在有效载荷中包含**折叠键（Collapse Key）**，确保移动操作系统仅静默更新未读角标和最新消息预览。
-- **显式 ACK**：只有在收到厂商返回的 `200 OK` HTTP 响应后，工作单元才会向 NATS 回复显式 ACK。如果 API 失败或超时，任务最多会被重新投递 3 次（或根据配置次数），随后移入死信队列 (DLQ)。
+- **显式 ACK**：只有在收到厂商返回的 `200 OK` HTTP 响应后，工作单元才会向 NATS 回复显式 ACK。如果 API 失败或超时，任务最多会被重新投递 **3 次**（`max_deliver: 3`），随后移入死信队列 (DLQ)。
 
 ## 5. 客户端唤醒与 HTTP Sync 同步
 

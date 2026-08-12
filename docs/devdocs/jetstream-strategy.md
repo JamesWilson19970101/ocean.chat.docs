@@ -151,7 +151,7 @@ flowchart LR
 
 - **Core Responsibility**: The most critical stream in the system. It serves not only as a "relay baton" for business payloads between microservices but also as the system's **Write Fence** and **Write-Ahead Log (WAL)**.
   - After `oceanchat-router` parses data from the gateway, it hands it off to this stream to trigger core business processing.
-  - After business services complete processing, they write to this stream again, leveraging NATS' high reliability to ensure no message loss. The flow then splits into [Message Sending and Storage](./Bussiness%20Logic/Message%20sending%20and%20database%20storage.md) and "Real-time Dispatch/Push" branches.
+  - After business services complete processing, they write to this stream again, leveraging NATS' high reliability to ensure no message loss. The flow then splits into [Message Sending and Storage](./Business%20Logic/message-sending-persistence-flow) and "Real-time Dispatch/Push" branches.
 
 - **Retention Strategy**: `RetentionPolicy.Limits`.
   - **Reason**: Data needs to be consumed independently and fully by multiple different microservice consumer groups (e.g., Push Orchestrator, Persistence Worker). The Limits strategy ensures that even if one consumer (like MongoDB batch persistence) is delayed or down, messages remain safely in the queue until all subscribers have successfully advanced their consumption cursors.

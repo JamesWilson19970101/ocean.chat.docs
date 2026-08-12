@@ -31,9 +31,9 @@
     "message": "接口",
     "description": "The label for category API in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Bussiness Logic": {
+  "sidebar.tutorialSidebar.category.Business Logic": {
     "message": "业务逻辑",
-    "description": "The label for category Bussiness Logic in sidebar tutorialSidebar"
+    "description": "The label for category Business Logic in sidebar tutorialSidebar"
   },
   "sidebar.tutorialSidebar.category.Monkey Protocol": {
     "message": "侯子协议",

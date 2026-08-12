@@ -142,7 +142,7 @@ flowchart LR
 
 - 核心职责: 系统最关键的流，不仅是微服务之间传递业务负载的“接力棒”，更充当着整个系统的**写屏障 (Write Fence)** 和**预写日志 (WAL)**。
   - 当 `oceanchat-router` 解析完网关上报的数据后，会交接给此流以触发下层核心业务处理。
-  - 业务服务处理完毕后，再次写入此流，利用 NATS 的高可靠性确保消息不丢失，随后分离为 [消息发送与落库](./Bussiness%20Logic/Message%20sending%20and%20database%20storage.md) 和“实时派发推送”两条支线。
+  - 业务服务处理完毕后，再次写入此流，利用 NATS 的高可靠性确保消息不丢失，随后分离为 [消息发送与落库](./Business%20Logic/message-sending-persistence-flow) 和“实时派发推送”两条支线。
 
 - 保留策略 (Retention Strategy): `RetentionPolicy.Limits` (基于限制的保留)。
   - 原因: 数据需要被多个不同的微服务消费者组（如推送编排服务、持久化 Worker）独立且全量地消费。Limits 策略确保了即使某个消费者（如 MongoDB 批量落库）出现延迟或宕机，消息依然安全保留在队列中，直到所有订阅者都成功推进消费游标。

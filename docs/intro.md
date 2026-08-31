@@ -4,4 +4,4 @@ sidebar_position: 1
 
 # OceanChat Intro
 
-Oceanchat is an IM platform that you can trust.
+OceanChat — an ocean no one owns. Open-source, end-to-end encrypted, distributed — with AI agents aboard.

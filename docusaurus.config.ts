@@ -8,7 +8,7 @@ import type * as OpenApiPlugin from "docusaurus-plugin-openapi-docs";
 
 const config: Config = {
   title: "Oceanchat",
-  tagline: "Oceanchat is an IM platform that you can trust.",
+  tagline: "OceanChat — an ocean no one owns. Open-source, end-to-end encrypted, distributed — with AI agents aboard.",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
